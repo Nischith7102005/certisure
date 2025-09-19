@@ -16,7 +16,7 @@ jobs:
         shell: pwsh
         run: |
           (Get-Content issuer.html) -replace 'CertiSure</span>', "CertiSure Build ${{ github.run_number }}</span>" |
-            Set-Content issuer.html
+            Set-Content index.html
 
       - name: Commit & push
         shell: pwsh
