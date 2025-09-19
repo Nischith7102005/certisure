@@ -1,33 +1,28 @@
-name: Whole-File Token Replace (Windows)
+name: Change Logo Text (Windows)
 
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:   # manual trigger for demo
 
 jobs:
-  replace-tokens:
+  replace-text:
     runs-on: windows-latest
     permissions:
       contents: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Replace tokens in issuer.html
+      - name: Replace "CertiSure" text with build number
         shell: pwsh
         run: |
-          # ---- edit any part of the file ----
-          (Get-Content issuer.html) `
-            -replace '{{CI_NAV_CLASS}}', 'bg-purple-900' `
-            -replace '{{CI_SITE_NAME}}', 'CertiSure Run-${{ github.run_number }}' `
-            | Set-Content issuer.html
+          (Get-Content issuer.html) -replace 'CertiSure</span>', "CertiSure Build ${{ github.run_number }}</span>" |
+            Set-Content issuer.html
 
-      - name: Commit & push the change
-        shell: pwss
+      - name: Commit & push
+        shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add issuer.html
-          git commit -m "CI: whole-file tokens replaced (Run ${{ github.run_number }})"
+          git commit -m "CI: logo text → Build ${{ github.run_number }}"
           git push
