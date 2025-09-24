@@ -1,0 +1,30 @@
+name: Build & Deploy site from YAML
+
+on:
+  push:
+    paths:
+      - 'data.yml'      # only rebuild when THIS file changes
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. install a tiny mustache renderer
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm install -g mustache
+
+      # 2. generate index.html from template + data
+      - run: mustache data.yml template.html > index.html
+
+      # 3. publish to GitHub Pages
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: '.' }
+      - uses: actions/deploy-pages@v4
