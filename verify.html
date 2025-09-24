@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Document - CertiSure</title>
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔒</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            color: #e2e8f0;
+        }
+        .verify-bg {
+            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.15) 0%, transparent 40%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+        }
+        .trust-score-high {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .trust-score-medium {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        .trust-score-low {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        .verification-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        .scanner-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .scanner-frame {
+            width: 250px;
+            height: 250px;
+            border: 3px solid #818cf8;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.5);
+        }
+        .scanner-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #818cf8;
+            box-shadow: 0 0 10px #818cf8;
+            animation: scan 2s linear infinite;
+        }
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        .result-container {
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-900 bg-opacity-90 backdrop-blur-sm fixed w-full z-50" data-aos="fade-down">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i data-feather="shield" class="text-indigo-500 mr-2"></i>
+                        <span class="text-xl font-bold text-white">CertiSure</span>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <a href="index.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                            <a href="issuer.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Issuer Portal</a>
+                            <a href="verify.html" class="text-white px-3 py-2 rounded-md text-sm font-medium bg-indigo-600">Verify Document</a>
+                            <a href="about.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">About</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <button class="bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-medium">Login</button>
+                </div>
+                <div class="-mr-2 flex md:hidden">
+                    <button class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none">
+                        <i data-feather="menu" class="block h-6 w-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="verify-bg pt-24 pb-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h1 class="text-3xl md:text-4xl font-bold" data-aos="fade-up">
+                    Verify Academic <span class="text-indigo-400">Credentials</span>
+                </h1>
+                <p class="mt-4 text-xl text-gray-300 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
+                    Instantly verify the authenticity of academic documents using our AI-powered system
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Verification Section -->
+    <section class="py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <!-- QR Scanner -->
+                <div class="bg-gray-800 rounded-2xl shadow-xl p-8" data-aos="fade-right">
+                    <h2 class="text-2xl font-bold text-white mb-6">Scan QR Code</h2>
+                    <p class="text-gray-400 mb-8">
+                        Point your camera at the QR code on the document to verify its authenticity instantly.
+                    </p>
+                    
+                    <div class="scanner-container mb-8">
+                        <video id="preview" class="w-full rounded-lg"></video>
+                        <div class="scanner-overlay">
+                            <div class="scanner-frame">
+                                <div class="scanner-line"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="text-gray-400 mb-4">Or enter document ID manually</p>
+                        <div class="flex">
+                            <input type="text" class="flex-1 bg-gray-700 border border-gray-600 rounded-l-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter document ID">
+                            <button class="bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded-r-lg font-medium">
+                                Verify
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Manual Upload -->
+                <div class="bg-gray-800 rounded-2xl shadow-xl p-8" data-aos="fade-left">
+                    <h2 class="text-2xl font-bold text-white mb-6">Manual Verification</h2>
+                    <p class="text-gray-400 mb-8">
+                        Upload the document and signature to verify authenticity using our AI system.
+                    </p>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Document Image</label>
+                            <div class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-500 transition-colors">
+                                <i data-feather="file" class="mx-auto h-12 w-12 text-gray-400"></i>
+                                <p class="mt-2 text-sm text-gray-400">Click to upload document image</p>
+                                <p class="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Signature Image</label>
+                            <div class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-500 transition-colors">
+                                <i data-feather="edit-3" class="mx-auto h-12 w-12 text-gray-400"></i>
+                                <p class="mt-2 text-sm text-gray-400">Click to upload signature image</p>
+                                <p class="text-xs text-gray-500">PNG, JPG up to 5MB</p>
+                            </div>
+                        </div>
+                        
+                        <button class="w-full btn-primary text-white py-3 rounded-lg font-medium">
+                            Verify Document
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Verification Result -->
+    <section class="py-12 result-container" id="result-section">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-gray-800 rounded-2xl shadow-xl p-8" data-aos="fade-up">
+                <div class="text-center mb-8">
+                    <div class="mx-auto w-24 h-24 rounded-full trust-score-high flex items-center justify-center mb-6">
+                        <span class="text-3xl font-bold text-white">96</span>
+                    </div>
+                    <h2 class="text-3xl font-bold text-white mb-2">Document Verified Successfully</h2>
+                    <p class="text-xl text-gray-400">High trust score indicates authentic document</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <!-- Document Details -->
+                    <div class="verification-card rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-white mb-4">Document Details</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-sm text-gray-400">Document Type</p>
+                                <p class="text-white">Bachelor of Science Degree</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">Issued To</p>
+                                <p class="text-white">John Smith</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">Student ID</p>
+                                <p class="text-white">STU-2023-0456</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">Issued By</p>
+                                <p class="text-white">Stanford University</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">Issue Date</p>
+                                <p class="text-white">June 15, 2023</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Verification Metrics -->
+                    <div class="verification-card rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-white mb-4">Verification Metrics</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-gray-400">Signature Match</span>
+                                    <span class="font-medium text-white">98%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                                    <div class="bg-green-500 h-2.5 rounded-full" style="width: 98%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-gray-400">Document Match</span>
+                                    <span class="font-medium text-white">94%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                                    <div class="bg-green-500 h-2.5 rounded-full" style="width: 94%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-gray-400">Watermark Verification</span>
+                                    <span class="font-medium text-white">100%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                                    <div class="bg-green-500 h-2.5 rounded-full" style="width: 100%"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-gray-400">Hash Verification</span>
+                                    <span class="font-medium text-white">100%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                                    <div class="bg-green-500 h-2.5 rounded-full" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+                    <button class="btn-primary text-white px-8 py-4 rounded-lg font-semibold">
+                        Download Verification Report
+                    </button>
+                    <button class="bg-gray-700 text-white px-8 py-4 rounded-lg font-semibold hover:bg-gray-600">
+                        Verify Another Document
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="py-16 bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12" data-aos="fade-up">
+                <h2 class="text-3xl font-bold">How Document <span class="text-indigo-400">Verification</span> Works</h2>
+                <p class="mt-4 text-xl text-gray-400 max-w-3xl mx-auto">
+                    Our AI-powered system ensures document authenticity through multiple verification layers
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+                    <div class="w-20 h-20 mx-auto rounded-full bg-indigo-900 flex items-center justify-center mb-6">
+                        <span class="text-2xl font-bold text-white">1</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Document Analysis</h3>
+                    <p class="text-gray-400">
+                        Our system analyzes the document structure, formatting, and security features.
+                    </p>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="text-center" data-aos="fade-up" data-aos-delay="200">
+                    <div class="w-20 h-20 mx-auto rounded-full bg-indigo-900 flex items-center justify-center mb-6">
+                        <span class="text-2xl font-bold text-white">2</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">AI Comparison</h3>
+                    <p class="text-gray-400">
+                        Advanced AI models compare signatures and reference documents for authenticity.
+                    </p>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="text-center" data-aos="fade-up" data-aos-delay="300">
+                    <div class="w-20 h-20 mx-auto rounded-full bg-indigo-900 flex items-center justify-center mb-6">
+                        <span class="text-2xl font-bold text-white">3</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Trust Score</h3>
+                    <p class="text-gray-400">
+                        A composite trust score (1-100) is generated based on all verification metrics.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="col-span-1 md:col-span-2">
+                    <div class="flex items-center mb-6">
+                        <i data-feather="shield" class="text-indigo-500 mr-2"></i>
+                        <span class="text-xl font-bold text-white">CertiSure</span>
+                    </div>
+                    <p class="text-gray-400 max-w-md">
+                        Securing academic credentials with blockchain technology and AI-powered verification for trust and integrity.
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="index.html" class="text-gray-400 hover:text-white">Home</a></li>
+                        <li><a href="issuer.html" class="text-gray-400 hover:text-white">Issuer Portal</a></li>
+                        <li><a href="verify.html" class="text-gray-400 hover:text-white">Verify Document</a></li>
+                        <li><a href="about.html" class="text-gray-400 hover:text-white">About Us</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-4">Legal</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Terms of Service</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Security</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-10 pt-6 text-center text-gray-500">
+                <p>&copy; 2023 CertiSure. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        AOS.init({
+            duration: 1000,
+            once: true
+        });
+        
+        feather.replace();
+        
+        // QR Scanner
+        document.addEventListener('DOMContentLoaded', function() {
+            let scanner = new Instascan.Scanner({ 
+                video: document.getElementById('preview'),
+                mirror: false
+            });
+            
+            scanner.addListener('scan', function (content) {
+                console.log('Scanned QR code:', content);
+                // Show verification result
+                document.getElementById('result-section').style.display = 'block';
+                // Scroll to result
+                document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            Instascan.Camera.getCameras().then(function (cameras) {
+                if (cameras.length > 0) {
+                    scanner.start(cameras[0]);
+                } else {
+                    console.error('No cameras found');
+                }
+            }).catch(function (e) {
+                console.error(e);
+            });
+            
+            // Simulate verification result
+            setTimeout(() => {
+                document.getElementById('result-section').style.display = 'block';
+            }, 5000);
+        });
+    </script>
+</body>
+</html>

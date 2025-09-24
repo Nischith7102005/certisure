@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CertiSure - Secure Document Verification</title>
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔒</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.7.6/lottie.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            color: #e2e8f0;
+        }
+        .hero-bg {
+            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.15) 0%, transparent 40%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+        }
+        .feature-icon {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+        .glow {
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-900 bg-opacity-90 backdrop-blur-sm fixed w-full z-50" data-aos="fade-down">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i data-feather="shield" class="text-indigo-500 mr-2"></i>
+                        <span class="text-xl font-bold text-white">CertiSure</span>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <a href="index.html" class="text-white px-3 py-2 rounded-md text-sm font-medium bg-indigo-600">Home</a>
+                            <a href="issuer.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Issuer Portal</a>
+                            <a href="verify.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Verify Document</a>
+                            <a href="about.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">About</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <button class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium">Login</button>
+                </div>
+                <div class="-mr-2 flex md:hidden">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none">
+                        <i data-feather="menu" class="block h-6 w-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-bg pt-24 pb-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div data-aos="fade-right" data-aos-delay="200">
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight">
+                        Secure Academic <span class="text-indigo-400">Credentials</span> with AI-Powered Verification
+                    </h1>
+                    <p class="mt-6 text-xl text-gray-300 max-w-2xl">
+                        CertiSure revolutionizes document authentication using blockchain technology and AI to ensure trust and integrity in academic credentials.
+                    </p>
+                    <div class="mt-10 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                        <a href="issuer.html" class="btn-primary text-white px-8 py-4 rounded-lg text-lg font-semibold shadow-lg">
+                            Get Started as Issuer
+                        </a>
+                        <a href="verify.html" class="bg-gray-800 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-700 transition duration-300">
+                            Verify Document
+                        </a>
+                    </div>
+                </div>
+                <div class="relative" data-aos="fade-left" data-aos-delay="400">
+                    <div class="relative z-10">
+                        <div id="hero-animation" class="w-full h-80 md:h-96"></div>
+                    </div>
+                    <div class="absolute -top-6 -right-6 w-full h-full bg-indigo-500 rounded-2xl opacity-20 blur-3xl"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-20 bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-3xl md:text-4xl font-bold">Powerful Features for <span class="text-indigo-400">Secure Verification</span></h2>
+                <p class="mt-4 text-xl text-gray-400 max-w-3xl mx-auto">
+                    Our platform combines cutting-edge technology with intuitive design to provide the best document verification experience.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                <!-- Feature 1 -->
+                <div class="bg-gray-800 rounded-2xl p-8 card-hover" data-aos="fade-up" data-aos-delay="100">
+                    <div class="feature-icon w-16 h-16 rounded-xl flex items-center justify-center mb-6">
+                        <i data-feather="lock" class="text-white w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Blockchain Security</h3>
+                    <p class="text-gray-400">
+                        Documents are stored on IPFS with tamper-proof hashing, ensuring authenticity and integrity.
+                    </p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="bg-gray-800 rounded-2xl p-8 card-hover" data-aos="fade-up" data-aos-delay="200">
+                    <div class="feature-icon w-16 h-16 rounded-xl flex items-center justify-center mb-6">
+                        <i data-feather="cpu" class="text-white w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">AI-Powered Trust Score</h3>
+                    <p class="text-gray-400">
+                        Advanced AI models compare signatures and reference documents to generate a trust score (1-100).
+                    </p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="bg-gray-800 rounded-2xl p-8 card-hover" data-aos="fade-up" data-aos-delay="300">
+                    <div class="feature-icon w-16 h-16 rounded-xl flex items-center justify-center mb-6">
+                        <i data-feather="smartphone" class="text-white w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">QR Code Verification</h3>
+                    <p class="text-gray-400">
+                        Instantly verify documents by scanning the unique QR code with any smartphone camera.
+                    </p>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="bg-gray-800 rounded-2xl p-8 card-hover" data-aos="fade-up" data-aos-delay="400">
+                    <div class="feature-icon w-16 h-16 rounded-xl flex items-center justify-center mb-6">
+                        <i data-feather="user-check" class="text-white w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Fingerprint Authentication</h3>
+                    <p class="text-gray-400">
+                        Issuers can authenticate documents with biometric fingerprint scanning for extra security.
+                    </p>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="bg-gray-800 rounded-2xl p-8 card-hover" data-aos="fade-up" data-aos-delay="500">
+                    <div class="feature-icon w-16 h-16 rounded-xl flex items-center justify-center mb-6">
+                        <i data-feather="globe" class="text-white w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Decentralized Storage</h3>
+                    <p class="text-gray-400">
+                        All documents are stored on IPFS, ensuring permanent availability and censorship resistance.
+                    </p>
+                </div>
+                
+                <!-- Feature 6 -->
+                <div class="bg-gray-800 rounded-2xl p-8 card-hover" data-aos="fade-up" data-aos-delay="600">
+                    <div class="feature-icon w-16 h-16 rounded-xl flex items-center justify-center mb-6">
+                        <i data-feather="bar-chart-2" class="text-white w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Verification Analytics</h3>
+                    <p class="text-gray-400">
+                        Track and analyze document verification history with detailed reports and metrics.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-3xl md:text-4xl font-bold">How CertiSure <span class="text-indigo-400">Works</span></h2>
+                <p class="mt-4 text-xl text-gray-400 max-w-3xl mx-auto">
+                    A simple 3-step process to secure and verify academic credentials
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                <!-- Step 1 -->
+                <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+                    <div class="relative mb-8">
+                        <div class="w-24 h-24 mx-auto rounded-full bg-indigo-900 flex items-center justify-center glow pulse">
+                            <span class="text-3xl font-bold text-white">1</span>
+                        </div>
+                        <div class="absolute top-1/2 right-0 w-full h-1 bg-gray-700 hidden md:block"></div>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Document Issuance</h3>
+                    <p class="text-gray-400">
+                        Academic institutions upload documents which are watermarked, hashed, and stored on IPFS with a unique QR code.
+                    </p>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="text-center" data-aos="fade-up" data-aos-delay="200">
+                    <div class="relative mb-8">
+                        <div class="w-24 h-24 mx-auto rounded-full bg-indigo-900 flex items-center justify-center glow pulse">
+                            <span class="text-3xl font-bold text-white">2</span>
+                        </div>
+                        <div class="absolute top-1/2 right-0 w-full h-1 bg-gray-700 hidden md:block"></div>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">AI Verification</h3>
+                    <p class="text-gray-400">
+                        Our AI models compare signatures and reference documents to generate a trust score (1-100).
+                    </p>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="text-center" data-aos="fade-up" data-aos-delay="300">
+                    <div class="relative mb-8">
+                        <div class="w-24 h-24 mx-auto rounded-full bg-indigo-900 flex items-center justify-center glow pulse">
+                            <span class="text-3xl font-bold text-white">3</span>
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Instant Results</h3>
+                    <p class="text-gray-400">
+                        Users scan the QR code to instantly verify document authenticity and view the trust score.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 bg-gradient-to-r from-indigo-900 to-purple-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-6" data-aos="fade-up">
+                Ready to Secure Your Academic Credentials?
+            </h2>
+            <p class="text-xl text-indigo-200 max-w-3xl mx-auto mb-10" data-aos="fade-up" data-aos-delay="100">
+                Join thousands of institutions and individuals who trust CertiSure for document verification.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6" data-aos="fade-up" data-aos-delay="200">
+                <a href="issuer.html" class="btn-primary text-white px-8 py-4 rounded-lg text-lg font-semibold shadow-lg">
+                    Become an Issuer
+                </a>
+                <a href="verify.html" class="bg-white text-indigo-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition duration-300">
+                    Verify a Document
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="col-span-1 md:col-span-2">
+                    <div class="flex items-center mb-6">
+                        <i data-feather="shield" class="text-indigo-500 mr-2"></i>
+                        <span class="text-xl font-bold text-white">CertiSure</span>
+                    </div>
+                    <p class="text-gray-400 max-w-md">
+                        Securing academic credentials with blockchain technology and AI-powered verification for trust and integrity.
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="index.html" class="text-gray-400 hover:text-white">Home</a></li>
+                        <li><a href="issuer.html" class="text-gray-400 hover:text-white">Issuer Portal</a></li>
+                        <li><a href="verify.html" class="text-gray-400 hover:text-white">Verify Document</a></li>
+                        <li><a href="about.html" class="text-gray-400 hover:text-white">About Us</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-4">Legal</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Terms of Service</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Security</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-10 pt-6 text-center text-gray-500">
+                <p>&copy; 2023 CertiSure. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        AOS.init({
+            duration: 1000,
+            once: true
+        });
+        
+        feather.replace();
+        
+        // Load Lottie animation
+        document.addEventListener('DOMContentLoaded', function() {
+            const animation = bodymovin.loadAnimation({
+                container: document.getElementById('hero-animation'),
+                renderer: 'svg',
+                loop: true,
+                autoplay: true,
+                path: 'https://assets10.lottiefiles.com/packages/lf20_jbrw3hcz.json'
+            });
+        });
+    </script>
+</body>
+</html>
