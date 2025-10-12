@@ -1,0 +1,28 @@
+name: Manual Site Update
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log info
+        run: echo "Manual workflow triggered — preparing to update site..."
+
+      - name: Auto commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Manual trigger: site updated via workflow" || echo "No changes detected to commit"
+          git push
+
+      - name: Confirm update
+        run: echo "✅ Site update workflow completed successfully."
