@@ -238,16 +238,6 @@
                             </div>
                         </div>
                         
-                        <div class="mt-8">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm font-medium text-gray-300">Processing</span>
-                                <span class="text-sm font-medium text-gray-300">85%</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="progress-fill"></div>
-                            </div>
-                        </div>
-                        
                         <div class="mt-8 flex justify-end">
                             <button class="btn-primary px-6 py-3 rounded-lg font-medium">
                                 Issue Document
@@ -446,20 +436,8 @@
         feather.replace();
         
         document.addEventListener('DOMContentLoaded', function () {
-            const progressFill = document.getElementById('progress-fill');
             const documentFileInput = document.getElementById('document-file');
             const documentUploadArea = document.getElementById('document-upload');
-
-            // Simulate progress bar
-            let width = 0;
-            const interval = setInterval(() => {
-                if (width >= 85) {
-                    clearInterval(interval);
-                } else {
-                    width++;
-                    progressFill.style.width = width + '%';
-                }
-            }, 50);
 
             // Handle file selection from file explorer
             documentFileInput.addEventListener('change', function (e) {
@@ -475,18 +453,6 @@
                         <p class="text-xs text-gray-500">${fileSize} MB</p>
                     `;
                     feather.replace();
-
-                    // Reset and restart progress bar
-                    width = 0;
-                    progressFill.style.width = '0%';
-                    const processingInterval = setInterval(() => {
-                        if (width >= 85) {
-                            clearInterval(processingInterval);
-                        } else {
-                            width++;
-                            progressFill.style.width = width + '%';
-                        }
-                    }, 50);
                 }
             });
 
@@ -521,10 +487,6 @@
                             <p class="text-xs text-gray-500">${fileSize} MB</p>
                         `;
                         feather.replace();
-
-                        // Trigger change event
-                        const event = new Event('change');
-                        documentFileInput.dispatchEvent(event);
                     }
                 });
             });
