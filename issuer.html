@@ -441,7 +441,6 @@
         document.addEventListener('DOMContentLoaded', function () {
             const documentFileInput = document.getElementById('document-file');
             const documentUploadArea = document.getElementById('document-upload');
-            const newDocumentBtn = document.getElementById('new-document-btn');
             const issueDocumentBtn = document.getElementById('issue-document-btn');
             const baseUrl = "https://certisure-nu.vercel.app";
             
@@ -505,64 +504,52 @@
                     // Load the PDF
                     pdfjsLib.getDocument(typedArray).promise.then(function(pdf) {
                         const totalPages = pdf.numPages;
-                        const pdfArray = [];
+                        const doc = new jspdf.jsPDF();
                         
                         // Process each page
+                        const promises = [];
                         for (let i = 1; i <= totalPages; i++) {
-                            pdf.getPage(i).then(function(page) {
-                                const viewport = page.getViewport({ scale: 1.5 });
-                                const canvas = document.createElement('canvas');
-                                const context = canvas.getContext('2d');
-                                canvas.height = viewport.height;
-                                canvas.width = viewport.width;
-                                
-                                // Render the page
-                                const renderContext = {
-                                    canvasContext: context,
-                                    viewport: viewport
-                                };
-                                
-                                page.render(renderContext).promise.then(function() {
-                                    // Add QR code to the page
-                                    addQRCodeToPDF(pdfArray, qrCodeData, viewport.width, viewport.height);
+                            promises.push(
+                                pdf.getPage(i).then(function(page) {
+                                    const viewport = page.getViewport({ scale: 1.5 });
+                                    const canvas = document.createElement('canvas');
+                                    const context = canvas.getContext('2d');
+                                    canvas.height = viewport.height;
+                                    canvas.width = viewport.width;
                                     
-                                    // Save the page to the PDF array
-                                    pdfArray.push(canvas.toDataURL('image/png'));
+                                    // Render the page
+                                    const renderContext = {
+                                        canvasContext: context,
+                                        viewport: viewport
+                                    };
                                     
-                                    // If all pages are processed, create the final PDF
-                                    if (pdfArray.length === totalPages) {
-                                        const doc = new jspdf.jsPDF();
-                                        const firstPage = true;
+                                    return page.render(renderContext).promise.then(function() {
+                                        // Add the page image to the PDF
+                                        const pageData = canvas.toDataURL('image/png');
+                                        doc.addImage(pageData, 'PNG', 0, 0, 210, 297);
                                         
-                                        // Add each page
-                                        pdfArray.forEach(function(pageData, index) {
-                                            // Add a new page if not the first page
-                                            if (!firstPage) {
-                                                doc.addPage();
-                                            }
-                                            
-                                            // Add the page image
-                                            doc.addImage(pageData, 'PNG', 0, 0, 210, 297);
-                                            
-                                            // Add QR code to the page
-                                            const qrSize = 60;
-                                            const x = 210 - qrSize - 10;
-                                            const y = 297 - qrSize - 10;
-                                            doc.addImage(qrCodeData, 'PNG', x, y, qrSize, qrSize);
-                                            
-                                            // If this is the first page, add the document ID to the top
-                                            if (index === 0) {
-                                                doc.setFontSize(12);
-                                                doc.text(`Document ID: ${docId}`, 10, 15);
-                                            }
-                                        });
+                                        // Add QR code to the page
+                                        addQRCodeToPDF(doc, qrCodeData, viewport.width, viewport.height);
                                         
-                                        // Save the PDF
-                                        doc.save(`certified_${docId}.pdf`);
-                                    }
-                                });
-                            });
+                                        // If this is the first page, add the document ID to the top
+                                        if (i === 1) {
+                                            doc.setFontSize(12);
+                                            doc.text(`Document ID: ${docId}`, 10, 15);
+                                        }
+                                    });
+                                })
+                            );
                         }
+                        
+                        // Wait for all pages to be processed
+                        Promise.all(promises).then(function() {
+                            // Save the PDF with a unique filename
+                            const filename = `certified_${docId}.pdf`;
+                            doc.save(filename);
+                        });
+                    }).catch(function(error) {
+                        console.error('Error processing PDF:', error);
+                        alert('Error processing PDF: ' + error.message);
                     });
                 };
                 reader.readAsArrayBuffer(file);
@@ -582,9 +569,6 @@
                         <p class="text-xs text-gray-500">${fileSize} MB</p>
                     `;
                     feather.replace();
-                    
-                    // Process the PDF
-                    processPDF(file);
                 } else {
                     alert("Please upload a valid PDF file");
                 }
@@ -595,12 +579,21 @@
                 documentFileInput.click();
             });
 
-            // Make both buttons trigger file input
-            newDocumentBtn.addEventListener('click', () => {
-                documentFileInput.click();
-            });
-            issueDocumentBtn.addEventListener('click', () => {
-                documentFileInput.click();
+            // Handle "Issue Document" button click
+            issueDocumentBtn.addEventListener('click', function() {
+                const file = documentFileInput.files[0];
+                if (!file) {
+                    alert("Please upload a PDF file first");
+                    return;
+                }
+                
+                if (file.type !== 'application/pdf') {
+                    alert("Please upload a valid PDF file");
+                    return;
+                }
+                
+                // Process the PDF and generate the QR code
+                processPDF(file);
             });
 
             // Drag and drop
@@ -629,9 +622,6 @@
                             <p class="text-xs text-gray-500">${fileSize} MB</p>
                         `;
                         feather.replace();
-
-                        // Process the PDF
-                        processPDF(file);
                     } else {
                         alert("Please upload a valid PDF file");
                     }
