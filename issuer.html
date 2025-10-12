@@ -50,7 +50,7 @@
         }
         .progress-bar {
             height: 8px;
-            background: rgba(79, 70, 229, 0.2);
+            background: rgba(79, 70, 241, 0.2);
             border-radius: 4px;
             overflow: hidden;
         }
@@ -127,7 +127,7 @@
                     </p>
                 </div>
                 <div class="mt-4 flex md:mt-0 md:ml-4" data-aos="fade-left">
-                    <button class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none">
+                    <button class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none" id="new-document-btn">
                         <i data-feather="plus" class="mr-2 h-4 w-4"></i>
                         New Document
                     </button>
@@ -239,7 +239,7 @@
                         </div>
                         
                         <div class="mt-8 flex justify-end">
-                            <button class="btn-primary px-6 py-3 rounded-lg font-medium">
+                            <button class="btn-primary px-6 py-3 rounded-lg font-medium" id="issue-document-btn">
                                 Issue Document
                             </button>
                         </div>
@@ -422,7 +422,7 @@
     <footer class="bg-gray-900 py-8 mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="border-t border-gray-800 pt-6 text-center text-gray-500">
-                <p>&copy; 2023 CertiSure. All rights reserved.</p>
+                <p>&copy; 2025 CertiSure. All rights reserved.</p>
             </div>
         </div>
     </footer>
@@ -438,6 +438,13 @@
         document.addEventListener('DOMContentLoaded', function () {
             const documentFileInput = document.getElementById('document-file');
             const documentUploadArea = document.getElementById('document-upload');
+            const newDocumentBtn = document.getElementById('new-document-btn');
+            const issueDocumentBtn = document.getElementById('issue-document-btn');
+
+            // Function to trigger file input
+            function triggerFileInput() {
+                documentFileInput.click();
+            }
 
             // Handle file selection from file explorer
             documentFileInput.addEventListener('change', function (e) {
@@ -457,9 +464,11 @@
             });
 
             // Allow click on upload area to trigger file input
-            documentUploadArea.addEventListener('click', () => {
-                documentFileInput.click();
-            });
+            documentUploadArea.addEventListener('click', triggerFileInput);
+
+            // Make both buttons trigger file input
+            newDocumentBtn.addEventListener('click', triggerFileInput);
+            issueDocumentBtn.addEventListener('click', triggerFileInput);
 
             // Drag and drop
             [documentUploadArea].forEach(uploadArea => {
