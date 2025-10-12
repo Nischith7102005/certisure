@@ -226,14 +226,14 @@
                                 <input type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter student full name">
                             </div>
                             
-                            
-                            
+                            <!-- Document Upload with File Explorer Support -->
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-300 mb-2">Document</label>
-                                <div class="upload-area rounded-lg p-8 text-center cursor-pointer" id="document-upload">
+                                <div class="upload-area rounded-lg p-8 text-center cursor-pointer relative" id="document-upload">
+                                    <input type="file" id="document-file" accept=".pdf,.doc,.docx" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                                     <i data-feather="file" class="mx-auto h-12 w-12 text-gray-400"></i>
                                     <p class="mt-2 text-sm text-gray-400">Click to upload document</p>
-                                    <p class="text-xs text-gray-500">PDF, DOC up to 10MB</p>
+                                    <p class="text-xs text-gray-500">PDF, DOC, DOCX up to 10MB</p>
                                 </div>
                             </div>
                         </div>
@@ -445,9 +445,12 @@
         
         feather.replace();
         
-        // Simulate progress bar
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const progressFill = document.getElementById('progress-fill');
+            const documentFileInput = document.getElementById('document-file');
+            const documentUploadArea = document.getElementById('document-upload');
+
+            // Simulate progress bar
             let width = 0;
             const interval = setInterval(() => {
                 if (width >= 85) {
@@ -457,25 +460,72 @@
                     progressFill.style.width = width + '%';
                 }
             }, 50);
-            
-            // Upload area drag and drop
-            const signatureUpload = document.getElementById('signature-upload');
-            const documentUpload = document.getElementById('document-upload');
-            
-            [signatureUpload, documentUpload].forEach(uploadArea => {
+
+            // Handle file selection from file explorer
+            documentFileInput.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const fileName = file.name;
+                    const fileSize = (file.size / (1024 * 1024)).toFixed(2); // in MB
+
+                    // Update upload area with file info
+                    documentUploadArea.innerHTML = `
+                        <i data-feather="check" class="mx-auto h-12 w-12 text-green-500"></i>
+                        <p class="mt-2 text-sm text-gray-400">File selected: ${fileName}</p>
+                        <p class="text-xs text-gray-500">${fileSize} MB</p>
+                    `;
+                    feather.replace();
+
+                    // Reset and restart progress bar
+                    width = 0;
+                    progressFill.style.width = '0%';
+                    const processingInterval = setInterval(() => {
+                        if (width >= 85) {
+                            clearInterval(processingInterval);
+                        } else {
+                            width++;
+                            progressFill.style.width = width + '%';
+                        }
+                    }, 50);
+                }
+            });
+
+            // Allow click on upload area to trigger file input
+            documentUploadArea.addEventListener('click', () => {
+                documentFileInput.click();
+            });
+
+            // Drag and drop
+            [documentUploadArea].forEach(uploadArea => {
                 uploadArea.addEventListener('dragover', (e) => {
                     e.preventDefault();
                     uploadArea.classList.add('dragover');
                 });
-                
+
                 uploadArea.addEventListener('dragleave', () => {
                     uploadArea.classList.remove('dragover');
                 });
-                
+
                 uploadArea.addEventListener('drop', (e) => {
                     e.preventDefault();
                     uploadArea.classList.remove('dragover');
-                    // Handle file drop
+                    const file = e.dataTransfer.files[0];
+                    if (file) {
+                        documentFileInput.files = e.dataTransfer.files;
+                        const fileName = file.name;
+                        const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+
+                        uploadArea.innerHTML = `
+                            <i data-feather="check" class="mx-auto h-12 w-12 text-green-500"></i>
+                            <p class="mt-2 text-sm text-gray-400">File selected: ${fileName}</p>
+                            <p class="text-xs text-gray-500">${fileSize} MB</p>
+                        `;
+                        feather.replace();
+
+                        // Trigger change event
+                        const event = new Event('change');
+                        documentFileInput.dispatchEvent(event);
+                    }
                 });
             });
         });
