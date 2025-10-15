@@ -1,559 +1,315 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Issuer Portal - CertiSure</title>
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔒</text></svg>">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <script src="https://unpkg.com/feather-icons"></script>
-    <!-- PDF-lib for PDF manipulation -->
-    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <!-- QR Code generation library -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
-            color: #e2e8f0;
-        }
-        .dashboard-bg {
-            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
-                        radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.15) 0%, transparent 40%);
-        }
-        .card-hover {
-            transition: all 0.3s ease;
-        }
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
-        }
-        .btn-primary {
-            background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
-            transition: all 0.3s ease;
-        }
-        .btn-primary:hover:not(:disabled) {
-            transform: scale(1.05);
-            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
-        }
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .stat-card {
-            background: linear-gradient(135deg, rgba(79, 70, 229, 0.15) 0%, rgba(124, 58, 237, 0.15) 100%);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-        }
-        .upload-area {
-            border: 2px dashed rgba(99, 102, 241, 0.5);
-            transition: all 0.3s ease;
-        }
-        .upload-area:hover, .upload-area.dragover {
-            border-color: #818cf8;
-            background: rgba(79, 70, 229, 0.1);
-        }
-        .document-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-        }
-        .processing-indicator {
-            display: none;
-            color: #fbbf24;
-        }
-        .animate-spin {
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Issuer Portal – CertiSure</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔒</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+    body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#1a202c 0%,#2d3748 100%);color:#e2e8f0}
+    .dashboard-bg{background:radial-gradient(circle at top right,rgba(99,102,241,.15) 0%,transparent 40%),radial-gradient(circle at bottom left,rgba(16,185,129,.15) 0%,transparent 40%)}
+    .card-hover{transition:all .3s ease}.card-hover:hover{transform:translateY(-5px);box-shadow:0 20px 25px -5px rgba(0,0,0,.3)}
+    .btn-primary{background:linear-gradient(90deg,#4f46e5 0%,#7c3aed 100%);transition:all .3s ease}
+    .btn-primary:hover:not(:disabled){transform:scale(1.05);box-shadow:0 10px 25px -5px rgba(79,70,229,.4)}
+    .btn-primary:disabled{opacity:.6;cursor:not-allowed;transform:none}
+    .stat-card{background:linear-gradient(135deg,rgba(79,70,229,.15) 0%,rgba(124,58,237,.15) 100%);border:1px solid rgba(99,102,241,.2)}
+    .upload-area{border:2px dashed rgba(99,102,241,.5);transition:all .3s ease}
+    .upload-area:hover,.upload-area.dragover{border-color:#818cf8;background:rgba(79,70,229,.1)}
+    .document-card{background:rgba(30,41,59,.7);backdrop-filter:blur(10px);border:1px solid rgba(99,102,241,.2)}
+    .progress-bar{height:8px;background:rgba(79,70,229,.2);border-radius:4px;overflow:hidden}
+    .progress-fill{height:100%;background:linear-gradient(90deg,#4f46e5 0%,#7c3aed 100%);border-radius:4px;width:0%;transition:width .5s ease}
+  </style>
 </head>
 <body class="min-h-screen">
-    <!-- Navigation -->
-    <nav class="bg-gray-900 bg-opacity-90 backdrop-blur-sm fixed w-full z-50" data-aos="fade-down">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 flex items-center">
-                        <i data-feather="shield" class="text-indigo-500 mr-2"></i>
-                        <span class="text-xl font-bold text-white">CertiSure</span>
-                    </div>
-                    <div class="hidden md:block">
-                        <div class="ml-10 flex items-baseline space-x-4">
-                            <a href="index.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
-                            <a href="issuer.html" class="text-white px-3 py-2 rounded-md text-sm font-medium bg-indigo-600">Issuer Portal</a>
-                            <a href="verify.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Verify Document</a>
-                            <a href="about.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">About</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="hidden md:block">
-                    <div class="ml-4 flex items-center md:ml-6">
-                        <button class="bg-gray-800 p-1 rounded-full text-gray-400 hover:text-white focus:outline-none mr-4">
-                            <i data-feather="bell" class="h-6 w-6"></i>
-                        </button>
-                        <div class="ml-3 relative">
-                            <div class="flex items-center">
-                                <div class="text-sm mr-3">
-                                    <div class="font-medium text-white">University Admin</div>
-                                    <div class="text-gray-400">admin@university.edu</div>
-                                </div>
-                                <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center">
-                                    <span class="font-bold">UA</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="-mr-2 flex md:hidden">
-                    <button class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none">
-                        <i data-feather="menu" class="block h-6 w-6"></i>
-                    </button>
-                </div>
-            </div>
+
+<!-- =========  LOGIN OVERLAY  ========= -->
+<section id="login-section" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-80">
+  <div class="bg-gray-800 rounded-xl shadow-lg p-8 w-full max-w-md" data-aos="fade-up">
+    <div class="text-center mb-6">
+      <i data-feather="shield" class="text-indigo-500 inline-block h-10 w-10 mb-2"></i>
+      <h2 class="text-2xl font-bold text-white">Issuer Login</h2>
+      <p class="text-sm text-gray-400 mt-1">Enter email & password to continue</p>
+    </div>
+    <form id="login-form" class="space-y-4">
+      <input id="email" type="email" required placeholder="Email address"
+             class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      <input id="password" type="password" required placeholder="Password"
+             class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      <button type="submit" class="btn-primary w-full px-4 py-3 rounded-lg font-medium text-white">Login</button>
+      <p id="login-error" class="text-red-400 text-sm hidden"></p>
+    </form>
+  </div>
+</section>
+
+<!-- =================  ORIGINAL NAV  ================= -->
+<nav class="bg-gray-900 bg-opacity-90 backdrop-blur-sm fixed w-full z-40" data-aos="fade-down">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <div class="flex items-center">
+        <i data-feather="shield" class="text-indigo-500 mr-2"></i>
+        <span class="text-xl font-bold text-white">CertiSure</span>
+        <div class="hidden md:block ml-10 flex items-baseline space-x-4">
+          <a href="index.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
+          <a href="issuer.html" class="text-white px-3 py-2 rounded-md text-sm font-medium bg-indigo-600">Issuer Portal</a>
+          <a href="verify.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Verify Document</a>
+          <a href="about.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">About</a>
         </div>
-    </nav>
-
-    <!-- Dashboard Header -->
-    <header class="dashboard-bg pt-24 pb-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="md:flex md:items-center md:justify-between">
-                <div class="flex-1 min-w-0">
-                    <h1 class="text-3xl font-bold leading-tight text-white" data-aos="fade-right">
-                        Issuer Dashboard
-                    </h1>
-                    <p class="mt-2 text-lg text-gray-300" data-aos="fade-right" data-aos-delay="100">
-                        Manage and issue secure academic documents
-                    </p>
-                </div>
-                <div class="mt-4 flex md:mt-0 md:ml-4" data-aos="fade-left">
-                    <button id="new-document-btn" class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none">
-                        <i data-feather="plus" class="mr-2 h-4 w-4"></i>
-                        New Document
-                    </button>
-                </div>
-            </div>
+      </div>
+      <div class="hidden md:block ml-4 flex items-center md:ml-6">
+        <button class="bg-gray-800 p-1 rounded-full text-gray-400 hover:text-white focus:outline-none mr-4"><i data-feather="bell" class="h-6 w-6"></i></button>
+        <div class="ml-3 relative flex items-center">
+          <div class="text-sm mr-3">
+            <div class="font-medium text-white" id="nav-name">University Admin</div>
+            <div class="text-gray-400" id="nav-email">admin@university.edu</div>
+          </div>
+          <button id="logout-btn" class="ml-3 text-xs text-indigo-400 hover:text-indigo-300">Logout</button>
+          <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center"><span class="font-bold">UA</span></div>
         </div>
-    </header>
+      </div>
+      <div class="-mr-2 flex md:hidden"><button class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none"><i data-feather="menu" class="block h-6 w-6"></i></button></div>
+    </div>
+  </div>
+</nav>
 
-    <!-- Stats Section -->
-    <section class="py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <!-- Stat 1 -->
-                <div class="stat-card rounded-lg p-6 card-hover" data-aos="fade-up" data-aos-delay="100">
-                    <div class="flex items-center">
-                        <div class="rounded-md bg-indigo-500 p-3">
-                            <i data-feather="file-text" class="h-6 w-6 text-white"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-400">Total Documents</p>
-                            <p class="text-2xl font-semibold text-white">1,248</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Stat 2 -->
-                <div class="stat-card rounded-lg p-6 card-hover" data-aos="fade-up" data-aos-delay="200">
-                    <div class="flex items-center">
-                        <div class="rounded-md bg-green-500 p-3">
-                            <i data-feather="check-circle" class="h-6 w-6 text-white"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-400">Verified</p>
-                            <p class="text-2xl font-semibold text-white">1,102</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Stat 3 -->
-                <div class="stat-card rounded-lg p-6 card-hover" data-aos="fade-up" data-aos-delay="300">
-                    <div class="flex items-center">
-                        <div class="rounded-md bg-yellow-500 p-3">
-                            <i data-feather="clock" class="h-6 w-6 text-white"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-400">Pending</p>
-                            <p class="text-2xl font-semibold text-white">89</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Stat 4 -->
-                <div class="stat-card rounded-lg p-6 card-hover" data-aos="fade-up" data-aos-delay="400">
-                    <div class="flex items-center">
-                        <div class="rounded-md bg-red-500 p-3">
-                            <i data-feather="alert-triangle" class="h-6 w-6 text-white"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-400">Rejected</p>
-                            <p class="text-2xl font-semibold text-white">57</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<!-- =================  ORIGINAL DASHBOARD (hidden until login)  ================= -->
+<main id="dashboard-main" class="hidden">
+  <header class="dashboard-bg pt-24 pb-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="md:flex md:items-center md:justify-between">
+        <div class="flex-1 min-w-0">
+          <h1 class="text-3xl font-bold leading-tight text-white" data-aos="fade-right">Issuer Dashboard</h1>
+          <p class="mt-2 text-lg text-gray-300" data-aos="fade-right" data-aos-delay="100">Manage and issue secure academic documents</p>
         </div>
-    </section>
-
-    <!-- Main Content -->
-    <main class="py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Left Column - Document Upload -->
-                <div class="lg:col-span-2">
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
-                        <h2 class="text-xl font-bold text-white mb-6">Issue New Document</h2>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Document Details -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Document Type</label>
-                                <select class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                    <option>Degree Certificate</option>
-                                    <option>Transcript</option>
-                                    <option>Recommendation Letter</option>
-                                    <option>Professional Certificate</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Student ID</label>
-                                <input type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter student ID">
-                            </div>
-                            
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Student Name</label>
-                                <input type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter student full name">
-                            </div>
-                            
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-300 mb-2">Document</label>
-                                <div class="upload-area rounded-lg p-8 text-center cursor-pointer" id="document-upload">
-                                    <i data-feather="file" class="mx-auto h-12 w-12 text-gray-400"></i>
-                                    <p class="mt-2 text-sm text-gray-400">Click to upload document</p>
-                                    <p class="text-xs text-gray-500">PDF only, up to 10MB</p>
-                                    <input type="file" id="document-file" accept=".pdf" style="display:none;">
-                                    <div id="file-name" class="mt-2 text-sm text-indigo-400"></div>
-                                    <div id="processing-indicator" class="processing-indicator mt-2 text-sm">
-                                        <i data-feather="loader" class="inline animate-spin mr-2"></i>
-                                        Processing PDF and adding QR codes...
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-8 flex justify-end">
-                            <button id="issue-document-btn" class="btn-primary px-6 py-3 rounded-lg font-medium" disabled>
-                                Issue Document
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Recent Documents -->
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6 mt-8" data-aos="fade-up" data-aos-delay="100">
-                        <div class="flex items-center justify-between mb-6">
-                            <h2 class="text-xl font-bold text-white">Recent Documents</h2>
-                            <a href="#" class="text-indigo-400 hover:text-indigo-300 text-sm">View all</a>
-                        </div>
-                        
-                        <div class="space-y-4">
-                            <!-- Document 1 -->
-                            <div class="document-card rounded-lg p-4 flex items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="bg-indigo-500 rounded-lg p-3">
-                                        <i data-feather="file-text" class="h-6 w-6 text-white"></i>
-                                    </div>
-                                </div>
-                                <div class="ml-4 flex-1">
-                                    <h3 class="font-medium text-white">Bachelor of Science Degree</h3>
-                                    <p class="text-sm text-gray-400">John Smith • Issued: 2 hours ago</p>
-                                </div>
-                                <div class="flex items-center">
-                                    <span class="px-2 py-1 text-xs rounded-full bg-green-900 text-green-300">Verified</span>
-                                    <button class="ml-4 text-gray-400 hover:text-white">
-                                        <i data-feather="more-vertical" class="h-5 w-5"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- Document 2 -->
-                            <div class="document-card rounded-lg p-4 flex items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="bg-yellow-500 rounded-lg p-3">
-                                        <i data-feather="file-text" class="h-6 w-6 text-white"></i>
-                                    </div>
-                                </div>
-                                <div class="ml-4 flex-1">
-                                    <h3 class="font-medium text-white">Master's Transcript</h3>
-                                    <p class="text-sm text-gray-400">Emily Johnson • Issued: 1 day ago</p>
-                                </div>
-                                <div class="flex items-center">
-                                    <span class="px-2 py-1 text-xs rounded-full bg-yellow-900 text-yellow-300">Pending</span>
-                                    <button class="ml-4 text-gray-400 hover:text-white">
-                                        <i data-feather="more-vertical" class="h-5 w-5"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- Document 3 -->
-                            <div class="document-card rounded-lg p-4 flex items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="bg-indigo-500 rounded-lg p-3">
-                                        <i data-feather="file-text" class="h-6 w-6 text-white"></i>
-                                    </div>
-                                </div>
-                                <div class="ml-4 flex-1">
-                                    <h3 class="font-medium text-white">PhD Recommendation</h3>
-                                    <p class="text-sm text-gray-400">Michael Brown • Issued: 3 days ago</p>
-                                </div>
-                                <div class="flex items-center">
-                                    <span class="px-2 py-1 text-xs rounded-full bg-green-900 text-green-300">Verified</span>
-                                    <button class="ml-4 text-gray-400 hover:text-white">
-                                        <i data-feather="more-vertical" class="h-5 w-5"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Right Column - Activity Feed -->
-                <div>
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
-                        <h2 class="text-xl font-bold text-white mb-6">Recent Activity</h2>
-                        
-                        <div class="space-y-6">
-                            <!-- Activity 1 -->
-                            <div class="flex">
-                                <div class="flex-shrink-0">
-                                    <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center">
-                                        <i data-feather="check" class="h-5 w-5 text-white"></i>
-                                    </div>
-                                </div>
-                                <div class="ml-4">
-                                    <h3 class="text-sm font-medium text-white">Document Verified</h3>
-                                    <p class="mt-1 text-sm text-gray-400">Bachelor of Science Degree for John Smith was successfully verified with a trust score of 96.</p>
-                                    <p class="mt-1 text-xs text-gray-500">2 hours ago</p>
-                                </div>
-                            </div>
-                            
-                            <!-- Activity 2 -->
-                            <div class="flex">
-                                <div class="flex-shrink-0">
-                                    <div class="h-10 w-10 rounded-full bg-yellow-600 flex items-center justify-center">
-                                        <i data-feather="upload" class="h-5 w-5 text-white"></i>
-                                    </div>
-                                </div>
-                                <div class="ml-4">
-                                    <h3 class="text-sm font-medium text-white">Document Issued</h3>
-                                    <p class="mt-1 text-sm text-gray-400">Master's Transcript for Emily Johnson was issued and is pending verification.</p>
-                                    <p class="mt-1 text-xs text-gray-500">1 day ago</p>
-                                </div>
-                            </div>
-                            
-                            <!-- Activity 3 -->
-                            <div class="flex">
-                                <div class="flex-shrink-0">
-                                    <div class="h-10 w-10 rounded-full bg-green-600 flex items-center justify-center">
-                                        <i data-feather="user" class="h-5 w-5 text-white"></i>
-                                    </div>
-                                </div>
-                                <div class="ml-4">
-                                    <h3 class="text-sm font-medium text-white">New User</h3>
-                                    <p class="mt-1 text-sm text-gray-400">Sarah Wilson was added as a document issuer for the Computer Science department.</p>
-                                    <p class="mt-1 text-xs text-gray-500">2 days ago</p>
-                                </div>
-                            </div>
-                            
-                            <!-- Activity 4 -->
-                            <div class="flex">
-                                <div class="flex-shrink-0">
-                                    <div class="h-10 w-10 rounded-full bg-purple-600 flex items-center justify-center">
-                                        <i data-feather="settings" class="h-5 w-5 text-white"></i>
-                                    </div>
-                                </div>
-                                <div class="ml-4">
-                                    <h3 class="text-sm font-medium text-white">System Update</h3>
-                                    <p class="mt-1 text-sm text-gray-400">AI verification model updated to version 2.5 with improved accuracy.</p>
-                                    <p class="mt-1 text-xs text-gray-500">3 days ago</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Quick Stats -->
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6 mt-8" data-aos="fade-up" data-aos-delay="100">
-                        <h2 class="text-xl font-bold text-white mb-6">Verification Metrics</h2>
-                        
-                        <div class="space-y-6">
-                            <div>
-                                <div class="flex justify-between mb-2">
-                                    <span class="text-sm font-medium text-gray-300">Trust Score Distribution</span>
-                                    <span class="text-sm font-medium text-gray-300">92%</span>
-                                </div>
-                                <div class="w-full bg-gray-700 rounded-full h-2.5">
-                                    <div class="bg-green-500 h-2.5 rounded-full" style="width: 92%"></div>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <div class="flex justify-between mb-2">
-                                    <span class="text-sm font-medium text-gray-300">Verification Rate</span>
-                                    <span class="text-sm font-medium text-gray-300">87%</span>
-                                </div>
-                                <div class="w-full bg-gray-700 rounded-full h-2.5">
-                                    <div class="bg-blue-500 h-2.5 rounded-full" style="width: 87%"></div>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <div class="flex justify-between mb-2">
-                                    <span class="text-sm font-medium text-gray-300">Avg. Processing Time</span>
-                                    <span class="text-sm font-medium text-gray-300">2.4s</span>
-                                </div>
-                                <div class="w-full bg-gray-700 rounded-full h-2.5">
-                                    <div class="bg-purple-500 h-2.5 rounded-full" style="width: 75%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="mt-4 flex md:mt-0 md:ml-4" data-aos="fade-left">
+          <button id="new-document-btn" class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none">
+            <i data-feather="plus" class="mr-2 h-4 w-4"></i>New Document
+          </button>
         </div>
-    </main>
+      </div>
+    </div>
+  </header>
 
-    <!-- Footer -->
-    <footer class="bg-gray-900 py-8 mt-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="border-t border-gray-800 pt-6 text-center text-gray-500">
-                <p>&copy; 2025 CertiSure. All rights reserved.</p>
+  <section class="py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="stat-card rounded-lg p-6 card-hover" data-aos="fade-up" data-aos-delay="100">
+          <div class="flex items-center">
+            <div class="rounded-md bg-indigo-500 p-3"><i data-feather="file-text" class="h-6 w-6 text-white"></i></div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-400">Total Documents</p>
+              <p class="text-2xl font-semibold text-white" id="stat-total">—</p>
             </div>
+          </div>
         </div>
-    </footer>
+        <div class="stat-card rounded-lg p-6 card-hover" data-aos="fade-up" data-aos-delay="200">
+          <div class="flex items-center">
+            <div class="rounded-md bg-green-500 p-3"><i data-feather="check-circle" class="h-6 w-6 text-white"></i></div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-400">Verified</p>
+              <p class="text-2xl font-semibold text-white" id="stat-verified">—</p>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card rounded-lg p-6 card-hover" data-aos="fade-up" data-aos-delay="300">
+          <div class="flex items-center">
+            <div class="rounded-md bg-yellow-500 p-3"><i data-feather="clock" class="h-6 w-6 text-white"></i></div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-400">Pending</p>
+              <p class="text-2xl font-semibold text-white" id="stat-pending">—</p>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card rounded-lg p-6 card-hover" data-aos="fade-up" data-aos-delay="400">
+          <div class="flex items-center">
+            <div class="rounded-md bg-red-500 p-3"><i data-feather="alert-triangle" class="h-6 w-6 text-white"></i></div>
+            <div class="ml-4">
+              <p class="text-sm font-medium text-gray-400">Rejected</p>
+              <p class="text-2xl font-semibold text-white" id="stat-rejected">—</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <script>
-        AOS.init({
-            duration: 1000,
-            once: true
-        });
-        
-        feather.replace();
+  <main class="py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2">
+          <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
+            <h2 class="text-xl font-bold text-white mb-6">Issue New Document</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Document Type</label>
+                <select id="doc-type" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option>Degree Certificate</option><option>Transcript</option><option>Recommendation Letter</option><option>Professional Certificate</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Student ID</label>
+                <input id="student-id" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter student ID">
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Student Name</label>
+                <input id="student-name" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter student full name">
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Document</label>
+                <div class="upload-area rounded-lg p-8 text-center cursor-pointer" id="document-upload">
+                  <i data-feather="file" class="mx-auto h-12 w-12 text-gray-400"></i>
+                  <p class="mt-2 text-sm text-gray-400">Click to upload document</p>
+                  <p class="text-xs text-gray-500">PDF only, up to 10MB</p>
+                  <input type="file" id="document-file" accept=".pdf" style="display:none;">
+                  <div id="file-name" class="mt-2 text-sm text-indigo-400"></div>
+                  <div id="processing-indicator" class="hidden mt-2 text-sm text-yellow-400">
+                    <i data-feather="loader" class="inline animate-spin mr-2"></i>Processing PDF and adding QR codes...
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-8 flex justify-end">
+              <button id="issue-document-btn" class="btn-primary px-6 py-3 rounded-lg font-medium" disabled>Issue Document</button>
+            </div>
+          </div>
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const documentUpload = document.getElementById('document-upload');
-            const documentFile = document.getElementById('document-file');
-            const fileNameDisplay = document.getElementById('file-name');
-            const processingIndicator = document.getElementById('processing-indicator');
-            const newDocumentBtn = document.getElementById('new-document-btn');
-            const issueDocumentBtn = document.getElementById('issue-document-btn');
+          <!-- live mongo cards -->
+          <div class="bg-gray-800 rounded-xl shadow-lg p-6 mt-8" data-aos="fade-up" data-aos-delay="100">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-xl font-bold text-white">Recent Documents</h2>
+              <span class="text-xs text-indigo-400">live from localhost:27017</span>
+            </div>
+            <div id="real-docs" class="space-y-4"><!-- mongo inject --></div>
+          </div>
+        </div>
 
-            let uploadedFile = null;
+        <!-- right activity feed -->
+        <div>
+          <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
+            <h2 class="text-xl font-bold text-white mb-6">Recent Activity</h2>
+            <div class="space-y-6 text-sm text-gray-400">
+              <div class="flex">
+                <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center"><i data-feather="check" class="h-5 w-5 text-white"></i></div>
+                <div class="ml-4"><h3 class="font-medium text-white">Document Verified</h3><p>Bachelor of Science Degree for John Smith was successfully verified with a trust score of 96.</p><p class="text-xs mt-1">2 hours ago</p></div>
+              </div>
+              <div class="flex">
+                <div class="h-10 w-10 rounded-full bg-yellow-600 flex items-center justify-center"><i data-feather="upload" class="h-5 w-5 text-white"></i></div>
+                <div class="ml-4"><h3 class="font-medium text-white">Document Issued</h3><p>Master's Transcript for Emily Johnson was issued and is pending verification.</p><p class="text-xs mt-1">1 day ago</p></div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-gray-800 rounded-xl shadow-lg p-6 mt-8" data-aos="fade-up" data-aos-delay="100">
+            <h2 class="text-xl font-bold text-white mb-6">Verification Metrics</h2>
+            <div class="space-y-6">
+              <div>
+                <div class="flex justify-between mb-2"><span class="text-sm font-medium text-gray-300">Trust Score Distribution</span><span class="text-sm font-medium text-gray-300">92%</span></div>
+                <div class="w-full bg-gray-700 rounded-full h-2.5"><div class="bg-green-500 h-2.5 rounded-full" style="width: 92%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between mb-2"><span class="text-sm font-medium text-gray-300">Verification Rate</span><span class="text-sm font-medium text-gray-300">87%</span></div>
+                <div class="w-full bg-gray-700 rounded-full h-2.5"><div class="bg-blue-500 h-2.5 rounded-full" style="width: 87%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between mb-2"><span class="text-sm font-medium text-gray-300">Avg. Processing Time</span><span class="text-sm font-medium text-gray-300">2.4s</span></div>
+                <div class="w-full bg-gray-700 rounded-full h-2.5"><div class="bg-purple-500 h-2.5 rounded-full" style="width: 75%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
 
-            // Function to generate unique document ID
-            function generateUniqueId() {
-                return 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            }
+  <footer class="bg-gray-900 py-8 mt-12">
+    <div class="max-w-7xl mx-auto px-4 text-center text-gray-500"><p>&copy; 2025 CertiSure. All rights reserved.</p></div>
+  </footer>
+</main>
 
-            // Function to generate QR code as image data
-            async function generateQRCode(text) {
-                try {
-                    const qrDataURL = await QRCode.toDataURL(text, {
-                        width: 80,
-                        height: 80,
-                        margin: 1,
-                        color: {
-                            dark: '#000000',
-                            light: '#FFFFFF'
-                        }
-                    });
-                    return qrDataURL;
-                } catch (error) {
-                    console.error('Error generating QR code:', error);
-                    return null;
-                }
-            }
+<script>
+/* ============  utilities  ============== */
+AOS.init({ duration:1000, once:true }); feather.replace();
+const badge = s => {
+  switch(s){
+    case 'verified': return 'bg-green-900 text-green-300';
+    case 'pending' : return 'bg-yellow-900 text-yellow-300';
+    case 'rejected': return 'bg-red-900 text-red-300';
+    default        : return 'bg-gray-700 text-gray-300';
+  }
+};
+/* ============  login flow  ============= */
+const loginSection = document.getElementById('login-section');
+const dashboardMain = document.getElementById('dashboard-main');
+const loginForm = document.getElementById('login-form');
+const loginError = document.getElementById('login-error');
+const navName = document.getElementById('nav-name');
+const navEmail = document.getElementById('nav-email');
+const logoutBtn = document.getElementById('logout-btn');
+let token = localStorage.getItem('issuer_token');
+if (token) showDashboard(); else loginSection.classList.remove('hidden');
+loginForm.addEventListener('submit', async (e)=>{
+  e.preventDefault(); loginError.classList.add('hidden');
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  try{
+    const res = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const data = await res.json(); if(!res.ok) throw new Error(data.error||'Login failed');
+    token = data.token; localStorage.setItem('issuer_token',token); localStorage.setItem('issuer',JSON.stringify(data.issuer));
+    showDashboard();
+  }catch(err){loginError.textContent=err.message; loginError.classList.remove('hidden');}
+});
+logoutBtn.addEventListener('click',async()=>{
+  await fetch('/api/logout',{method:'POST',headers:{Authorization:`Bearer ${token}`}}); localStorage.clear(); location.reload();
+});
+function showDashboard(){
+  loginSection.classList.add('hidden'); dashboardMain.classList.remove('hidden');
+  const iss = JSON.parse(localStorage.getItem('issuer')); navName.textContent=iss.name; navEmail.textContent=iss.email; loadIssuerDocs();
+}
+/* ============  mongo live feed  ======== */
+async function loadIssuerDocs(){
+  try{
+    const res = await fetch('/api/docs'); const docs = await res.json(); renderCards(docs); updateStats(docs);
+  }catch(err){console.error('Mongo feed error:',err);}
+}
+function renderCards(docs){
+  const html = docs.map(d=>`
+    <div class="document-card rounded-lg p-4 flex items-center">
+      <div class="flex-shrink-0"><div class="bg-indigo-500 rounded-lg p-3"><i data-feather="file-text" class="h-6 w-6 text-white"></i></div></div>
+      <div class="ml-4 flex-1">
+        <h3 class="font-medium text-white">${d.document_type.charAt(0).toUpperCase()+d.document_type.slice(1)}</h3>
+        <p class="text-sm text-gray-400">${d.name} • Issued: ${new Date(d.upload_date).toLocaleString()}</p>
+      </div>
+      <div class="flex items-center">
+        <span class="px-2 py-1 text-xs rounded-full ${badge(d.status)}">${d.status}</span>
+        <a href="${d.file_path}" target="_blank" class="ml-4 text-gray-400 hover:text-white"><i data-feather="external-link" class="h-5 w-5"></i></a>
+      </div>
+    </div>`).join('');
+  document.getElementById('real-docs').innerHTML = html; feather.replace();
+}
+function updateStats(docs){
+  const st = { total:docs.length, verified:0, pending:0, rejected:0 };
+  docs.forEach(d=> st[d.status]++);
+  ['total','verified','pending','rejected'].forEach(k=> document.getElementById(`stat-${k}`).textContent = st[k]);
+}
+setInterval(loadIssuerDocs, 30_000);
 
-            // Function to process PDF and add QR codes
-            async function processPDFWithQRCode(file) {
-                try {
-                    processingIndicator.style.display = 'block';
-                    issueDocumentBtn.disabled = true;
-                    issueDocumentBtn.innerHTML = '<i data-feather="loader" class="inline animate-spin mr-2"></i>Processing...';
-                    feather.replace();
-
-                    const documentId = generateUniqueId();
-                    const verificationUrl = 'https://certisure-nu.vercel.app';
-
-                    const qrCodeDataURL = await generateQRCode(verificationUrl);
-                    if (!qrCodeDataURL) {
-                        throw new Error('Failed to generate QR code');
-                    }
-
-                    const arrayBuffer = await file.arrayBuffer();
-                    const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-
-                    const qrImageBytes = await fetch(qrCodeDataURL).then(res => res.arrayBuffer());
-                    const qrImage = await pdfDoc.embedPng(qrImageBytes);
-
-                    const qrSize = 60;
-
-                    const pages = pdfDoc.getPages();
-                    pages.forEach((page) => {
-                        const { width, height } = page.getSize();
-                        const margin = 20;
-                        const qrX = width - qrSize - margin;
-                        const qrY = height - qrSize - margin;
-
-                        page.drawImage(qrImage, {
-                            x: qrX,
-                            y: qrY,
-                            width: qrSize,
-                            height: qrSize,
-                        });
-                    });
-
-                    const modifiedPdfBytes = await pdfDoc.save();
-
-                    const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
-                    const url = URL.createObjectURL(blob);
-                    
-                    const downloadLink = document.createElement('a');
-                    downloadLink.href = url;
-                    downloadLink.download = `certified_${file.name}`;
-                    document.body.appendChild(downloadLink);
-                    downloadLink.click();
-                    document.body.removeChild(downloadLink);
-
-                    URL.revokeObjectURL(url);
-
-                    fileNameDisplay.innerHTML = `
-                        <div class="text-green-400 mb-2">
-                            <i data-feather="check-circle" class="inline w-4 h-4 mr-1"></i>
-                            Document processed and downloaded successfully!
-                        </div>
-                        <div class="text-sm text-gray-300">
-                            File: ${file.name}<br>
-                            Document ID: ${documentId}<br>
-                            QR codes added to all pages
-                        </div>
-                    `;
-
-                    processingIndicator.style.display = 'none';
-                    issueDocumentBtn.disabled = false;
-                    issueDocumentBtn.textContent = 'Issue Document';
-                    feather.replace();
-
-                } catch (error) {
-                    console.error('Error processing PDF:', error);
-                    fileNameDisplay.innerHTML = `
-                        <span class="text-red-400">Error processing ${file.name}</span><br>
-                        <span class="text-xs text-gray-400">${error.message}</span>
-                    `;
-                    processingIndicator.style.display
+/* ============  pdf upload mock  ======== */
+document.addEventListener('DOMContentLoaded',()=>{
+  const du = document.getElementById('document-upload');
+  const df = document.getElementById('document-file');
+  const fn = document.getElementById('file-name');
+  const pi = document.getElementById('processing-indicator');
+  const btn = document.getElementById('issue-document-btn');
+  du.addEventListener('click',()=>df.click());
+  df.addEventListener('change',async(e)=>{
+    const file = e.target.files[0]; if(!file) return;
+    fn.innerHTML=file.name; pi.classList.remove('hidden'); btn.disabled=true;
+    setTimeout(()=>{ pi.classList.add('hidden'); btn.disabled=false; },1500);
+  });
+});
+</script>
+</body>
+</html>
