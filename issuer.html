@@ -248,30 +248,40 @@ const loginError = document.getElementById('login-error');
 const navName = document.getElementById('nav-name');
 const navEmail = document.getElementById('nav-email');
 const logoutBtn = document.getElementById('logout-btn');
+const API = 'https://princeton-blank-sussex-cemetery.trycloudflare.com ';   // <── cloudflare URL
+
 let token = localStorage.getItem('issuer_token');
 if (token) showDashboard(); else loginSection.classList.remove('hidden');
+
 loginForm.addEventListener('submit', async (e)=>{
   e.preventDefault(); loginError.classList.add('hidden');
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
   try{
-    const res = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const res = await fetch(`${API}/api/login`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email,password})
+    });
     const data = await res.json(); if(!res.ok) throw new Error(data.error||'Login failed');
     token = data.token; localStorage.setItem('issuer_token',token); localStorage.setItem('issuer',JSON.stringify(data.issuer));
     showDashboard();
   }catch(err){loginError.textContent=err.message; loginError.classList.remove('hidden');}
 });
+
 logoutBtn.addEventListener('click',async()=>{
-  await fetch('/api/logout',{method:'POST',headers:{Authorization:`Bearer ${token}`}}); localStorage.clear(); location.reload();
+  await fetch(`${API}/api/logout`,{method:'POST',headers:{Authorization:`Bearer ${token}`}}); localStorage.clear(); location.reload();
 });
+
 function showDashboard(){
   loginSection.classList.add('hidden'); dashboardMain.classList.remove('hidden');
   const iss = JSON.parse(localStorage.getItem('issuer')); navName.textContent=iss.name; navEmail.textContent=iss.email; loadIssuerDocs();
 }
+
 /* ============  mongo live feed  ======== */
 async function loadIssuerDocs(){
   try{
-    const res = await fetch('/api/docs'); const docs = await res.json(); renderCards(docs); updateStats(docs);
+    const res = await fetch(`${API}/api/docs`); const docs = await res.json(); renderCards(docs); updateStats(docs);
   }catch(err){console.error('Mongo feed error:',err);}
 }
 function renderCards(docs){
