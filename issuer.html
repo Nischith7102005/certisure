@@ -9,11 +9,10 @@
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <script src="https://unpkg.com/feather-icons"></script>
-    <!-- Add QR Code library -->
+    <!-- QR Code library -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <!-- Add AWS Amplify Storage -->
-    <script src="https://cdn.jsdelivr.net/npm/aws-amplify@4.3.27/dist/aws-amplify.min.js"></script>
+    <!-- AWS SDK -->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1239.0.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         body {
@@ -47,6 +46,7 @@
         .upload-area {
             border: 2px dashed rgba(99, 102, 241, 0.5);
             transition: all 0.3s ease;
+            cursor: pointer;
         }
         .upload-area:hover, .upload-area.dragover {
             border-color: #818cf8;
@@ -76,21 +76,98 @@
             padding: 10px;
             background: white;
             border-radius: 8px;
+            text-align: center;
         }
-        #uploaded-file {
+        .file-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+        .status-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
             display: none;
+        }
+        .success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+        .error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
         }
     </style>
 </head>
 <body class="min-h-screen">
     <!-- Navigation -->
     <nav class="bg-gray-900 bg-opacity-90 backdrop-blur-sm fixed w-full z-50" data-aos="fade-down">
-        <!-- ... (same navigation as before) ... -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i data-feather="shield" class="text-indigo-500 mr-2"></i>
+                        <span class="text-xl font-bold text-white">CertiSure</span>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <a href="index.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                            <a href="issuer.html" class="text-white px-3 py-2 rounded-md text-sm font-medium bg-indigo-600">Issuer Portal</a>
+                            <a href="verify.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Verify Document</a>
+                            <a href="about.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">About</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-4 flex items-center md:ml-6">
+                        <button class="bg-gray-800 p-1 rounded-full text-gray-400 hover:text-white focus:outline-none mr-4">
+                            <i data-feather="bell" class="h-6 w-6"></i>
+                        </button>
+                        <div class="ml-3 relative">
+                            <div class="flex items-center">
+                                <div class="text-sm mr-3">
+                                    <div class="font-medium text-white">University Admin</div>
+                                    <div class="text-gray-400">admin@university.edu</div>
+                                </div>
+                                <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center">
+                                    <span class="font-bold">UA</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="-mr-2 flex md:hidden">
+                    <button class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none">
+                        <i data-feather="menu" class="block h-6 w-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
     </nav>
 
     <!-- Dashboard Header -->
     <header class="dashboard-bg pt-24 pb-12">
-        <!-- ... (same header as before) ... -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="md:flex md:items-center md:justify-between">
+                <div class="flex-1 min-w-0">
+                    <h1 class="text-3xl font-bold leading-tight text-white" data-aos="fade-right">
+                        Issuer Dashboard
+                    </h1>
+                    <p class="mt-2 text-lg text-gray-300" data-aos="fade-right" data-aos-delay="100">
+                        Manage and issue secure academic documents
+                    </p>
+                </div>
+                <div class="mt-4 flex md:mt-0 md:ml-4" data-aos="fade-left">
+                    <button class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none">
+                        <i data-feather="plus" class="mr-2 h-4 w-4"></i>
+                        New Document
+                    </button>
+                </div>
+            </div>
+        </div>
     </header>
 
     <!-- Main Content -->
@@ -128,15 +205,17 @@
                                 
                                 <div class="md:col-span-2">
                                     <label class="block text-sm font-medium text-gray-300 mb-2">Document</label>
-                                    <div class="upload-area rounded-lg p-8 text-center cursor-pointer" id="document-upload">
-                                        <i data-feather="file" class="mx-auto h-12 w-12 text-gray-400"></i>
-                                        <p class="mt-2 text-sm text-gray-400">Click to upload document</p>
-                                        <p class="text-xs text-gray-500">PDF, DOC up to 10MB</p>
+                                    <div class="upload-area rounded-lg p-8 text-center" id="document-upload">
+                                        <i data-feather="upload" class="mx-auto h-12 w-12 text-gray-400"></i>
+                                        <p class="mt-2 text-sm text-gray-400">Click to upload document or drag and drop</p>
+                                        <p class="text-xs text-gray-500">PDF, DOC, DOCX (Max 10MB)</p>
                                         <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx">
                                     </div>
-                                    <div id="fileInfo" class="mt-2 text-sm text-gray-400 hidden">
-                                        Selected file: <span id="fileName" class="font-medium"></span>
+                                    <div id="fileInfo" class="file-info hidden">
+                                        <p class="text-sm text-gray-300">Selected file: <span id="fileName" class="font-medium text-white"></span></p>
+                                        <p class="text-xs text-gray-400" id="fileSize"></p>
                                     </div>
+                                    <div id="statusMessage" class="status-message"></div>
                                 </div>
                             </div>
                             
@@ -155,96 +234,167 @@
                             
                             <div class="mt-8 flex justify-end">
                                 <button type="submit" id="submitBtn" class="btn-primary px-6 py-3 rounded-lg font-medium">
-                                    Issue Document
+                                    <span id="buttonText">Issue Document</span>
+                                    <span id="buttonSpinner" class="hidden ml-2">
+                                        <i data-feather="loader" class="animate-spin"></i>
+                                    </span>
                                 </button>
                             </div>
                         </form>
                     </div>
-                    
-                    <!-- Recent Documents -->
-                    <!-- ... (same as before) ... -->
                 </div>
                 
                 <!-- Right Column - Activity Feed -->
-                <!-- ... (same as before) ... -->
+                <div>
+                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
+                        <h2 class="text-xl font-bold text-white mb-6">Recent Activity</h2>
+                        <div class="space-y-6" id="activityFeed">
+                            <!-- Activity items will be added here -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
 
     <!-- Footer -->
     <footer class="bg-gray-900 py-8 mt-12">
-        <!-- ... (same as before) ... -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="border-t border-gray-800 pt-6 text-center text-gray-500">
+                <p>&copy; 2023 CertiSure. All rights reserved.</p>
+            </div>
+        </div>
     </footer>
 
     <script>
         // Initialize AOS and Feather Icons
-        AOS.init({
-            duration: 1000,
-            once: true
-        });
-        
-        feather.replace();
+        document.addEventListener('DOMContentLoaded', function() {
+            AOS.init({
+                duration: 1000,
+                once: true
+            });
+            
+            feather.replace();
+            
+            // AWS Configuration - Replace with your actual values
+            const awsConfig = {
+                region: 'YOUR_AWS_REGION',
+                credentials: {
+                    accessKeyId: 'YOUR_ACCESS_KEY_ID',
+                    secretAccessKey: 'YOUR_SECRET_ACCESS_KEY'
+                },
+                bucket: 'YOUR_S3_BUCKET_NAME'
+            };
 
-        // AWS Configuration
-        // Replace these with your actual AWS credentials and S3 bucket information
-        const awsConfig = {
-            region: 'YOUR_AWS_REGION',
-            credentials: {
-                accessKeyId: 'YOUR_ACCESS_KEY_ID',
-                secretAccessKey: 'YOUR_SECRET_ACCESS_KEY'
-            },
-            bucket: 'YOUR_S3_BUCKET_NAME'
-        };
+            // Configure AWS
+            AWS.config.update({
+                region: awsConfig.region,
+                credentials: new AWS.Credentials(
+                    awsConfig.credentials.accessKeyId,
+                    awsConfig.credentials.secretAccessKey
+                )
+            });
 
-        // Configure AWS
-        AWS.config.update({
-            region: awsConfig.region,
-            credentials: new AWS.Credentials(
-                awsConfig.credentials.accessKeyId,
-                awsConfig.credentials.secretAccessKey
-            )
-        });
+            const s3 = new AWS.S3();
 
-        const s3 = new AWS.S3();
+            // DOM Elements
+            const fileInput = document.getElementById('fileInput');
+            const documentUpload = document.getElementById('document-upload');
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const qrCodeElement = document.getElementById('qr-code');
+            const progressFill = document.getElementById('progress-fill');
+            const progressText = document.getElementById('progressText');
+            const submitBtn = document.getElementById('submitBtn');
+            const buttonText = document.getElementById('buttonText');
+            const buttonSpinner = document.getElementById('buttonSpinner');
+            const statusMessage = document.getElementById('statusMessage');
+            const form = document.getElementById('documentForm');
+            const activityFeed = document.getElementById('activityFeed');
 
-        // File handling
-        const fileInput = document.getElementById('fileInput');
-        const documentUpload = document.getElementById('document-upload');
-        const fileInfo = document.getElementById('fileInfo');
-        const fileName = document.getElementById('fileName');
-        const qrCodeElement = document.getElementById('qr-code');
-        const progressFill = document.getElementById('progress-fill');
-        const progressText = document.getElementById('progressText');
-        const submitBtn = document.getElementById('submitBtn');
-        const form = document.getElementById('documentForm');
+            let selectedFile = null;
+            let qrCodeData = null;
 
-        let selectedFile = null;
-        let qrCodeData = null;
+            // Event Listeners
+            documentUpload.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFileSelect);
+            form.addEventListener('submit', handleFormSubmit);
 
-        // Handle file selection
-        documentUpload.addEventListener('click', () => {
-            fileInput.click();
-        });
+            // Initialize drag and drop
+            initDragAndDrop();
 
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                selectedFile = e.target.files[0];
-                fileName.textContent = selectedFile.name;
+            // Functions
+            function handleFileSelect(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Validate file
+                if (!validateFile(file)) {
+                    return;
+                }
+
+                selectedFile = file;
+                displayFileInfo(file);
+                generateQRCode(file);
+            }
+
+            function validateFile(file) {
+                const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+                const maxSize = 10 * 1024 * 1024; // 10MB
+
+                if (!validTypes.includes(file.type)) {
+                    showStatus('Please select a PDF or Word document', 'error');
+                    return false;
+                }
+
+                if (file.size > maxSize) {
+                    showStatus('File size must be less than 10MB', 'error');
+                    return false;
+                }
+
+                return true;
+            }
+
+            function displayFileInfo(file) {
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
                 fileInfo.classList.remove('hidden');
-                
-                // Generate a unique identifier for this document
+                showStatus('', '');
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            function generateQRCode(file) {
+                // Generate document ID
                 const docId = 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                 
-                // Generate QR code data
+                // Get form values
+                const studentId = document.getElementById('studentId').value || 'N/A';
+                const studentName = document.getElementById('studentName').value || 'N/A';
+                const docType = document.getElementById('docType').value || 'N/A';
+
+                // Create QR code data
                 qrCodeData = JSON.stringify({
                     documentId: docId,
-                    studentId: document.getElementById('studentId').value,
-                    studentName: document.getElementById('studentName').value,
-                    documentType: document.getElementById('docType').value,
+                    studentId: studentId,
+                    studentName: studentName,
+                    documentType: docType,
+                    fileName: file.name,
+                    fileSize: file.size,
                     timestamp: new Date().toISOString()
                 });
-                
-                // Generate QR code
+
+                // Clear previous QR code
+                qrCodeElement.innerHTML = '';
+
+                // Generate new QR code
                 QRCode.toCanvas(qrCodeElement, qrCodeData, {
                     width: 200,
                     margin: 1,
@@ -253,124 +403,156 @@
                         light: '#ffffff'
                     }
                 }, (error) => {
-                    if (error) console.error(error);
-                    qrCodeElement.style.display = 'block';
-                });
-            }
-        });
-
-        // Handle form submission
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            if (!selectedFile) {
-                alert('Please select a file to upload');
-                return;
-            }
-            
-            // Disable submit button
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = 'Uploading...';
-            
-            try {
-                // Generate a unique filename
-                const timestamp = Date.now();
-                const fileExtension = selectedFile.name.split('.').pop();
-                const fileName = `documents/${timestamp}.${fileExtension}`;
-                const qrFileName = `qr-codes/${timestamp}.png`;
-                
-                // Upload the document to S3
-                await uploadFileToS3(selectedFile, fileName, 'document');
-                
-                // Convert QR code canvas to blob and upload
-                const qrCanvas = qrCodeElement.querySelector('canvas');
-                qrCanvas.toBlob(async (blob) => {
-                    await uploadFileToS3(blob, qrFileName, 'QR code');
-                    
-                    // Show success message
-                    alert('Document and QR code uploaded successfully!');
-                    resetForm();
-                    
-                }, 'image/png');
-                
-            } catch (error) {
-                console.error('Upload failed:', error);
-                alert('Upload failed. Please try again.');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = 'Issue Document';
-            }
-        });
-
-        // Function to upload file to S3
-        function uploadFileToS3(file, fileName, type) {
-            return new Promise((resolve, reject) => {
-                const params = {
-                    Bucket: awsConfig.bucket,
-                    Key: fileName,
-                    Body: file,
-                    ContentType: file.type
-                };
-                
-                const options = {
-                    partSize: 10 * 1024 * 1024, // 10MB chunks
-                    queueSize: 1
-                };
-                
-                const upload = s3.upload(params, options);
-                
-                upload.on('httpUploadProgress', (progress) => {
-                    const percent = Math.round((progress.loaded / progress.total) * 100);
-                    updateProgress(percent);
-                });
-                
-                upload.send((err, data) => {
-                    if (err) {
-                        reject(err);
+                    if (error) {
+                        console.error('QR Code generation error:', error);
+                        showStatus('Error generating QR code', 'error');
                     } else {
-                        console.log(`${type} uploaded successfully:`, data.Location);
-                        resolve(data);
+                        qrCodeElement.style.display = 'block';
                     }
                 });
-            });
-        }
+            }
 
-        // Update progress bar
-        function updateProgress(percent) {
-            progressFill.style.width = `${percent}%`;
-            progressText.textContent = `${percent}%`;
-        }
+            async function handleFormSubmit(e) {
+                e.preventDefault();
+                
+                if (!selectedFile) {
+                    showStatus('Please select a file to upload', 'error');
+                    return;
+                }
 
-        // Reset form after successful upload
-        function resetForm() {
-            form.reset();
-            selectedFile = null;
-            fileInfo.classList.add('hidden');
-            qrCodeElement.style.display = 'none';
-            qrCodeElement.innerHTML = '';
-            progressFill.style.width = '0%';
-            progressText.textContent = '0%';
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = 'Issue Document';
-        }
+                // Show loading state
+                setButtonState(true);
 
-        // Initialize drag and drop
-        documentUpload.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            documentUpload.classList.add('dragover');
-        });
+                try {
+                    // Generate filenames
+                    const timestamp = Date.now();
+                    const fileExtension = selectedFile.name.split('.').pop();
+                    const documentKey = `documents/${timestamp}.${fileExtension}`;
+                    const qrCodeKey = `qr-codes/${timestamp}.png`;
 
-        documentUpload.addEventListener('dragleave', () => {
-            documentUpload.classList.remove('dragover');
-        });
+                    // Upload document
+                    await uploadToS3(selectedFile, documentKey, 'document');
 
-        documentUpload.addEventListener('drop', (e) => {
-            e.preventDefault();
-            documentUpload.classList.remove('dragover');
-            
-            if (e.dataTransfer.files.length > 0) {
-                fileInput.files = e.dataTransfer.files;
-                const event = new Event('change', { bubbles: true });
-                fileInput.dispatchEvent(event);
+                    // Upload QR code
+                    const qrCanvas = qrCodeElement.querySelector('canvas');
+                    const qrBlob = await new Promise(resolve => qrCanvas.toBlob(resolve, 'image/png'));
+                    await uploadToS3(qrBlob, qrCodeKey, 'QR code');
+
+                    // Show success
+                    showStatus('Document and QR code uploaded successfully!', 'success');
+                    addActivity('Document issued', selectedFile.name, 'success');
+                    resetForm();
+
+                } catch (error) {
+                    console.error('Upload failed:', error);
+                    showStatus('Upload failed: ' + error.message, 'error');
+                    addActivity('Upload failed', error.message, 'error');
+                } finally {
+                    setButtonState(false);
+                }
+            }
+
+            function uploadToS3(file, key, type) {
+                return new Promise((resolve, reject) => {
+                    const params = {
+                        Bucket: awsConfig.bucket,
+                        Key: key,
+                        Body: file,
+                        ContentType: file.type || 'application/octet-stream'
+                    };
+
+                    const options = {
+                        partSize: 10 * 1024 * 1024,
+                        queueSize: 1
+                    };
+
+                    const upload = s3.upload(params, options);
+
+                    upload.on('httpUploadProgress', (progress) => {
+                        const percent = Math.round((progress.loaded / progress.total) * 100);
+                        updateProgress(percent);
+                    });
+
+                    upload.send((err, data) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(data);
+                        }
+                    });
+                });
+            }
+
+            function updateProgress(percent) {
+                progressFill.style.width = `${percent}%`;
+                progressText.textContent = `${percent}%`;
+            }
+
+            function setButtonState(isLoading) {
+                submitBtn.disabled = isLoading;
+                buttonText.textContent = isLoading ? 'Uploading...' : 'Issue Document';
+                buttonSpinner.classList.toggle('hidden', !isLoading);
+            }
+
+            function showStatus(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = 'status-message';
+                if (type) {
+                    statusMessage.classList.add(type);
+                    statusMessage.style.display = 'block';
+                } else {
+                    statusMessage.style.display = 'none';
+                }
+            }
+
+            function addActivity(title, description, type) {
+                const activity = document.createElement('div');
+                activity.className = `flex items-start ${type === 'error' ? 'text-red-400' : 'text-green-400'}`;
+                activity.innerHTML = `
+                    <div class="flex-shrink-0 mt-1">
+                        <i data-feather="${type === 'error' ? 'alert-circle' : 'check-circle'}" class="h-5 w-5"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium">${title}</p>
+                        <p class="text-xs text-gray-400">${description}</p>
+                        <p class="text-xs text-gray-500 mt-1">Just now</p>
+                    </div>
+                `;
+                activityFeed.insertBefore(activity, activityFeed.firstChild);
+                feather.replace();
+            }
+
+            function resetForm() {
+                form.reset();
+                selectedFile = null;
+                fileInfo.classList.add('hidden');
+                qrCodeElement.style.display = 'none';
+                qrCodeElement.innerHTML = '';
+                progressFill.style.width = '0%';
+                progressText.textContent = '0%';
+                showStatus('', '');
+            }
+
+            function initDragAndDrop() {
+                documentUpload.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    documentUpload.classList.add('dragover');
+                });
+
+                documentUpload.addEventListener('dragleave', () => {
+                    documentUpload.classList.remove('dragover');
+                });
+
+                documentUpload.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    documentUpload.classList.remove('dragover');
+                    
+                    if (e.dataTransfer.files.length > 0) {
+                        fileInput.files = e.dataTransfer.files;
+                        const event = new Event('change');
+                        fileInput.dispatchEvent(event);
+                    }
+                });
             }
         });
     </script>
