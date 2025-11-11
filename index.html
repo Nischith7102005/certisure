@@ -35,8 +35,7 @@
         }
         .btn-primary:hover {
             transform: scale(1.05);
-            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
-        }
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);        }
         .feature-icon {
             background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
         }
@@ -60,8 +59,7 @@
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
                     <div class="flex-shrink-0 flex items-center">
-                        <i data-feather="shield" class="text-indigo-500 mr-2"></i>
-                        <span class="text-xl font-bold text-white">CertiSure</span>
+                        <i data-feather="shield" class="text-indigo-500 mr-2"></i>                        <span class="text-xl font-bold text-white">CertiSure</span>
                     </div>
                     <div class="hidden md:block">
                         <div class="ml-10 flex items-baseline space-x-4">
@@ -70,10 +68,10 @@
                             <a href="verify.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Verify Document</a>
                             <a href="about.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">About</a>
                         </div>
-                    </div>
-                </div>
+                    </div>                </div>
                 <div class="hidden md:block">
-                    <button class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium">Login</button>
+                    <!-- MODIFIED: Added ID for script targeting -->
+                    <button id="dummy-login-btn" class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium">Login</button>
                 </div>
                 <div class="-mr-2 flex md:hidden">
                     <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none">
@@ -130,8 +128,7 @@
                     <div class="feature-icon w-16 h-16 rounded-xl flex items-center justify-center mb-6">
                         <i data-feather="lock" class="text-white w-8 h-8"></i>
                     </div>
-                    <h3 class="text-2xl font-bold mb-3">Blockchain Security</h3>
-                    <p class="text-gray-400">
+                    <h3 class="text-2xl font-bold mb-3">Blockchain Security</h3>                    <p class="text-gray-400">
                         Documents are stored on IPFS with tamper-proof hashing, ensuring authenticity and integrity.
                     </p>
                 </div>
@@ -166,8 +163,7 @@
                     <h3 class="text-2xl font-bold mb-3">Fingerprint Authentication</h3>
                     <p class="text-gray-400">
                         Issuers can authenticate documents with biometric fingerprint scanning for extra security.
-                    </p>
-                </div>
+                    </p>                </div>
                 
                 <!-- Feature 5 -->
                 <div class="bg-gray-800 rounded-2xl p-8 card-hover" data-aos="fade-up" data-aos-delay="500">
@@ -175,8 +171,7 @@
                         <i data-feather="globe" class="text-white w-8 h-8"></i>
                     </div>
                     <h3 class="text-2xl font-bold mb-3">Decentralized Storage</h3>
-                    <p class="text-gray-400">
-                        All documents are stored on IPFS, ensuring permanent availability and censorship resistance.
+                    <p class="text-gray-400">                        All documents are stored on IPFS, ensuring permanent availability and censorship resistance.
                     </p>
                 </div>
                 
@@ -323,6 +318,22 @@
                 autoplay: true,
                 path: 'https://assets10.lottiefiles.com/packages/lf20_jbrw3hcz.json'
             });
+
+            // --- DUMMY LOGIN LOGIC START ---
+            const loginButton = document.getElementById('dummy-login-btn');
+            if (loginButton) {
+                loginButton.addEventListener('click', function(event) {
+                    // Prevent any default link behavior if it were an <a> tag
+                    event.preventDefault(); 
+                    
+                    // Simulate a login action (e.g., showing a modal or a simple alert)
+                    alert("Login functionality is currently disabled (Dummy Action). You would normally be redirected to the Issuer Portal or a login screen.");
+                    
+                    // Optional: If you wanted it to navigate to the Issuer Portal instead of alerting:
+                    // window.location.href = 'issuer.html'; 
+                });
+            }
+            // --- DUMMY LOGIN LOGIC END ---
         });
     </script>
 </body>
