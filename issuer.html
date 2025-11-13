@@ -13,6 +13,8 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <!-- PDF-lib for PDF manipulation -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <!-- AWS SDK -->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1492.0.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         body {
@@ -112,17 +114,6 @@
             color: #ef4444;
             border: 1px solid #ef4444;
         }
-        .demo-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -143,9 +134,9 @@
                 </div>
                 <div class="hidden md:block">
                     <div class="flex items-center space-x-4">
-                        <span class="px-3 py-1 bg-yellow-500 text-yellow-900 text-sm font-bold rounded-full">DEMO</span>
+                        <span class="px-3 py-1 bg-green-500 text-green-900 text-sm font-bold rounded-full">LIVE S3</span>
                         <div class="text-sm text-gray-300">
-                            Project Demonstration
+                            Real AWS S3 Uploads
                         </div>
                     </div>
                 </div>
@@ -161,11 +152,11 @@
                     CertiSure Issuer Portal
                 </h1>
                 <p class="mt-4 text-xl text-gray-300 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
-                    Secure document certification with QR codes and cloud storage simulation
+                    Secure document certification with QR codes and AWS S3 storage
                 </p>
-                <div class="mt-6 inline-flex items-center px-4 py-2 bg-indigo-600 bg-opacity-20 border border-indigo-400 rounded-lg" data-aos="fade-up" data-aos-delay="200">
-                    <i data-feather="cloud" class="h-5 w-5 text-indigo-400 mr-2"></i>
-                    <span class="text-indigo-300">S3 Upload Simulation - Project Demo</span>
+                <div class="mt-6 inline-flex items-center px-4 py-2 bg-green-600 bg-opacity-20 border border-green-400 rounded-lg" data-aos="fade-up" data-aos-delay="200">
+                    <i data-feather="cloud" class="h-5 w-5 text-green-400 mr-2"></i>
+                    <span class="text-green-300">Live AWS S3 Integration - arn:aws:s3:::certisure</span>
                 </div>
             </div>
         </div>
@@ -177,8 +168,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <!-- Left Column - Document Upload -->
                 <div class="lg:col-span-2">
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6 relative" data-aos="fade-up">
-                        <div class="demo-badge">ACTIVE DEMO</div>
+                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
                         <h2 class="text-xl font-bold text-white mb-6">Issue Certified Document</h2>
                         
                         <form id="documentForm">
@@ -249,11 +239,11 @@
                                 </button>
                                 <button type="button" id="downloadBtn" class="btn-secondary px-6 py-3 rounded-lg font-medium hidden">
                                     <i data-feather="download" class="inline h-4 w-4 mr-2"></i>
-                                    Download Certified Document
+                                    Download & Upload to S3
                                 </button>
                             </div>
                             
-                            <!-- S3 Upload Simulation -->
+                            <!-- S3 Upload Status -->
                             <div id="s3Status" class="s3-status hidden mt-6">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center">
@@ -282,70 +272,67 @@
                                     <i data-feather="info" class="h-5 w-5"></i>
                                 </div>
                                 <div class="ml-3">
-                                    <p class="text-sm font-medium">Welcome to CertiSure Demo</p>
-                                    <p class="text-xs text-gray-500">Upload a PDF to start the certification process</p>
+                                    <p class="text-sm font-medium">System Initialized</p>
+                                    <p class="text-xs text-gray-500">Ready for document processing</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- S3 Simulation Panel -->
+                    <!-- S3 Configuration Panel -->
                     <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up" data-aos-delay="100">
-                        <h2 class="text-xl font-bold text-white mb-4">Cloud Storage Simulation</h2>
+                        <h2 class="text-xl font-bold text-white mb-4">AWS S3 Configuration</h2>
                         <div class="space-y-4">
                             <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
                                 <div class="flex items-center">
-                                    <i data-feather="hard-drive" class="h-5 w-5 text-indigo-400 mr-3"></i>
-                                    <span class="text-sm">AWS S3 Bucket</span>
+                                    <i data-feather="hard-drive" class="h-5 w-5 text-green-400 mr-3"></i>
+                                    <span class="text-sm">S3 Bucket</span>
                                 </div>
                                 <span class="text-xs bg-green-500 text-green-900 px-2 py-1 rounded">certisure</span>
                             </div>
                             <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
                                 <div class="flex items-center">
-                                    <i data-feather="folder" class="h-5 w-5 text-indigo-400 mr-3"></i>
+                                    <i data-feather="folder" class="h-5 w-5 text-green-400 mr-3"></i>
                                     <span class="text-sm">Storage Path</span>
                                 </div>
                                 <span class="text-xs text-gray-300">docs/</span>
                             </div>
                             <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
                                 <div class="flex items-center">
-                                    <i data-feather="map-pin" class="h-5 w-5 text-indigo-400 mr-3"></i>
-                                    <span class="text-sm">Region</span>
+                                    <i data-feather="map-pin" class="h-5 w-5 text-green-400 mr-3"></i>
+                                    <span class="text-sm">AWS Region</span>
                                 </div>
                                 <span class="text-xs text-gray-300">eu-north-1</span>
                             </div>
-                            <div class="mt-4 p-3 bg-yellow-900 bg-opacity-20 border border-yellow-600 rounded-lg">
-                                <div class="flex items-start">
-                                    <i data-feather="cpu" class="h-4 w-4 text-yellow-400 mr-2 mt-0.5"></i>
-                                    <p class="text-xs text-yellow-300">This is a simulation. In production, documents would be uploaded to AWS S3.</p>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-feather="link" class="h-5 w-5 text-green-400 mr-3"></i>
+                                    <span class="text-sm">ARN</span>
                                 </div>
+                                <span class="text-xs text-gray-300 truncate" title="arn:aws:s3:::certisure">arn:aws:s3:::certisure</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Demo Instructions -->
+                    <!-- Instructions -->
                     <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up" data-aos-delay="200">
-                        <h2 class="text-xl font-bold text-white mb-4">How This Demo Works</h2>
+                        <h2 class="text-xl font-bold text-white mb-4">How It Works</h2>
                         <ol class="space-y-3 text-sm text-gray-300">
                             <li class="flex items-start">
                                 <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">1</span>
-                                <span>Upload any PDF document</span>
+                                <span>Upload PDF document</span>
                             </li>
                             <li class="flex items-start">
                                 <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">2</span>
-                                <span>Fill in recipient details</span>
+                                <span>Fill recipient details</span>
                             </li>
                             <li class="flex items-start">
                                 <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">3</span>
-                                <span>Generate QR code verification</span>
+                                <span>Generate QR code</span>
                             </li>
                             <li class="flex items-start">
                                 <span class="flex-shrink-0 w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs mr-3">4</span>
-                                <span>Download certified document</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs mr-3">5</span>
-                                <span>Watch S3 upload simulation</span>
+                                <span>Download & auto-upload to S3</span>
                             </li>
                         </ol>
                     </div>
@@ -354,47 +341,36 @@
         </div>
     </main>
 
-    <!-- Demo Features Section -->
-    <section class="py-12 bg-gray-900">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-3xl font-bold text-center text-white mb-12" data-aos="fade-up">Project Features</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="text-center" data-aos="fade-up" data-aos-delay="100">
-                    <div class="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i data-feather="qr-code" class="h-8 w-8 text-white"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2">QR Code Integration</h3>
-                    <p class="text-gray-400">Embed secure QR codes for document verification and authenticity checks.</p>
-                </div>
-                <div class="text-center" data-aos="fade-up" data-aos-delay="200">
-                    <div class="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i data-feather="cloud" class="h-8 w-8 text-white"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2">Cloud Storage Ready</h3>
-                    <p class="text-gray-400">Designed for AWS S3 integration with secure document archiving.</p>
-                </div>
-                <div class="text-center" data-aos="fade-up" data-aos-delay="300">
-                    <div class="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i data-feather="shield" class="h-8 w-8 text-white"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-2">Secure Verification</h3>
-                    <p class="text-gray-400">Tamper-evident documents with embedded verification mechanisms.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- Footer -->
     <footer class="bg-gray-900 py-8 border-t border-gray-800">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center text-gray-500">
                 <p class="mb-2">CertiSure - Document Certification System</p>
-                <p class="text-sm">Project Demonstration | S3 Integration Simulation</p>
+                <p class="text-sm">Live AWS S3 Integration | arn:aws:s3:::certisure</p>
             </div>
         </div>
     </footer>
 
     <script>
+        // AWS S3 Configuration - Using your actual credentials
+        const AWS_CONFIG = {
+            region: 'eu-north-1',
+            accessKeyId: 'AKIAS5JBIBYFTSZVE4VA',
+            secretAccessKey: 'p9JqTrNbeHUi2oZ18GeycU/Xl3GNCRzyS27mMdCl',
+            bucketName: 'certisure',
+            folderPath: 'docs/'
+        };
+
+        // Initialize AWS S3 with your credentials
+        AWS.config.update({
+            region: AWS_CONFIG.region,
+            accessKeyId: AWS_CONFIG.accessKeyId,
+            secretAccessKey: AWS_CONFIG.secretAccessKey,
+            s3ForcePathStyle: true
+        });
+
+        const s3 = new AWS.S3();
+
         // Initialize AOS and Feather Icons
         document.addEventListener('DOMContentLoaded', function() {
             AOS.init({
@@ -430,17 +406,19 @@
             documentUpload.addEventListener('click', () => fileInput.click());
             fileInput.addEventListener('change', handleFileSelect);
             form.addEventListener('submit', handleFormSubmit);
-            downloadBtn.addEventListener('click', downloadDocument);
+            downloadBtn.addEventListener('click', downloadAndUploadToS3);
 
             // Initialize drag and drop
             initDragAndDrop();
+
+            // Test S3 connection on load
+            testS3Connection();
 
             // Functions
             function handleFileSelect(e) {
                 const file = e.target.files[0];
                 if (!file) return;
 
-                // Validate file
                 if (!validateFile(file)) {
                     return;
                 }
@@ -454,7 +432,7 @@
 
             function validateFile(file) {
                 const validTypes = ['application/pdf'];
-                const maxSize = 10 * 1024 * 1024; // 10MB
+                const maxSize = 10 * 1024 * 1024;
 
                 if (!validTypes.includes(file.type)) {
                     showStatus('Please select a PDF document only', 'error');
@@ -491,7 +469,6 @@
                     return;
                 }
 
-                // Get form values
                 const studentId = document.getElementById('studentId').value;
                 const studentName = document.getElementById('studentName').value;
                 const docType = document.getElementById('docType').value;
@@ -501,7 +478,6 @@
                     return;
                 }
 
-                // Store metadata
                 documentMetadata = {
                     studentId,
                     studentName,
@@ -515,20 +491,16 @@
                     buttonText.textContent = 'Generating QR Code...';
                     submitBtn.disabled = true;
 
-                    // Generate QR code
                     await generateQRCode();
                     updateProgress(40);
 
-                    // Add QR code to PDF
                     buttonText.textContent = 'Adding QR Code to PDF...';
                     await addQRCodeToPDF();
                     updateProgress(100);
 
-                    // Show success
                     showStatus('QR Code generated successfully! Ready for download.', 'success');
                     addActivity('Document processed', `${docType} for ${studentName}`, 'success');
                     
-                    // Show download button
                     downloadBtn.classList.remove('hidden');
                     feather.replace();
 
@@ -544,7 +516,6 @@
 
             async function generateQRCode() {
                 return new Promise((resolve, reject) => {
-                    // Create verification URL with document data
                     const verificationData = JSON.stringify({
                         documentId: documentMetadata.studentId + '_' + Date.now(),
                         type: documentMetadata.docType,
@@ -554,7 +525,6 @@
                     
                     const qrCodeData = `https://certisure-demo.vercel.app/verify?data=${btoa(verificationData)}`;
 
-                    // Generate QR code
                     QRCode.toDataURL(qrCodeData, {
                         width: 200,
                         margin: 1,
@@ -564,7 +534,6 @@
                         }
                     }, (error, url) => {
                         if (error) {
-                            console.error('QR Code generation error:', error);
                             reject(new Error('Error generating QR code'));
                         } else {
                             qrCodeDataUrl = url;
@@ -576,26 +545,19 @@
 
             async function addQRCodeToPDF() {
                 try {
-                    // Read the PDF file
                     const arrayBuffer = await selectedFile.arrayBuffer();
-                    
-                    // Load the PDF with pdf-lib
                     const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
                     
-                    // Embed the QR code image
                     const qrImageBytes = await fetch(qrCodeDataUrl).then(res => res.arrayBuffer());
                     const qrImage = await pdfDoc.embedPng(qrImageBytes);
                     
-                    // Get the first page
                     const pages = pdfDoc.getPages();
                     const firstPage = pages[0];
                     const { width, height } = firstPage.getSize();
                     
-                    // QR code dimensions
                     const qrSize = 80;
                     const margin = 20;
                     
-                    // Get QR position from form
                     const position = document.getElementById('qrPosition').value;
                     let x, y;
                     
@@ -621,7 +583,6 @@
                             y = margin;
                     }
                     
-                    // Draw the QR code on the first page
                     firstPage.drawImage(qrImage, {
                         x: x,
                         y: y,
@@ -629,7 +590,6 @@
                         height: qrSize,
                     });
                     
-                    // Add verification text
                     const fontSize = 8;
                     firstPage.drawText('CertiSure Verified Document', {
                         x: x,
@@ -638,83 +598,112 @@
                         color: PDFLib.rgb(0, 0, 0),
                     });
                     
-                    // Save the modified PDF
                     modifiedPdfBytes = await pdfDoc.save();
                     
                 } catch (error) {
-                    console.error('Error adding QR code to PDF:', error);
                     throw new Error('Failed to add QR code to PDF: ' + error.message);
                 }
             }
 
-            async function downloadDocument() {
+            async function downloadAndUploadToS3() {
                 if (!modifiedPdfBytes) {
                     showStatus('No document ready for download', 'error');
                     return;
                 }
 
                 try {
-                    // Show S3 upload simulation
-                    simulateS3Upload();
-                    
-                    // Create a blob from the PDF bytes
+                    // First download the file
                     const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
-                    
-                    // Generate filename
                     const originalName = selectedFile.name.replace('.pdf', '');
                     const downloadFileName = `${originalName}_certified.pdf`;
                     
-                    // Create a download link
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
                     a.download = downloadFileName;
-                    
-                    // Trigger download
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                     
-                    addActivity('Document downloaded', downloadFileName, 'success');
+                    // Then upload to S3
+                    await uploadToS3(blob, downloadFileName);
                     
                 } catch (error) {
-                    console.error('Download error:', error);
-                    showStatus('Download failed: ' + error.message, 'error');
+                    console.error('Download/Upload error:', error);
+                    showStatus('Operation failed: ' + error.message, 'error');
                 }
             }
 
-            function simulateS3Upload() {
-                // Show uploading status
-                s3Status.className = 's3-status s3-uploading';
-                s3StatusText.textContent = 'Uploading to S3: Preparing transfer...';
-                s3Status.classList.remove('hidden');
-                feather.replace();
-                
-                // Simulate upload process
-                setTimeout(() => {
-                    s3StatusText.textContent = 'Uploading to S3: Transferring data (25%)...';
-                }, 800);
-                
-                setTimeout(() => {
-                    s3StatusText.textContent = 'Uploading to S3: Transferring data (65%)...';
-                }, 1600);
-                
-                setTimeout(() => {
-                    s3StatusText.textContent = 'Uploading to S3: Finalizing upload (90%)...';
-                }, 2400);
-                
-                setTimeout(() => {
-                    const timestamp = new Date().getTime();
-                    const s3Key = `docs/${timestamp}_${selectedFile.name.replace('.pdf', '')}_certified.pdf`;
-                    
-                    s3Status.className = 's3-status s3-success';
-                    s3StatusText.textContent = `Uploaded to S3: ${s3Key}`;
-                    
-                    addActivity('S3 Upload Complete', `s3://certisure/${s3Key}`, 'success');
-                    showStatus('Document downloaded and S3 upload simulation complete!', 'success');
+            async function uploadToS3(blob, fileName) {
+                return new Promise((resolve, reject) => {
+                    // Show uploading status
+                    s3Status.className = 's3-status s3-uploading';
+                    s3StatusText.textContent = 'Uploading to AWS S3...';
+                    s3Status.classList.remove('hidden');
                     feather.replace();
-                }, 3200);
+                    
+                    const timestamp = new Date().getTime();
+                    const s3Key = `${AWS_CONFIG.folderPath}${timestamp}_${fileName}`;
+                    
+                    console.log('Starting S3 upload:', {
+                        bucket: AWS_CONFIG.bucketName,
+                        key: s3Key,
+                        fileSize: blob.size
+                    });
+                    
+                    const params = {
+                        Bucket: AWS_CONFIG.bucketName,
+                        Key: s3Key,
+                        Body: blob,
+                        ContentType: 'application/pdf',
+                        Metadata: {
+                            'student-id': documentMetadata.studentId,
+                            'student-name': documentMetadata.studentName,
+                            'document-type': documentMetadata.docType,
+                            'original-filename': documentMetadata.originalFileName,
+                            'upload-timestamp': documentMetadata.timestamp
+                        }
+                    };
+
+                    s3.upload(params, (err, data) => {
+                        if (err) {
+                            console.error('S3 Upload Error:', err);
+                            s3Status.className = 's3-status s3-error';
+                            s3StatusText.textContent = `S3 Upload Failed: ${err.message}`;
+                            addActivity('S3 Upload Failed', err.message, 'error');
+                            reject(err);
+                        } else {
+                            console.log('S3 Upload Success:', data);
+                            s3Status.className = 's3-status s3-success';
+                            s3StatusText.textContent = `Successfully uploaded to S3: ${s3Key}`;
+                            showStatus('Document downloaded and uploaded to AWS S3 successfully!', 'success');
+                            addActivity('S3 Upload Complete', `s3://certisure/${s3Key}`, 'success');
+                            resolve(data);
+                        }
+                        feather.replace();
+                    });
+                });
+            }
+
+            async function testS3Connection() {
+                try {
+                    console.log('Testing S3 connection...');
+                    
+                    const params = {
+                        Bucket: AWS_CONFIG.bucketName,
+                        MaxKeys: 1
+                    };
+                    
+                    const data = await s3.listObjectsV2(params).promise();
+                    console.log('S3 Connection Test Success:', data);
+                    addActivity('S3 Connection', 'Connected to certisure bucket', 'success');
+                    
+                } catch (error) {
+                    console.error('S3 Connection Test Failed:', error);
+                    addActivity('S3 Connection', 'Failed: ' + error.message, 'error');
+                    showStatus('S3 connection failed. Check credentials and bucket permissions.', 'error');
+                }
             }
 
             function updateProgress(percent) {
@@ -749,7 +738,6 @@
                 activityFeed.insertBefore(activity, activityFeed.firstChild);
                 feather.replace();
                 
-                // Keep only last 5 activities
                 while (activityFeed.children.length > 5) {
                     activityFeed.removeChild(activityFeed.lastChild);
                 }
@@ -776,9 +764,6 @@
                     }
                 });
             }
-
-            // Add initial demo activity
-            addActivity('System Ready', 'CertiSure demo initialized', 'success');
         });
     </script>
 </body>
