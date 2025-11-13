@@ -11,8 +11,10 @@
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <!-- QR Code library -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <!-- AWS SDK -->
-    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1239.0.min.js"></script>
+    <!-- PDF.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- PDF-lib for PDF manipulation -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         body {
@@ -38,6 +40,14 @@
         .btn-primary:hover {
             transform: scale(1.05);
             box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+        }
+        .btn-secondary {
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
         }
         .stat-card {
             background: linear-gradient(135deg, rgba(79, 70, 229, 0.15) 0%, rgba(124, 58, 237, 0.15) 100%);
@@ -70,14 +80,7 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(99, 102, 241, 0.2);
         }
-        #qr-code {
-            display: none;
-            margin: 20px auto;
-            padding: 10px;
-            background: white;
-            border-radius: 8px;
-            text-align: center;
-        }
+
         .file-info {
             margin-top: 10px;
             padding: 10px;
@@ -100,6 +103,12 @@
             color: #ef4444;
             border: 1px solid #ef4444;
         }
+        #pdfPreview {
+            max-width: 100%;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 8px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -114,10 +123,7 @@
                     </div>
                     <div class="hidden md:block">
                         <div class="ml-10 flex items-baseline space-x-4">
-                            <a href="index.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
-                            <a href="issuer.html" class="text-white px-3 py-2 rounded-md text-sm font-medium bg-indigo-600">Issuer Portal</a>
-                            <a href="verify.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Verify Document</a>
-                            <a href="about.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">About</a>
+                            <a href="#" class="text-white px-3 py-2 rounded-md text-sm font-medium bg-indigo-600">Issuer Portal</a>
                         </div>
                     </div>
                 </div>
@@ -157,14 +163,8 @@
                         Issuer Dashboard
                     </h1>
                     <p class="mt-2 text-lg text-gray-300" data-aos="fade-right" data-aos-delay="100">
-                        Manage and issue secure academic documents
+                        Add QR code to documents and download certified versions
                     </p>
-                </div>
-                <div class="mt-4 flex md:mt-0 md:ml-4" data-aos="fade-left">
-                    <button class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none">
-                        <i data-feather="plus" class="mr-2 h-4 w-4"></i>
-                        New Document
-                    </button>
                 </div>
             </div>
         </div>
@@ -204,12 +204,22 @@
                                 </div>
                                 
                                 <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Document</label>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">QR Code Position</label>
+                                    <select id="qrPosition" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <option value="bottom-right">Bottom Right</option>
+                                        <option value="bottom-left">Bottom Left</option>
+                                        <option value="top-right">Top Right</option>
+                                        <option value="top-left">Top Left</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Document (PDF only)</label>
                                     <div class="upload-area rounded-lg p-8 text-center" id="document-upload">
                                         <i data-feather="upload" class="mx-auto h-12 w-12 text-gray-400"></i>
                                         <p class="mt-2 text-sm text-gray-400">Click to upload document or drag and drop</p>
-                                        <p class="text-xs text-gray-500">PDF, DOC, DOCX (Max 10MB)</p>
-                                        <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx">
+                                        <p class="text-xs text-gray-500">PDF only (Max 10MB)</p>
+                                        <input type="file" id="fileInput" class="hidden" accept=".pdf">
                                     </div>
                                     <div id="fileInfo" class="file-info hidden">
                                         <p class="text-sm text-gray-300">Selected file: <span id="fileName" class="font-medium text-white"></span></p>
@@ -219,8 +229,7 @@
                                 </div>
                             </div>
                             
-                            <!-- QR Code Preview -->
-                            <div id="qr-code" class="mt-6"></div>
+
                             
                             <div class="mt-8">
                                 <div class="flex items-center justify-between mb-2">
@@ -232,12 +241,13 @@
                                 </div>
                             </div>
                             
-                            <div class="mt-8 flex justify-end">
+                            <div class="mt-8 flex justify-end space-x-4">
                                 <button type="submit" id="submitBtn" class="btn-primary px-6 py-3 rounded-lg font-medium">
-                                    <span id="buttonText">Issue Document</span>
-                                    <span id="buttonSpinner" class="hidden ml-2">
-                                        <i data-feather="loader" class="animate-spin"></i>
-                                    </span>
+                                    <span id="buttonText">Generate QR Code</span>
+                                </button>
+                                <button type="button" id="downloadBtn" class="btn-secondary px-6 py-3 rounded-lg font-medium hidden">
+                                    <i data-feather="download" class="inline h-4 w-4 mr-2"></i>
+                                    Download with QR Code
                                 </button>
                             </div>
                         </form>
@@ -249,8 +259,39 @@
                     <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
                         <h2 class="text-xl font-bold text-white mb-6">Recent Activity</h2>
                         <div class="space-y-6" id="activityFeed">
-                            <!-- Activity items will be added here -->
+                            <div class="flex items-start text-gray-400">
+                                <div class="flex-shrink-0 mt-1">
+                                    <i data-feather="info" class="h-5 w-5"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium">Welcome!</p>
+                                    <p class="text-xs text-gray-500">Upload a PDF to get started</p>
+                                </div>
+                            </div>
                         </div>
+                    </div>
+
+                    <!-- Instructions Card -->
+                    <div class="bg-gray-800 rounded-xl shadow-lg p-6 mt-6" data-aos="fade-up" data-aos-delay="100">
+                        <h2 class="text-xl font-bold text-white mb-4">How It Works</h2>
+                        <ol class="space-y-3 text-sm text-gray-300">
+                            <li class="flex items-start">
+                                <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">1</span>
+                                <span>Fill in document details</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">2</span>
+                                <span>Upload your PDF document</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">3</span>
+                                <span>Click "Generate QR Code"</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">4</span>
+                                <span>Download your certified document</span>
+                            </li>
+                        </ol>
                     </div>
                 </div>
             </div>
@@ -275,27 +316,6 @@
             });
             
             feather.replace();
-            
-            // AWS Configuration - Replace with your actual values
-            const awsConfig = {
-                region: 'YOUR_AWS_REGION',
-                credentials: {
-                    accessKeyId: 'YOUR_ACCESS_KEY_ID',
-                    secretAccessKey: 'YOUR_SECRET_ACCESS_KEY'
-                },
-                bucket: 'YOUR_S3_BUCKET_NAME'
-            };
-
-            // Configure AWS
-            AWS.config.update({
-                region: awsConfig.region,
-                credentials: new AWS.Credentials(
-                    awsConfig.credentials.accessKeyId,
-                    awsConfig.credentials.secretAccessKey
-                )
-            });
-
-            const s3 = new AWS.S3();
 
             // DOM Elements
             const fileInput = document.getElementById('fileInput');
@@ -303,23 +323,24 @@
             const fileInfo = document.getElementById('fileInfo');
             const fileName = document.getElementById('fileName');
             const fileSize = document.getElementById('fileSize');
-            const qrCodeElement = document.getElementById('qr-code');
             const progressFill = document.getElementById('progress-fill');
             const progressText = document.getElementById('progressText');
             const submitBtn = document.getElementById('submitBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
             const buttonText = document.getElementById('buttonText');
-            const buttonSpinner = document.getElementById('buttonSpinner');
             const statusMessage = document.getElementById('statusMessage');
             const form = document.getElementById('documentForm');
             const activityFeed = document.getElementById('activityFeed');
 
             let selectedFile = null;
-            let qrCodeData = null;
+            let qrCodeDataUrl = null;
+            let modifiedPdfBytes = null;
 
             // Event Listeners
             documentUpload.addEventListener('click', () => fileInput.click());
             fileInput.addEventListener('change', handleFileSelect);
             form.addEventListener('submit', handleFormSubmit);
+            downloadBtn.addEventListener('click', downloadDocument);
 
             // Initialize drag and drop
             initDragAndDrop();
@@ -336,15 +357,15 @@
 
                 selectedFile = file;
                 displayFileInfo(file);
-                generateQRCode(file);
+                downloadBtn.classList.add('hidden');
             }
 
             function validateFile(file) {
-                const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+                const validTypes = ['application/pdf'];
                 const maxSize = 10 * 1024 * 1024; // 10MB
 
                 if (!validTypes.includes(file.type)) {
-                    showStatus('Please select a PDF or Word document', 'error');
+                    showStatus('Please select a PDF document only', 'error');
                     return false;
                 }
 
@@ -371,127 +392,191 @@
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
             }
 
-            function generateQRCode(file) {
-                // Generate document ID
-                const docId = 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                
-                // Get form values
-                const studentId = document.getElementById('studentId').value || 'N/A';
-                const studentName = document.getElementById('studentName').value || 'N/A';
-                const docType = document.getElementById('docType').value || 'N/A';
-
-                // Create QR code data
-                qrCodeData = JSON.stringify({
-                    documentId: docId,
-                    studentId: studentId,
-                    studentName: studentName,
-                    documentType: docType,
-                    fileName: file.name,
-                    fileSize: file.size,
-                    timestamp: new Date().toISOString()
-                });
-
-                // Clear previous QR code
-                qrCodeElement.innerHTML = '';
-
-                // Generate new QR code
-                QRCode.toCanvas(qrCodeElement, qrCodeData, {
-                    width: 200,
-                    margin: 1,
-                    color: {
-                        dark: '#000000',
-                        light: '#ffffff'
-                    }
-                }, (error) => {
-                    if (error) {
-                        console.error('QR Code generation error:', error);
-                        showStatus('Error generating QR code', 'error');
-                    } else {
-                        qrCodeElement.style.display = 'block';
-                    }
-                });
-            }
-
             async function handleFormSubmit(e) {
                 e.preventDefault();
                 
                 if (!selectedFile) {
-                    showStatus('Please select a file to upload', 'error');
+                    showStatus('Please select a PDF file to upload', 'error');
                     return;
                 }
 
-                // Show loading state
-                setButtonState(true);
+                // Get form values
+                const studentId = document.getElementById('studentId').value;
+                const studentName = document.getElementById('studentName').value;
+                const docType = document.getElementById('docType').value;
+
+                if (!studentId || !studentName || !docType) {
+                    showStatus('Please fill in all required fields', 'error');
+                    return;
+                }
 
                 try {
-                    // Generate filenames
-                    const timestamp = Date.now();
-                    const fileExtension = selectedFile.name.split('.').pop();
-                    const documentKey = `documents/${timestamp}.${fileExtension}`;
-                    const qrCodeKey = `qr-codes/${timestamp}.png`;
+                    updateProgress(10);
+                    buttonText.textContent = 'Generating QR Code...';
+                    submitBtn.disabled = true;
 
-                    // Upload document
-                    await uploadToS3(selectedFile, documentKey, 'document');
+                    // Generate QR code
+                    await generateQRCode();
+                    updateProgress(40);
 
-                    // Upload QR code
-                    const qrCanvas = qrCodeElement.querySelector('canvas');
-                    const qrBlob = await new Promise(resolve => qrCanvas.toBlob(resolve, 'image/png'));
-                    await uploadToS3(qrBlob, qrCodeKey, 'QR code');
+                    // Add QR code to PDF
+                    buttonText.textContent = 'Adding QR Code to PDF...';
+                    await addQRCodeToPDF();
+                    updateProgress(100);
 
                     // Show success
-                    showStatus('Document and QR code uploaded successfully!', 'success');
-                    addActivity('Document issued', selectedFile.name, 'success');
-                    resetForm();
+                    showStatus('QR Code generated successfully! Click download to get your document.', 'success');
+                    addActivity('QR Code generated', selectedFile.name, 'success');
+                    
+                    // Show download button
+                    downloadBtn.classList.remove('hidden');
+                    feather.replace();
 
                 } catch (error) {
-                    console.error('Upload failed:', error);
-                    showStatus('Upload failed: ' + error.message, 'error');
-                    addActivity('Upload failed', error.message, 'error');
+                    console.error('Processing failed:', error);
+                    showStatus('Processing failed: ' + error.message, 'error');
+                    addActivity('Processing failed', error.message, 'error');
                 } finally {
-                    setButtonState(false);
+                    buttonText.textContent = 'Generate QR Code';
+                    submitBtn.disabled = false;
                 }
             }
 
-            function uploadToS3(file, key, type) {
+            async function generateQRCode() {
                 return new Promise((resolve, reject) => {
-                    const params = {
-                        Bucket: awsConfig.bucket,
-                        Key: key,
-                        Body: file,
-                        ContentType: file.type || 'application/octet-stream'
-                    };
+                    // QR code will lead to this URL when scanned
+                    const qrCodeData = 'https://certisure-nu.vercel.app';
 
-                    const options = {
-                        partSize: 10 * 1024 * 1024,
-                        queueSize: 1
-                    };
-
-                    const upload = s3.upload(params, options);
-
-                    upload.on('httpUploadProgress', (progress) => {
-                        const percent = Math.round((progress.loaded / progress.total) * 100);
-                        updateProgress(percent);
-                    });
-
-                    upload.send((err, data) => {
-                        if (err) {
-                            reject(err);
+                    // Generate QR code directly without displaying preview
+                    QRCode.toDataURL(qrCodeData, {
+                        width: 200,
+                        margin: 1,
+                        color: {
+                            dark: '#000000',
+                            light: '#ffffff'
+                        }
+                    }, (error, url) => {
+                        if (error) {
+                            console.error('QR Code generation error:', error);
+                            reject(new Error('Error generating QR code'));
                         } else {
-                            resolve(data);
+                            qrCodeDataUrl = url;
+                            resolve();
                         }
                     });
                 });
             }
 
+            async function addQRCodeToPDF() {
+                try {
+                    // Read the PDF file
+                    const arrayBuffer = await selectedFile.arrayBuffer();
+                    
+                    // Load the PDF with pdf-lib
+                    const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                    
+                    // Embed the QR code image
+                    const qrImageBytes = await fetch(qrCodeDataUrl).then(res => res.arrayBuffer());
+                    const qrImage = await pdfDoc.embedPng(qrImageBytes);
+                    
+                    // Get the first page (or you can add to all pages)
+                    const pages = pdfDoc.getPages();
+                    const firstPage = pages[0];
+                    const { width, height } = firstPage.getSize();
+                    
+                    // QR code dimensions
+                    const qrSize = 80;
+                    const margin = 20;
+                    
+                    // Get QR position from form
+                    const position = document.getElementById('qrPosition').value;
+                    let x, y;
+                    
+                    switch(position) {
+                        case 'bottom-right':
+                            x = width - qrSize - margin;
+                            y = margin;
+                            break;
+                        case 'bottom-left':
+                            x = margin;
+                            y = margin;
+                            break;
+                        case 'top-right':
+                            x = width - qrSize - margin;
+                            y = height - qrSize - margin;
+                            break;
+                        case 'top-left':
+                            x = margin;
+                            y = height - qrSize - margin;
+                            break;
+                        default:
+                            x = width - qrSize - margin;
+                            y = margin;
+                    }
+                    
+                    // Draw the QR code on the first page
+                    firstPage.drawImage(qrImage, {
+                        x: x,
+                        y: y,
+                        width: qrSize,
+                        height: qrSize,
+                    });
+                    
+                    // Add a small text label
+                    const fontSize = 8;
+                    firstPage.drawText('Verified by CertiSure', {
+                        x: x,
+                        y: y - 12,
+                        size: fontSize,
+                        color: PDFLib.rgb(0, 0, 0),
+                    });
+                    
+                    // Save the modified PDF
+                    modifiedPdfBytes = await pdfDoc.save();
+                    
+                } catch (error) {
+                    console.error('Error adding QR code to PDF:', error);
+                    throw new Error('Failed to add QR code to PDF: ' + error.message);
+                }
+            }
+
+            function downloadDocument() {
+                if (!modifiedPdfBytes) {
+                    showStatus('No document ready for download', 'error');
+                    return;
+                }
+
+                try {
+                    // Create a blob from the PDF bytes
+                    const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
+                    
+                    // Create a download link
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    
+                    // Generate filename
+                    const originalName = selectedFile.name.replace('.pdf', '');
+                    a.download = `${originalName}_certified.pdf`;
+                    
+                    // Trigger download
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    addActivity('Document downloaded', a.download, 'success');
+                    showStatus('Document downloaded successfully!', 'success');
+                    
+                } catch (error) {
+                    console.error('Download error:', error);
+                    showStatus('Download failed: ' + error.message, 'error');
+                }
+            }
+
             function updateProgress(percent) {
                 progressFill.style.width = `${percent}%`;
                 progressText.textContent = `${percent}%`;
-            }
-
-            function setButtonState(isLoading) {
-                submitBtn.disabled = isLoading;
-                buttonText.textContent = isLoading ? 'Uploading...' : 'Issue Document';
-                buttonSpinner.classList.toggle('hidden', !isLoading);
             }
 
             function showStatus(message, type) {
@@ -515,22 +600,16 @@
                     <div class="ml-3">
                         <p class="text-sm font-medium">${title}</p>
                         <p class="text-xs text-gray-400">${description}</p>
-                        <p class="text-xs text-gray-500 mt-1">Just now</p>
+                        <p class="text-xs text-gray-500 mt-1">${new Date().toLocaleTimeString()}</p>
                     </div>
                 `;
                 activityFeed.insertBefore(activity, activityFeed.firstChild);
                 feather.replace();
-            }
-
-            function resetForm() {
-                form.reset();
-                selectedFile = null;
-                fileInfo.classList.add('hidden');
-                qrCodeElement.style.display = 'none';
-                qrCodeElement.innerHTML = '';
-                progressFill.style.width = '0%';
-                progressText.textContent = '0%';
-                showStatus('', '');
+                
+                // Keep only last 5 activities
+                while (activityFeed.children.length > 5) {
+                    activityFeed.removeChild(activityFeed.lastChild);
+                }
             }
 
             function initDragAndDrop() {
