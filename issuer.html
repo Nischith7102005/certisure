@@ -15,6 +15,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <!-- PDF-lib for PDF manipulation -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <!-- AWS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/aws-sdk@2.1492.0/dist/aws-sdk.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         body {
@@ -229,8 +231,6 @@
                                 </div>
                             </div>
                             
-
-                            
                             <div class="mt-8">
                                 <div class="flex items-center justify-between mb-2">
                                     <span class="text-sm font-medium text-gray-300">Processing</span>
@@ -308,6 +308,24 @@
     </footer>
 
     <script>
+        // AWS S3 Configuration
+        const AWS_CONFIG = {
+            region: 'eu-north-1',
+            accessKeyId: 'AKIAS5JBIBYFTSZVE4VA',
+            secretAccessKey: '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',
+            bucketName: 'certisure',
+            folderPath: 'docs/'
+        };
+
+        // Initialize AWS S3
+        AWS.config.update({
+            region: AWS_CONFIG.region,
+            accessKeyId: AWS_CONFIG.accessKeyId,
+            secretAccessKey: AWS_CONFIG.secretAccessKey
+        });
+
+        const s3 = new AWS.S3();
+
         // Initialize AOS and Feather Icons
         document.addEventListener('DOMContentLoaded', function() {
             AOS.init({
@@ -335,6 +353,7 @@
             let selectedFile = null;
             let qrCodeDataUrl = null;
             let modifiedPdfBytes = null;
+            let documentMetadata = {};
 
             // Event Listeners
             documentUpload.addEventListener('click', () => fileInput.click());
@@ -409,6 +428,15 @@
                     showStatus('Please fill in all required fields', 'error');
                     return;
                 }
+
+                // Store metadata for S3 upload
+                documentMetadata = {
+                    studentId,
+                    studentName,
+                    docType,
+                    timestamp: new Date().toISOString(),
+                    originalFileName: selectedFile.name
+                };
 
                 try {
                     updateProgress(10);
@@ -540,7 +568,7 @@
                 }
             }
 
-            function downloadDocument() {
+            async function downloadDocument() {
                 if (!modifiedPdfBytes) {
                     showStatus('No document ready for download', 'error');
                     return;
@@ -550,14 +578,15 @@
                     // Create a blob from the PDF bytes
                     const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
                     
+                    // Generate filename
+                    const originalName = selectedFile.name.replace('.pdf', '');
+                    const downloadFileName = `${originalName}_certified.pdf`;
+                    
                     // Create a download link
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    
-                    // Generate filename
-                    const originalName = selectedFile.name.replace('.pdf', '');
-                    a.download = `${originalName}_certified.pdf`;
+                    a.download = downloadFileName;
                     
                     // Trigger download
                     document.body.appendChild(a);
@@ -565,13 +594,50 @@
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                     
-                    addActivity('Document downloaded', a.download, 'success');
-                    showStatus('Document downloaded successfully!', 'success');
+                    // Upload to S3
+                    await uploadToS3(blob, downloadFileName);
+                    
+                    addActivity('Document downloaded and uploaded to S3', downloadFileName, 'success');
+                    showStatus('Document downloaded successfully and uploaded to S3!', 'success');
                     
                 } catch (error) {
-                    console.error('Download error:', error);
-                    showStatus('Download failed: ' + error.message, 'error');
+                    console.error('Download/Upload error:', error);
+                    showStatus('Download successful but S3 upload failed: ' + error.message, 'error');
+                    addActivity('S3 upload failed', error.message, 'error');
                 }
+            }
+
+            async function uploadToS3(blob, fileName) {
+                return new Promise((resolve, reject) => {
+                    // Generate S3 key with timestamp to avoid conflicts
+                    const timestamp = new Date().getTime();
+                    const s3Key = `${AWS_CONFIG.folderPath}${timestamp}_${fileName}`;
+                    
+                    const params = {
+                        Bucket: AWS_CONFIG.bucketName,
+                        Key: s3Key,
+                        Body: blob,
+                        ContentType: 'application/pdf',
+                        Metadata: {
+                            'student-id': documentMetadata.studentId,
+                            'student-name': documentMetadata.studentName,
+                            'document-type': documentMetadata.docType,
+                            'original-filename': documentMetadata.originalFileName,
+                            'upload-timestamp': documentMetadata.timestamp
+                        }
+                    };
+
+                    s3.upload(params, (err, data) => {
+                        if (err) {
+                            console.error('S3 Upload Error:', err);
+                            reject(err);
+                        } else {
+                            console.log('S3 Upload Success:', data.Location);
+                            addActivity('Uploaded to S3', fileName, 'success');
+                            resolve(data);
+                        }
+                    });
+                });
             }
 
             function updateProgress(percent) {
