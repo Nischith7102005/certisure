@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Issuer Portal - CertiSure</title>
+    <title>CertiSure - Document Issuer Portal</title>
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔒</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
@@ -13,8 +13,6 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <!-- PDF-lib for PDF manipulation -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <!-- AWS SDK -->
-    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1492.0.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         body {
@@ -49,18 +47,6 @@
             transform: scale(1.05);
             box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
         }
-        .btn-tertiary {
-            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
-            transition: all 0.3s ease;
-        }
-        .btn-tertiary:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4);
-        }
-        .stat-card {
-            background: linear-gradient(135deg, rgba(79, 70, 229, 0.15) 0%, rgba(124, 58, 237, 0.15) 100%);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-        }
         .upload-area {
             border: 2px dashed rgba(99, 102, 241, 0.5);
             transition: all 0.3s ease;
@@ -82,11 +68,6 @@
             border-radius: 4px;
             width: 0%;
             transition: width 0.5s ease;
-        }
-        .document-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(99, 102, 241, 0.2);
         }
         .file-info {
             margin-top: 10px;
@@ -110,17 +91,6 @@
             color: #ef4444;
             border: 1px solid #ef4444;
         }
-        .warning {
-            background: rgba(245, 158, 11, 0.2);
-            color: #f59e0b;
-            border: 1px solid #f59e0b;
-        }
-        #pdfPreview {
-            max-width: 100%;
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: 8px;
-            margin-top: 20px;
-        }
         .s3-status {
             padding: 8px 12px;
             border-radius: 6px;
@@ -142,6 +112,17 @@
             color: #ef4444;
             border: 1px solid #ef4444;
         }
+        .demo-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -161,27 +142,12 @@
                     </div>
                 </div>
                 <div class="hidden md:block">
-                    <div class="ml-4 flex items-center md:ml-6">
-                        <button class="bg-gray-800 p-1 rounded-full text-gray-400 hover:text-white focus:outline-none mr-4">
-                            <i data-feather="bell" class="h-6 w-6"></i>
-                        </button>
-                        <div class="ml-3 relative">
-                            <div class="flex items-center">
-                                <div class="text-sm mr-3">
-                                    <div class="font-medium text-white">University Admin</div>
-                                    <div class="text-gray-400">admin@university.edu</div>
-                                </div>
-                                <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center">
-                                    <span class="font-bold">UA</span>
-                                </div>
-                            </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="px-3 py-1 bg-yellow-500 text-yellow-900 text-sm font-bold rounded-full">DEMO</span>
+                        <div class="text-sm text-gray-300">
+                            Project Demonstration
                         </div>
                     </div>
-                </div>
-                <div class="-mr-2 flex md:hidden">
-                    <button class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none">
-                        <i data-feather="menu" class="block h-6 w-6"></i>
-                    </button>
                 </div>
             </div>
         </div>
@@ -190,20 +156,16 @@
     <!-- Dashboard Header -->
     <header class="dashboard-bg pt-24 pb-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="md:flex md:items-center md:justify-between">
-                <div class="flex-1 min-w-0">
-                    <h1 class="text-3xl font-bold leading-tight text-white" data-aos="fade-right">
-                        Issuer Dashboard
-                    </h1>
-                    <p class="mt-2 text-lg text-gray-300" data-aos="fade-right" data-aos-delay="100">
-                        Add QR code to documents and download certified versions
-                    </p>
-                </div>
-                <div class="mt-4 flex md:mt-0 md:ml-4" data-aos="fade-left">
-                    <button id="testS3Btn" class="btn-tertiary px-4 py-2 rounded-lg font-medium text-sm">
-                        <i data-feather="cloud" class="inline h-4 w-4 mr-2"></i>
-                        Test S3 Connection
-                    </button>
+            <div class="text-center">
+                <h1 class="text-4xl font-bold leading-tight text-white" data-aos="fade-up">
+                    CertiSure Issuer Portal
+                </h1>
+                <p class="mt-4 text-xl text-gray-300 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
+                    Secure document certification with QR codes and cloud storage simulation
+                </p>
+                <div class="mt-6 inline-flex items-center px-4 py-2 bg-indigo-600 bg-opacity-20 border border-indigo-400 rounded-lg" data-aos="fade-up" data-aos-delay="200">
+                    <i data-feather="cloud" class="h-5 w-5 text-indigo-400 mr-2"></i>
+                    <span class="text-indigo-300">S3 Upload Simulation - Project Demo</span>
                 </div>
             </div>
         </div>
@@ -211,12 +173,13 @@
 
     <!-- Main Content -->
     <main class="py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <!-- Left Column - Document Upload -->
                 <div class="lg:col-span-2">
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
-                        <h2 class="text-xl font-bold text-white mb-6">Issue New Document</h2>
+                    <div class="bg-gray-800 rounded-xl shadow-lg p-6 relative" data-aos="fade-up">
+                        <div class="demo-badge">ACTIVE DEMO</div>
+                        <h2 class="text-xl font-bold text-white mb-6">Issue Certified Document</h2>
                         
                         <form id="documentForm">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -226,38 +189,38 @@
                                     <select id="docType" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
                                         <option value="">Select document type</option>
                                         <option value="degree">Degree Certificate</option>
-                                        <option value="transcript">Transcript</option>
-                                        <option value="recommendation">Recommendation Letter</option>
-                                        <option value="professional">Professional Certificate</option>
+                                        <option value="transcript">Academic Transcript</option>
+                                        <option value="certificate">Professional Certificate</option>
+                                        <option value="letter">Official Letter</option>
                                     </select>
                                 </div>
                                 
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Student ID</label>
-                                    <input id="studentId" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter student ID" required>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Student/Recipient ID</label>
+                                    <input id="studentId" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter ID" required>
                                 </div>
                                 
                                 <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Student Name</label>
-                                    <input id="studentName" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter student full name" required>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+                                    <input id="studentName" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter full name" required>
                                 </div>
                                 
                                 <div class="md:col-span-2">
                                     <label class="block text-sm font-medium text-gray-300 mb-2">QR Code Position</label>
                                     <select id="qrPosition" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                        <option value="bottom-right">Bottom Right</option>
-                                        <option value="bottom-left">Bottom Left</option>
-                                        <option value="top-right">Top Right</option>
-                                        <option value="top-left">Top Left</option>
+                                        <option value="bottom-right">Bottom Right Corner</option>
+                                        <option value="bottom-left">Bottom Left Corner</option>
+                                        <option value="top-right">Top Right Corner</option>
+                                        <option value="top-left">Top Left Corner</option>
                                     </select>
                                 </div>
                                 
                                 <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Document (PDF only)</label>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Upload Document (PDF)</label>
                                     <div class="upload-area rounded-lg p-8 text-center" id="document-upload">
                                         <i data-feather="upload" class="mx-auto h-12 w-12 text-gray-400"></i>
-                                        <p class="mt-2 text-sm text-gray-400">Click to upload document or drag and drop</p>
-                                        <p class="text-xs text-gray-500">PDF only (Max 10MB)</p>
+                                        <p class="mt-2 text-sm text-gray-400">Click to upload or drag & drop PDF file</p>
+                                        <p class="text-xs text-gray-500">Maximum file size: 10MB</p>
                                         <input type="file" id="fileInput" class="hidden" accept=".pdf">
                                     </div>
                                     <div id="fileInfo" class="file-info hidden">
@@ -268,9 +231,10 @@
                                 </div>
                             </div>
                             
+                            <!-- Progress Bar -->
                             <div class="mt-8">
                                 <div class="flex items-center justify-between mb-2">
-                                    <span class="text-sm font-medium text-gray-300">Processing</span>
+                                    <span class="text-sm font-medium text-gray-300">Processing Progress</span>
                                     <span class="text-sm font-medium text-gray-300" id="progressText">0%</span>
                                 </div>
                                 <div class="progress-bar">
@@ -278,90 +242,110 @@
                                 </div>
                             </div>
                             
+                            <!-- Action Buttons -->
                             <div class="mt-8 flex justify-end space-x-4">
                                 <button type="submit" id="submitBtn" class="btn-primary px-6 py-3 rounded-lg font-medium">
                                     <span id="buttonText">Generate QR Code</span>
                                 </button>
                                 <button type="button" id="downloadBtn" class="btn-secondary px-6 py-3 rounded-lg font-medium hidden">
                                     <i data-feather="download" class="inline h-4 w-4 mr-2"></i>
-                                    Download with QR Code
+                                    Download Certified Document
                                 </button>
                             </div>
                             
-                            <!-- S3 Upload Status -->
-                            <div id="s3Status" class="s3-status hidden mt-4">
-                                <div class="flex items-center">
-                                    <i data-feather="cloud" class="h-4 w-4 mr-2"></i>
-                                    <span id="s3StatusText">Uploading to S3...</span>
+                            <!-- S3 Upload Simulation -->
+                            <div id="s3Status" class="s3-status hidden mt-6">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <i data-feather="cloud" class="h-4 w-4 mr-2"></i>
+                                        <span id="s3StatusText">Preparing S3 upload...</span>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                                    </div>
                                 </div>
                             </div>
                         </form>
                     </div>
                 </div>
                 
-                <!-- Right Column - Activity Feed & S3 Info -->
-                <div>
+                <!-- Right Column - Info Panels -->
+                <div class="space-y-6">
+                    <!-- Activity Feed -->
                     <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
-                        <h2 class="text-xl font-bold text-white mb-6">Recent Activity</h2>
-                        <div class="space-y-6" id="activityFeed">
+                        <h2 class="text-xl font-bold text-white mb-6">Activity Log</h2>
+                        <div class="space-y-4" id="activityFeed">
                             <div class="flex items-start text-gray-400">
                                 <div class="flex-shrink-0 mt-1">
                                     <i data-feather="info" class="h-5 w-5"></i>
                                 </div>
                                 <div class="ml-3">
-                                    <p class="text-sm font-medium">Welcome!</p>
-                                    <p class="text-xs text-gray-500">Upload a PDF to get started</p>
+                                    <p class="text-sm font-medium">Welcome to CertiSure Demo</p>
+                                    <p class="text-xs text-gray-500">Upload a PDF to start the certification process</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- S3 Configuration Card -->
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6 mt-6" data-aos="fade-up" data-aos-delay="100">
-                        <h2 class="text-xl font-bold text-white mb-4">S3 Configuration</h2>
-                        <div class="space-y-3 text-sm text-gray-300">
-                            <div class="flex justify-between">
-                                <span>Bucket:</span>
-                                <span class="text-white">certisure</span>
+                    <!-- S3 Simulation Panel -->
+                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up" data-aos-delay="100">
+                        <h2 class="text-xl font-bold text-white mb-4">Cloud Storage Simulation</h2>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-feather="hard-drive" class="h-5 w-5 text-indigo-400 mr-3"></i>
+                                    <span class="text-sm">AWS S3 Bucket</span>
+                                </div>
+                                <span class="text-xs bg-green-500 text-green-900 px-2 py-1 rounded">certisure</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span>Region:</span>
-                                <span class="text-white">eu-north-1</span>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-feather="folder" class="h-5 w-5 text-indigo-400 mr-3"></i>
+                                    <span class="text-sm">Storage Path</span>
+                                </div>
+                                <span class="text-xs text-gray-300">docs/</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span>Destination:</span>
-                                <span class="text-white">s3://certisure/docs/</span>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-feather="map-pin" class="h-5 w-5 text-indigo-400 mr-3"></i>
+                                    <span class="text-sm">Region</span>
+                                </div>
+                                <span class="text-xs text-gray-300">eu-north-1</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span>Status:</span>
-                                <span id="s3ConfigStatus" class="text-yellow-400">Not Tested</span>
+                            <div class="mt-4 p-3 bg-yellow-900 bg-opacity-20 border border-yellow-600 rounded-lg">
+                                <div class="flex items-start">
+                                    <i data-feather="cpu" class="h-4 w-4 text-yellow-400 mr-2 mt-0.5"></i>
+                                    <p class="text-xs text-yellow-300">This is a simulation. In production, documents would be uploaded to AWS S3.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Instructions Card -->
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6 mt-6" data-aos="fade-up" data-aos-delay="200">
-                        <h2 class="text-xl font-bold text-white mb-4">How It Works</h2>
+                    <!-- Demo Instructions -->
+                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up" data-aos-delay="200">
+                        <h2 class="text-xl font-bold text-white mb-4">How This Demo Works</h2>
                         <ol class="space-y-3 text-sm text-gray-300">
                             <li class="flex items-start">
                                 <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">1</span>
-                                <span>Fill in document details</span>
+                                <span>Upload any PDF document</span>
                             </li>
                             <li class="flex items-start">
                                 <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">2</span>
-                                <span>Upload your PDF document</span>
+                                <span>Fill in recipient details</span>
                             </li>
                             <li class="flex items-start">
                                 <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">3</span>
-                                <span>Click "Generate QR Code"</span>
+                                <span>Generate QR code verification</span>
                             </li>
                             <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">4</span>
-                                <span>Download your certified document</span>
+                                <span class="flex-shrink-0 w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs mr-3">4</span>
+                                <span>Download certified document</span>
                             </li>
                             <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs mr-3">5</span>
-                                <span>Copy automatically uploaded to S3</span>
+                                <span class="flex-shrink-0 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs mr-3">5</span>
+                                <span>Watch S3 upload simulation</span>
                             </li>
                         </ol>
                     </div>
@@ -370,34 +354,47 @@
         </div>
     </main>
 
+    <!-- Demo Features Section -->
+    <section class="py-12 bg-gray-900">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center text-white mb-12" data-aos="fade-up">Project Features</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+                    <div class="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-feather="qr-code" class="h-8 w-8 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">QR Code Integration</h3>
+                    <p class="text-gray-400">Embed secure QR codes for document verification and authenticity checks.</p>
+                </div>
+                <div class="text-center" data-aos="fade-up" data-aos-delay="200">
+                    <div class="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-feather="cloud" class="h-8 w-8 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">Cloud Storage Ready</h3>
+                    <p class="text-gray-400">Designed for AWS S3 integration with secure document archiving.</p>
+                </div>
+                <div class="text-center" data-aos="fade-up" data-aos-delay="300">
+                    <div class="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-feather="shield" class="h-8 w-8 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-2">Secure Verification</h3>
+                    <p class="text-gray-400">Tamper-evident documents with embedded verification mechanisms.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
-    <footer class="bg-gray-900 py-8 mt-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="border-t border-gray-800 pt-6 text-center text-gray-500">
-                <p>&copy; 2023 CertiSure. All rights reserved.</p>
+    <footer class="bg-gray-900 py-8 border-t border-gray-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center text-gray-500">
+                <p class="mb-2">CertiSure - Document Certification System</p>
+                <p class="text-sm">Project Demonstration | S3 Integration Simulation</p>
             </div>
         </div>
     </footer>
 
     <script>
-        // AWS S3 Configuration
-        const AWS_CONFIG = {
-            region: 'eu-north-1',
-            accessKeyId: 'AKIAS5JBIBYFTSZVE4VA',
-            secretAccessKey: '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',
-            bucketName: 'certisure',
-            folderPath: 'docs/'
-        };
-
-        // Initialize AWS S3
-        AWS.config.update({
-            region: AWS_CONFIG.region,
-            accessKeyId: AWS_CONFIG.accessKeyId,
-            secretAccessKey: AWS_CONFIG.secretAccessKey
-        });
-
-        const s3 = new AWS.S3();
-
         // Initialize AOS and Feather Icons
         document.addEventListener('DOMContentLoaded', function() {
             AOS.init({
@@ -421,8 +418,6 @@
             const statusMessage = document.getElementById('statusMessage');
             const s3Status = document.getElementById('s3Status');
             const s3StatusText = document.getElementById('s3StatusText');
-            const s3ConfigStatus = document.getElementById('s3ConfigStatus');
-            const testS3Btn = document.getElementById('testS3Btn');
             const form = document.getElementById('documentForm');
             const activityFeed = document.getElementById('activityFeed');
 
@@ -436,7 +431,6 @@
             fileInput.addEventListener('change', handleFileSelect);
             form.addEventListener('submit', handleFormSubmit);
             downloadBtn.addEventListener('click', downloadDocument);
-            testS3Btn.addEventListener('click', testS3Connection);
 
             // Initialize drag and drop
             initDragAndDrop();
@@ -455,6 +449,7 @@
                 displayFileInfo(file);
                 downloadBtn.classList.add('hidden');
                 s3Status.classList.add('hidden');
+                showStatus('File ready for processing', 'success');
             }
 
             function validateFile(file) {
@@ -478,7 +473,6 @@
                 fileName.textContent = file.name;
                 fileSize.textContent = formatFileSize(file.size);
                 fileInfo.classList.remove('hidden');
-                showStatus('', '');
             }
 
             function formatFileSize(bytes) {
@@ -507,7 +501,7 @@
                     return;
                 }
 
-                // Store metadata for S3 upload
+                // Store metadata
                 documentMetadata = {
                     studentId,
                     studentName,
@@ -531,8 +525,8 @@
                     updateProgress(100);
 
                     // Show success
-                    showStatus('QR Code generated successfully! Click download to get your document.', 'success');
-                    addActivity('QR Code generated', selectedFile.name, 'success');
+                    showStatus('QR Code generated successfully! Ready for download.', 'success');
+                    addActivity('Document processed', `${docType} for ${studentName}`, 'success');
                     
                     // Show download button
                     downloadBtn.classList.remove('hidden');
@@ -550,10 +544,17 @@
 
             async function generateQRCode() {
                 return new Promise((resolve, reject) => {
-                    // QR code will lead to this URL when scanned
-                    const qrCodeData = 'https://certisure-nu.vercel.app';
+                    // Create verification URL with document data
+                    const verificationData = JSON.stringify({
+                        documentId: documentMetadata.studentId + '_' + Date.now(),
+                        type: documentMetadata.docType,
+                        name: documentMetadata.studentName,
+                        timestamp: documentMetadata.timestamp
+                    });
+                    
+                    const qrCodeData = `https://certisure-demo.vercel.app/verify?data=${btoa(verificationData)}`;
 
-                    // Generate QR code directly without displaying preview
+                    // Generate QR code
                     QRCode.toDataURL(qrCodeData, {
                         width: 200,
                         margin: 1,
@@ -585,7 +586,7 @@
                     const qrImageBytes = await fetch(qrCodeDataUrl).then(res => res.arrayBuffer());
                     const qrImage = await pdfDoc.embedPng(qrImageBytes);
                     
-                    // Get the first page (or you can add to all pages)
+                    // Get the first page
                     const pages = pdfDoc.getPages();
                     const firstPage = pages[0];
                     const { width, height } = firstPage.getSize();
@@ -628,11 +629,11 @@
                         height: qrSize,
                     });
                     
-                    // Add a small text label
+                    // Add verification text
                     const fontSize = 8;
-                    firstPage.drawText('Verified by CertiSure', {
+                    firstPage.drawText('CertiSure Verified Document', {
                         x: x,
-                        y: y - 12,
+                        y: y - 15,
                         size: fontSize,
                         color: PDFLib.rgb(0, 0, 0),
                     });
@@ -653,6 +654,9 @@
                 }
 
                 try {
+                    // Show S3 upload simulation
+                    simulateS3Upload();
+                    
                     // Create a blob from the PDF bytes
                     const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
                     
@@ -672,101 +676,45 @@
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                     
-                    // Upload to S3
-                    await uploadToS3(blob, downloadFileName);
-                    
-                    addActivity('Document downloaded and uploaded to S3', downloadFileName, 'success');
-                    showStatus('Document downloaded successfully and uploaded to S3!', 'success');
+                    addActivity('Document downloaded', downloadFileName, 'success');
                     
                 } catch (error) {
-                    console.error('Download/Upload error:', error);
-                    showStatus('Download successful but S3 upload failed: ' + error.message, 'error');
-                    addActivity('S3 upload failed', error.message, 'error');
+                    console.error('Download error:', error);
+                    showStatus('Download failed: ' + error.message, 'error');
                 }
             }
 
-            async function uploadToS3(blob, fileName) {
-                return new Promise((resolve, reject) => {
-                    // Show S3 upload status
-                    s3Status.className = 's3-status s3-uploading';
-                    s3StatusText.textContent = 'Uploading to S3...';
-                    s3Status.classList.remove('hidden');
-                    
-                    // Generate S3 key with timestamp to avoid conflicts
+            function simulateS3Upload() {
+                // Show uploading status
+                s3Status.className = 's3-status s3-uploading';
+                s3StatusText.textContent = 'Uploading to S3: Preparing transfer...';
+                s3Status.classList.remove('hidden');
+                feather.replace();
+                
+                // Simulate upload process
+                setTimeout(() => {
+                    s3StatusText.textContent = 'Uploading to S3: Transferring data (25%)...';
+                }, 800);
+                
+                setTimeout(() => {
+                    s3StatusText.textContent = 'Uploading to S3: Transferring data (65%)...';
+                }, 1600);
+                
+                setTimeout(() => {
+                    s3StatusText.textContent = 'Uploading to S3: Finalizing upload (90%)...';
+                }, 2400);
+                
+                setTimeout(() => {
                     const timestamp = new Date().getTime();
-                    const s3Key = `${AWS_CONFIG.folderPath}${timestamp}_${fileName}`;
+                    const s3Key = `docs/${timestamp}_${selectedFile.name.replace('.pdf', '')}_certified.pdf`;
                     
-                    console.log('Uploading to S3:', {
-                        bucket: AWS_CONFIG.bucketName,
-                        key: s3Key,
-                        fileSize: blob.size
-                    });
+                    s3Status.className = 's3-status s3-success';
+                    s3StatusText.textContent = `Uploaded to S3: ${s3Key}`;
                     
-                    const params = {
-                        Bucket: AWS_CONFIG.bucketName,
-                        Key: s3Key,
-                        Body: blob,
-                        ContentType: 'application/pdf',
-                        Metadata: {
-                            'student-id': documentMetadata.studentId,
-                            'student-name': documentMetadata.studentName,
-                            'document-type': documentMetadata.docType,
-                            'original-filename': documentMetadata.originalFileName,
-                            'upload-timestamp': documentMetadata.timestamp
-                        }
-                    };
-
-                    s3.upload(params, (err, data) => {
-                        if (err) {
-                            console.error('S3 Upload Error:', err);
-                            s3Status.className = 's3-status s3-error';
-                            s3StatusText.textContent = `S3 Upload Failed: ${err.message}`;
-                            reject(err);
-                        } else {
-                            console.log('S3 Upload Success:', data);
-                            s3Status.className = 's3-status s3-success';
-                            s3StatusText.textContent = `Uploaded to S3: ${s3Key}`;
-                            addActivity('Uploaded to S3', s3Key, 'success');
-                            resolve(data);
-                        }
-                        feather.replace();
-                    });
-                });
-            }
-
-            async function testS3Connection() {
-                try {
-                    testS3Btn.disabled = true;
-                    testS3Btn.innerHTML = '<i data-feather="loader" class="inline h-4 w-4 mr-2 animate-spin"></i>Testing...';
+                    addActivity('S3 Upload Complete', `s3://certisure/${s3Key}`, 'success');
+                    showStatus('Document downloaded and S3 upload simulation complete!', 'success');
                     feather.replace();
-                    
-                    s3ConfigStatus.textContent = 'Testing...';
-                    s3ConfigStatus.className = 'text-yellow-400';
-                    
-                    const params = {
-                        Bucket: AWS_CONFIG.bucketName,
-                        MaxKeys: 1
-                    };
-                    
-                    const data = await s3.listObjectsV2(params).promise();
-                    console.log('S3 Connection Test Success:', data);
-                    
-                    s3ConfigStatus.textContent = 'Connected';
-                    s3ConfigStatus.className = 'text-green-400';
-                    showStatus('S3 connection test successful!', 'success');
-                    addActivity('S3 Test', 'Connection successful', 'success');
-                    
-                } catch (error) {
-                    console.error('S3 Connection Test Failed:', error);
-                    s3ConfigStatus.textContent = 'Failed';
-                    s3ConfigStatus.className = 'text-red-400';
-                    showStatus('S3 connection test failed: ' + error.message, 'error');
-                    addActivity('S3 Test', 'Connection failed: ' + error.message, 'error');
-                } finally {
-                    testS3Btn.disabled = false;
-                    testS3Btn.innerHTML = '<i data-feather="cloud" class="inline h-4 w-4 mr-2"></i>Test S3 Connection';
-                    feather.replace();
-                }
+                }, 3200);
             }
 
             function updateProgress(percent) {
@@ -787,10 +735,10 @@
 
             function addActivity(title, description, type) {
                 const activity = document.createElement('div');
-                activity.className = `flex items-start ${type === 'error' ? 'text-red-400' : type === 'warning' ? 'text-yellow-400' : 'text-green-400'}`;
+                activity.className = `flex items-start ${type === 'error' ? 'text-red-400' : 'text-green-400'}`;
                 activity.innerHTML = `
                     <div class="flex-shrink-0 mt-1">
-                        <i data-feather="${type === 'error' ? 'alert-circle' : type === 'warning' ? 'alert-triangle' : 'check-circle'}" class="h-5 w-5"></i>
+                        <i data-feather="${type === 'error' ? 'alert-circle' : 'check-circle'}" class="h-5 w-5"></i>
                     </div>
                     <div class="ml-3">
                         <p class="text-sm font-medium">${title}</p>
@@ -813,7 +761,7 @@
                     documentUpload.classList.add('dragover');
                 });
 
-                                documentUpload.addEventListener('dragleave', () => {
+                documentUpload.addEventListener('dragleave', () => {
                     documentUpload.classList.remove('dragover');
                 });
 
@@ -829,25 +777,8 @@
                 });
             }
 
-            // Security warning for AWS credentials
-            console.warn('⚠️ SECURITY WARNING: AWS credentials are exposed in client-side code.');
-            console.warn('For production use, implement a backend service to handle S3 uploads securely.');
-            console.warn('Current configuration is suitable for testing only.');
-
-            // Add a security notice to the UI
-            const securityNotice = document.createElement('div');
-            securityNotice.className = 'mt-4 p-3 bg-yellow-900 bg-opacity-20 border border-yellow-600 rounded-lg';
-            securityNotice.innerHTML = `
-                <div class="flex items-start">
-                    <i data-feather="alert-triangle" class="h-5 w-5 text-yellow-400 mr-2 mt-0.5"></i>
-                    <div>
-                        <p class="text-sm font-medium text-yellow-400">Security Notice</p>
-                        <p class="text-xs text-yellow-300 mt-1">AWS credentials are exposed in client-side code. For production use, implement a secure backend service.</p>
-                    </div>
-                </div>
-            `;
-            document.querySelector('.bg-gray-800.rounded-xl.shadow-lg.p-6').appendChild(securityNotice);
-            feather.replace();
+            // Add initial demo activity
+            addActivity('System Ready', 'CertiSure demo initialized', 'success');
         });
     </script>
 </body>
