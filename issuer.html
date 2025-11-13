@@ -11,12 +11,10 @@
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <!-- QR Code library -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <!-- PDF.js library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <!-- PDF-lib for PDF manipulation -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <!-- AWS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/aws-sdk@2.1492.0/dist/aws-sdk.min.js"></script>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1492.0.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         body {
@@ -51,6 +49,14 @@
             transform: scale(1.05);
             box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
         }
+        .btn-tertiary {
+            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-tertiary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4);
+        }
         .stat-card {
             background: linear-gradient(135deg, rgba(79, 70, 229, 0.15) 0%, rgba(124, 58, 237, 0.15) 100%);
             border: 1px solid rgba(99, 102, 241, 0.2);
@@ -82,7 +88,6 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(99, 102, 241, 0.2);
         }
-
         .file-info {
             margin-top: 10px;
             padding: 10px;
@@ -105,11 +110,37 @@
             color: #ef4444;
             border: 1px solid #ef4444;
         }
+        .warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid #f59e0b;
+        }
         #pdfPreview {
             max-width: 100%;
             border: 1px solid rgba(99, 102, 241, 0.3);
             border-radius: 8px;
             margin-top: 20px;
+        }
+        .s3-status {
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 0.875rem;
+        }
+        .s3-uploading {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border: 1px solid #3b82f6;
+        }
+        .s3-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+        .s3-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid #ef4444;
         }
     </style>
 </head>
@@ -167,6 +198,12 @@
                     <p class="mt-2 text-lg text-gray-300" data-aos="fade-right" data-aos-delay="100">
                         Add QR code to documents and download certified versions
                     </p>
+                </div>
+                <div class="mt-4 flex md:mt-0 md:ml-4" data-aos="fade-left">
+                    <button id="testS3Btn" class="btn-tertiary px-4 py-2 rounded-lg font-medium text-sm">
+                        <i data-feather="cloud" class="inline h-4 w-4 mr-2"></i>
+                        Test S3 Connection
+                    </button>
                 </div>
             </div>
         </div>
@@ -250,11 +287,19 @@
                                     Download with QR Code
                                 </button>
                             </div>
+                            
+                            <!-- S3 Upload Status -->
+                            <div id="s3Status" class="s3-status hidden mt-4">
+                                <div class="flex items-center">
+                                    <i data-feather="cloud" class="h-4 w-4 mr-2"></i>
+                                    <span id="s3StatusText">Uploading to S3...</span>
+                                </div>
+                            </div>
                         </form>
                     </div>
                 </div>
                 
-                <!-- Right Column - Activity Feed -->
+                <!-- Right Column - Activity Feed & S3 Info -->
                 <div>
                     <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
                         <h2 class="text-xl font-bold text-white mb-6">Recent Activity</h2>
@@ -271,8 +316,31 @@
                         </div>
                     </div>
 
-                    <!-- Instructions Card -->
+                    <!-- S3 Configuration Card -->
                     <div class="bg-gray-800 rounded-xl shadow-lg p-6 mt-6" data-aos="fade-up" data-aos-delay="100">
+                        <h2 class="text-xl font-bold text-white mb-4">S3 Configuration</h2>
+                        <div class="space-y-3 text-sm text-gray-300">
+                            <div class="flex justify-between">
+                                <span>Bucket:</span>
+                                <span class="text-white">certisure</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Region:</span>
+                                <span class="text-white">eu-north-1</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Destination:</span>
+                                <span class="text-white">s3://certisure/docs/</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Status:</span>
+                                <span id="s3ConfigStatus" class="text-yellow-400">Not Tested</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Instructions Card -->
+                    <div class="bg-gray-800 rounded-xl shadow-lg p-6 mt-6" data-aos="fade-up" data-aos-delay="200">
                         <h2 class="text-xl font-bold text-white mb-4">How It Works</h2>
                         <ol class="space-y-3 text-sm text-gray-300">
                             <li class="flex items-start">
@@ -290,6 +358,10 @@
                             <li class="flex items-start">
                                 <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">4</span>
                                 <span>Download your certified document</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="flex-shrink-0 w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs mr-3">5</span>
+                                <span>Copy automatically uploaded to S3</span>
                             </li>
                         </ol>
                     </div>
@@ -347,6 +419,10 @@
             const downloadBtn = document.getElementById('downloadBtn');
             const buttonText = document.getElementById('buttonText');
             const statusMessage = document.getElementById('statusMessage');
+            const s3Status = document.getElementById('s3Status');
+            const s3StatusText = document.getElementById('s3StatusText');
+            const s3ConfigStatus = document.getElementById('s3ConfigStatus');
+            const testS3Btn = document.getElementById('testS3Btn');
             const form = document.getElementById('documentForm');
             const activityFeed = document.getElementById('activityFeed');
 
@@ -360,6 +436,7 @@
             fileInput.addEventListener('change', handleFileSelect);
             form.addEventListener('submit', handleFormSubmit);
             downloadBtn.addEventListener('click', downloadDocument);
+            testS3Btn.addEventListener('click', testS3Connection);
 
             // Initialize drag and drop
             initDragAndDrop();
@@ -377,6 +454,7 @@
                 selectedFile = file;
                 displayFileInfo(file);
                 downloadBtn.classList.add('hidden');
+                s3Status.classList.add('hidden');
             }
 
             function validateFile(file) {
@@ -609,9 +687,20 @@
 
             async function uploadToS3(blob, fileName) {
                 return new Promise((resolve, reject) => {
+                    // Show S3 upload status
+                    s3Status.className = 's3-status s3-uploading';
+                    s3StatusText.textContent = 'Uploading to S3...';
+                    s3Status.classList.remove('hidden');
+                    
                     // Generate S3 key with timestamp to avoid conflicts
                     const timestamp = new Date().getTime();
                     const s3Key = `${AWS_CONFIG.folderPath}${timestamp}_${fileName}`;
+                    
+                    console.log('Uploading to S3:', {
+                        bucket: AWS_CONFIG.bucketName,
+                        key: s3Key,
+                        fileSize: blob.size
+                    });
                     
                     const params = {
                         Bucket: AWS_CONFIG.bucketName,
@@ -630,14 +719,54 @@
                     s3.upload(params, (err, data) => {
                         if (err) {
                             console.error('S3 Upload Error:', err);
+                            s3Status.className = 's3-status s3-error';
+                            s3StatusText.textContent = `S3 Upload Failed: ${err.message}`;
                             reject(err);
                         } else {
-                            console.log('S3 Upload Success:', data.Location);
-                            addActivity('Uploaded to S3', fileName, 'success');
+                            console.log('S3 Upload Success:', data);
+                            s3Status.className = 's3-status s3-success';
+                            s3StatusText.textContent = `Uploaded to S3: ${s3Key}`;
+                            addActivity('Uploaded to S3', s3Key, 'success');
                             resolve(data);
                         }
+                        feather.replace();
                     });
                 });
+            }
+
+            async function testS3Connection() {
+                try {
+                    testS3Btn.disabled = true;
+                    testS3Btn.innerHTML = '<i data-feather="loader" class="inline h-4 w-4 mr-2 animate-spin"></i>Testing...';
+                    feather.replace();
+                    
+                    s3ConfigStatus.textContent = 'Testing...';
+                    s3ConfigStatus.className = 'text-yellow-400';
+                    
+                    const params = {
+                        Bucket: AWS_CONFIG.bucketName,
+                        MaxKeys: 1
+                    };
+                    
+                    const data = await s3.listObjectsV2(params).promise();
+                    console.log('S3 Connection Test Success:', data);
+                    
+                    s3ConfigStatus.textContent = 'Connected';
+                    s3ConfigStatus.className = 'text-green-400';
+                    showStatus('S3 connection test successful!', 'success');
+                    addActivity('S3 Test', 'Connection successful', 'success');
+                    
+                } catch (error) {
+                    console.error('S3 Connection Test Failed:', error);
+                    s3ConfigStatus.textContent = 'Failed';
+                    s3ConfigStatus.className = 'text-red-400';
+                    showStatus('S3 connection test failed: ' + error.message, 'error');
+                    addActivity('S3 Test', 'Connection failed: ' + error.message, 'error');
+                } finally {
+                    testS3Btn.disabled = false;
+                    testS3Btn.innerHTML = '<i data-feather="cloud" class="inline h-4 w-4 mr-2"></i>Test S3 Connection';
+                    feather.replace();
+                }
             }
 
             function updateProgress(percent) {
@@ -658,10 +787,10 @@
 
             function addActivity(title, description, type) {
                 const activity = document.createElement('div');
-                activity.className = `flex items-start ${type === 'error' ? 'text-red-400' : 'text-green-400'}`;
+                activity.className = `flex items-start ${type === 'error' ? 'text-red-400' : type === 'warning' ? 'text-yellow-400' : 'text-green-400'}`;
                 activity.innerHTML = `
                     <div class="flex-shrink-0 mt-1">
-                        <i data-feather="${type === 'error' ? 'alert-circle' : 'check-circle'}" class="h-5 w-5"></i>
+                        <i data-feather="${type === 'error' ? 'alert-circle' : type === 'warning' ? 'alert-triangle' : 'check-circle'}" class="h-5 w-5"></i>
                     </div>
                     <div class="ml-3">
                         <p class="text-sm font-medium">${title}</p>
@@ -684,7 +813,7 @@
                     documentUpload.classList.add('dragover');
                 });
 
-                documentUpload.addEventListener('dragleave', () => {
+                                documentUpload.addEventListener('dragleave', () => {
                     documentUpload.classList.remove('dragover');
                 });
 
@@ -699,6 +828,26 @@
                     }
                 });
             }
+
+            // Security warning for AWS credentials
+            console.warn('⚠️ SECURITY WARNING: AWS credentials are exposed in client-side code.');
+            console.warn('For production use, implement a backend service to handle S3 uploads securely.');
+            console.warn('Current configuration is suitable for testing only.');
+
+            // Add a security notice to the UI
+            const securityNotice = document.createElement('div');
+            securityNotice.className = 'mt-4 p-3 bg-yellow-900 bg-opacity-20 border border-yellow-600 rounded-lg';
+            securityNotice.innerHTML = `
+                <div class="flex items-start">
+                    <i data-feather="alert-triangle" class="h-5 w-5 text-yellow-400 mr-2 mt-0.5"></i>
+                    <div>
+                        <p class="text-sm font-medium text-yellow-400">Security Notice</p>
+                        <p class="text-xs text-yellow-300 mt-1">AWS credentials are exposed in client-side code. For production use, implement a secure backend service.</p>
+                    </div>
+                </div>
+            `;
+            document.querySelector('.bg-gray-800.rounded-xl.shadow-lg.p-6').appendChild(securityNotice);
+            feather.replace();
         });
     </script>
 </body>
