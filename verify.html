@@ -1,272 +1,695 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CertiSure - Verify Document</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet"/>
-  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0; }
-    .upload-box {
-      border: 3px dashed #475569;
-      border-radius: 16px;
-      padding: 40px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      background: rgba(30, 41, 59, 0.4);
-      backdrop-filter: blur(10px);
-    }
-    .upload-box:hover { border-color: #818cf8; background: rgba(129, 140, 248, 0.1); }
-    .upload-box.dragover { border-color: #4f46e5; background: rgba(79, 70, 229, 0.2); }
-    .score-circle {
-      width: 140px; height: 140px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 48px; font-weight: bold; color: white;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    }
-    .trust-high { background: linear-gradient(135deg, #10b981, #059669); }
-    .trust-low { background: linear-gradient(135deg, #ef4444, #dc2626); }
-    .result-hidden { display: none; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Document - CertiSure</title>
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔒</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            color: #e2e8f0;
+        }
+        .verify-bg {
+            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.15) 0%, transparent 40%);
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+            transition: all 0.2s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+        }
+        .trust-score-high {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .trust-score-medium {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        .trust-score-low {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        .verification-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        .scanner-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+        .scanner-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .scanner-frame {
+            width: 250px;
+            height: 250px;
+            border: 3px solid #818cf8;
+            border-radius: 12px;
+            position: relative;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.5);
+        }
+        .scanner-line {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #818cf8;
+            box-shadow: 0 0 10px #818cf8;
+            animation: scan 2s linear infinite;
+        }
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        .result-container {
+            display: none;
+        }
+        .api-response {
+            max-height: 150px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            background-color: #1f2937;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+    </style>
 </head>
 <body class="min-h-screen">
-
-  <!-- Header -->
-  <nav class="fixed top-0 w-full bg-slate-900/90 backdrop-blur z-50 border-b border-slate-800">
-    <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-      <div class="flex items-center gap-3">
-        <i data-feather="shield" class="w-8 h-8 text-indigo-500"></i>
-        <span class="text-2xl font-bold text-white">CertiSure</span>
-      </div>
-      <a href="#" class="text-white bg-indigo-600 hover:bg-indigo-700 px-5 py-2 rounded-lg text-sm font-medium">Verify</a>
-    </div>
-  </nav>
-
-  <!-- Hero -->
-  <section class="pt-32 pb-16 text-center px-6">
-    <h1 class="text-5xl md:text-6xl font-bold mb-6" data-aos="fade-up">
-      Verify Your <span class="text-indigo-400">Academic Document</span>
-    </h1>
-    <p class="text-xl text-slate-400 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
-      Upload your certificate or degree — our AI instantly checks authenticity using QR code and visual analysis.
-    </p>
-  </section>
-
-  <!-- Upload Area -->
-  <section class="max-w-3xl mx-auto px-6 pb-20">
-    <div id="upload-box" class="upload-box" data-aos="fade-up" data-aos-delay="200">
-      <i data-feather="upload-cloud" class="w-20 h-20 text-slate-500 mx-auto mb-6"></i>
-      <h3 class="text-2xl font-semibold mb-3">Drop your document here</h3>
-      <p class="text-slate-400 mb-4">or click to browse</p>
-      <p class="text-sm text-slate-500">Supports PNG, JPG, PDF • Max 10MB</p>
-      <p id="file-name" class="mt-6 text-green-400 font-medium hidden"></p>
-    </div>
-
-    <button id="verify-btn" class="mt-8 w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-xl py-5 rounded-xl opacity-0 pointer-events-none transition-all duration-300 hover:scale-105 shadow-xl">
-      Verify Document
-    </button>
-  </section>
-
-  <!-- Result Section -->
-  <section id="result-section" class="result-hidden max-w-4xl mx-auto px-6 pb-32">
-    <div class="bg-slate-800/80 backdrop-blur-xl rounded-3xl shadow-2xl p-10 border border-slate-700" data-aos="fade-up">
-      <div class="text-center mb-10">
-        <div id="score-circle" class="score-circle trust-high mx-auto">
-          <span id="score-text">92</span>
+    <!-- Navigation -->
+    <nav class="bg-gray-900 bg-opacity-90 backdrop-blur-sm fixed w-full z-40" data-aos="fade-down">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i data-feather="shield" class="text-indigo-500 mr-2"></i>
+                        <span class="text-xl font-bold text-white">CertiSure</span>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <a href="index.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                            <a href="issuer.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Issuer Portal</a>
+                            <a href="verify.html" class="text-white px-3 py-2 rounded-md text-sm font-medium bg-indigo-600">Verify Document</a>
+                            <a href="about.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">About</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <button class="bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-medium">Login</button>
+                </div>
+                <div class="-mr-2 flex md:hidden">
+                    <button class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none">
+                        <i data-feather="menu" class="block h-6 w-6"></i>
+                    </button>
+                </div>
+            </div>
         </div>
-        <h2 id="result-title" class="text-4xl font-bold mt-8">Document Verified Successfully</h2>
-        <p id="result-desc" class="text-xl text-slate-400 mt-4">High trust score confirms authenticity</p>
-      </div>
+    </nav>
 
-      <div class="grid md:grid-cols-2 gap-8">
-        <div class="bg-slate-700/50 rounded-2xl p-6 border border-slate-600">
-          <h3 class="text-xl font-bold mb-4">Verification Details</h3>
-          <div class="space-y-3 text-lg">
-            <div class="flex justify-between"><span class="text-slate-400">QR Code</span><span id="qr-result">Valid CertiSure Link</span></div>
-            <div class="flex justify-between"><span class="text-slate-400">AI Visual Check</span><span id="ai-result">Passed</span></div>
-            <div class="flex justify-between"><span class="text-slate-400">Trust Score</span><span id="final-score" class="font-bold text-2xl">92</span></div>
-          </div>
+    <!-- Hero Section -->
+    <section class="verify-bg pt-24 pb-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h1 class="text-3xl md:text-4xl font-bold" data-aos="fade-up">
+                    Verify Academic <span class="text-indigo-400">Credentials</span>
+                </h1>
+                <p class="mt-4 text-xl text-gray-300 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
+                    Instantly verify the authenticity of academic documents using our AI-powered system
+                </p>
+            </div>
         </div>
+    </section>
 
-        <div class="bg-slate-700/50 rounded-2xl p-6 border border-slate-600">
-          <h3 class="text-xl font-bold mb-4">Document Info</h3>
-          <div class="space-y-3 text-lg">
-            <div><span class="text-slate-400">Name:</span> <span id="name">John Smith</span></div>
-            <div><span class="text-slate-400">Institution:</span> <span id="university">Stanford University</span></div>
-            <div><span class="text-slate-400">Date:</span> <span id="date">June 2023</span></div>
-          </div>
+    <!-- Verification Section -->
+    <section class="py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <!-- QR Scanner -->
+                <div class="bg-gray-800 rounded-2xl shadow-xl p-8" data-aos="fade-right">
+                    <h2 class="text-2xl font-bold text-white mb-6">Scan QR Code</h2>
+                    <p class="text-gray-400 mb-8">
+                        Point your camera at the QR code on the document to verify its authenticity instantly.
+                    </p>
+                    
+                    <div class="scanner-container mb-8">
+                        <video id="preview" class="w-full rounded-lg"></video>
+                        <div class="scanner-overlay">
+                            <div class="scanner-frame">
+                                <div class="scanner-line"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="text-gray-400 mb-4">Or enter document ID manually</p>
+                        <div class="flex">
+                            <input
+                                type="text"
+                                id="manual-doc-id-input"
+                                class="flex-1 bg-gray-700 border border-gray-600 rounded-l-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="Enter document ID"
+                            >
+                            <button
+                                id="manual-id-verify-btn"
+                                class="bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded-r-lg font-medium"
+                            >
+                                Verify
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Manual Upload -->
+                <div class="bg-gray-800 rounded-2xl shadow-xl p-8" data-aos="fade-left">
+                    <h2 class="text-2xl font-bold text-white mb-6">Manual Verification (AI Scoring)</h2>
+                    <p class="text-gray-400 mb-8">
+                        Upload the document. The system generates a deterministic trust score every time.
+                    </p>
+                    
+                    <div class="space-y-6">
+                        <!-- Document Upload -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Document File</label>
+                            <div
+                                id="doc-upload-area"
+                                class="border-2 border-dashed border-gray-600 rounded-xl px-6 py-8 text-center cursor-pointer hover:border-indigo-500 hover:bg-gray-800/60 transition-colors flex flex-col items-center space-y-3"
+                            >
+                                <i data-feather="file-text" class="h-10 w-10 text-gray-400"></i>
+                                <p id="doc-upload-title" class="text-sm font-medium text-gray-200">
+                                    Click here to select a document
+                                </p>
+                                <p id="doc-upload-subtext" class="text-xs text-gray-500">
+                                    Supported: PNG, JPG, PDF · Max 10MB
+                                </p>
+                                <p id="doc-file-name" class="text-xs text-gray-400 italic">
+                                    No file selected
+                                </p>
+                            </div>
+                            <input type="file" id="doc-upload-input" class="hidden" accept=".png,.jpg,.jpeg,.pdf">
+                        </div>
+
+                        <!-- Simulated QR status -->
+                        <div class="flex items-center">
+                            <input
+                                id="has-correct-qr"
+                                type="checkbox"
+                                checked
+                                class="h-4 w-4 rounded border-gray-500 text-indigo-600 focus:ring-indigo-500"
+                            >
+                            <label for="has-correct-qr" class="ml-3 block text-sm text-gray-300">
+                                Treat this document as having a valid CertiSure QR link
+                                <span class="block text-xs text-gray-500">
+                                    (Checked → score between 80–95, unchecked → 1–40)
+                                </span>
+                            </label>
+                        </div>
+                        
+                        <!-- Verify button -->
+                        <button
+                            id="manual-verify-btn"
+                            class="w-full btn-primary text-white py-3 rounded-lg font-medium"
+                        >
+                            Verify Document
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
+    </section>
 
-      <div class="mt-10 text-center">
-        <button onclick="location.reload()" class="bg-slate-700 hover:bg-slate-600 text-white px-10 py-4 rounded-xl font-semibold text-lg transition-all">
-          Verify Another Document
-        </button>
-      </div>
-    </div>
-  </section>
+    <!-- Verification Result -->
+    <section class="py-12 result-container" id="result-section">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-gray-800 rounded-2xl shadow-xl p-8" data-aos="fade-up">
+                <div class="text-center mb-8">
+                    <div
+                        id="trust-score-circle"
+                        class="mx-auto w-24 h-24 rounded-full trust-score-high flex items-center justify-center mb-6"
+                    >
+                        <span id="trust-score-value" class="text-3xl font-bold text-white">96</span>
+                    </div>
+                    <h2 id="verification-status" class="text-3xl font-bold text-white mb-2">
+                        Document Verified Successfully
+                    </h2>
+                    <p id="verification-comment" class="text-xl text-gray-400">
+                        High trust score indicates authentic document.
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <!-- Document Details -->
+                    <div class="verification-card rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-white mb-4">Verification Input</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-sm text-gray-400">File Name / ID</p>
+                                <p id="doc-name" class="text-white break-all">N/A</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">Deterministic Seed (Hash)</p>
+                                <p id="doc-hash" class="text-white text-xs break-all">0</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">Source</p>
+                                <p id="verification-source" class="text-white">Manual File Upload</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">QR Code Status</p>
+                                <p id="qr-status" class="text-white">Assumed valid</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Verification Metrics -->
+                    <div class="verification-card rounded-xl p-6">
+                        <h3 class="text-xl font-bold text-white mb-4">Verification Metrics</h3>
+                        <div class="space-y-5">
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-gray-400">Signature Match (simulated)</span>
+                                    <span id="sig-match-percent" class="font-medium text-white">98%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                                    <div id="sig-match-bar" class="bg-green-500 h-2.5 rounded-full" style="width: 98%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-gray-400">Document Match (simulated)</span>
+                                    <span id="doc-match-percent" class="font-medium text-white">94%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                                    <div id="doc-match-bar" class="bg-green-500 h-2.5 rounded-full" style="width: 94%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="text-gray-400">API Status (OpenRouter)</span>
+                                    <span id="api-status" class="font-medium text-white">Not called</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                                    <div id="api-status-bar" class="bg-gray-500 h-2.5 rounded-full" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400 mb-1">AI Explanation</p>
+                                <div id="api-reasoning" class="api-response">
+                                    AI explanation will appear here after verification (if API key is set).
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+                    <button class="btn-primary text-white px-8 py-4 rounded-lg font-semibold">
+                        Download Verification Report
+                    </button>
+                    <button
+                        id="verify-another-btn"
+                        class="bg-gray-700 text-white px-8 py-4 rounded-lg font-semibold hover:bg-gray-600"
+                    >
+                        Verify Another Document
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
 
-  <script>
-    AOS.init({ duration: 800, once: true });
-    feather.replace();
+    <!-- How It Works -->
+    <section class="py-16 bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12" data-aos="fade-up">
+                <h2 class="text-3xl font-bold">How Document <span class="text-indigo-400">Verification</span> Works</h2>
+                <p class="mt-4 text-xl text-gray-400 max-w-3xl mx-auto">
+                    We combine deterministic scoring with AI-based reasoning to verify document authenticity.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+                    <div class="w-20 h-20 mx-auto rounded-full bg-indigo-900 flex items-center justify-center mb-6">
+                        <span class="text-2xl font-bold text-white">1</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Deterministic Hashing</h3>
+                    <p class="text-gray-400">
+                        Each file or ID is converted into a numeric hash, ensuring the same doc always gets the same score.
+                    </p>
+                </div>
+                <div class="text-center" data-aos="fade-up" data-aos-delay="200">
+                    <div class="w-20 h-20 mx-auto rounded-full bg-indigo-900 flex items-center justify-center mb-6">
+                        <span class="text-2xl font-bold text-white">2</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Trust Score</h3>
+                    <p class="text-gray-400">
+                        Based on the hash and QR status, we generate a trust score (80–95 or 1–40).
+                    </p>
+                </div>
+                <div class="text-center" data-aos="fade-up" data-aos-delay="300">
+                    <div class="w-20 h-20 mx-auto rounded-full bg-indigo-900 flex items-center justify-center mb-6">
+                        <span class="text-2xl font-bold text-white">3</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">OpenRouter AI</h3>
+                    <p class="text-gray-400">
+                        Optionally, an AI model explains the verification result using the OpenRouter GPT API.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-    const OPENROUTER_KEY = "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";
-    const cache = new Map();
+    <!-- Footer -->
+    <footer class="bg-gray-900 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="col-span-1 md:col-span-2">
+                    <div class="flex items-center mb-6">
+                        <i data-feather="shield" class="text-indigo-500 mr-2"></i>
+                        <span class="text-xl font-bold text-white">CertiSure</span>
+                    </div>
+                    <p class="text-gray-400 max-w-md">
+                        Securing academic credentials with AI-powered verification for trust and integrity.
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="index.html" class="text-gray-400 hover:text-white">Home</a></li>
+                        <li><a href="issuer.html" class="text-gray-400 hover:text-white">Issuer Portal</a></li>
+                        <li><a href="verify.html" class="text-gray-400 hover:text-white">Verify Document</a></li>
+                        <li><a href="about.html" class="text-gray-400 hover:text-white">About Us</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-4">Legal</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Terms of Service</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Security</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-10 pt-6 text-center text-gray-500">
+                <p>&copy; 2023 CertiSure. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
 
-    // Deterministic score based on file hash
-    function getScore(hasValidQR, hash) {
-      let seed = 0;
-      for (let i = 0; i < hash.length; i++) seed = (seed * 31 + hash.charCodeAt(i)) | 0;
-      const rand = (seed >>> 0) / 4294967295;
-      return hasValidQR ? Math.floor(80 + rand * 16) : Math.floor(1 + rand * 40);
-    }
+    <script>
+        AOS.init({ duration: 1000, once: true });
+        feather.replace();
 
-    async function hashFile(file) {
-      const buffer = await file.arrayBuffer();
-      return CryptoJS.MD5(CryptoJS.lib.WordArray.create(buffer)).toString();
-    }
+        // =========================
+        //  CONFIG – SET YOUR KEY
+        // =========================
+        const OPENROUTER_API_KEY = "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"; // <-- replace this
+        const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-    async function detectQR(file) {
-      return new Promise(resolve => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width; canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
-          resolve(code ? code.data : null);
-        };
-        img.src = URL.createObjectURL(file);
-      });
-    }
+        // ---------- Helper functions ----------
 
-    async function verifyWithAI(file) {
-      const form = new FormData();
-      form.append("image", file);
-      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${OPENROUTER_KEY}`,
-          "HTTP-Referer": window.location.href,
-          "X-Title": "CertiSure"
-        },
-        body: JSON.stringify({
-          model: "liquid/llava-v1.6-mistral",
-          messages: [{
-            role: "user",
-            content: [
-              { type: "text", text: "Look at this academic document. Extract name, university, date. Is it authentic? Does it have a QR code? Give a trust score 0-100." },
-              { type: "image_url", image_url: { url: URL.createObjectURL(file) } }
-            ]
-          }],
-          max_tokens: 300
-        })
-      });
-      const data = await res.json();
-      return data.choices?.[0]?.message?.content || "No response";
-    }
+        function stringToHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash |= 0; // 32-bit int
+            }
+            return hash;
+        }
 
-    // Upload handling
-    const uploadBox = document.getElementById("upload-box");
-    const verifyBtn = document.getElementById("verify-btn");
-    let currentFile = null;
+        function seededRandom(seed) {
+            const x = Math.sin(seed) * 10000;
+            return x - Math.floor(x);
+        }
 
-    ["dragenter", "dragover", "dragleave", "drop"].forEach(event => {
-      uploadBox.addEventListener(event, e => {
-        e.preventDefault();
-        e.stopPropagation();
-      });
-    });
+        // Score: 80–95 if hasCorrectQr, else 1–40
+        function generateScore(seed, hasCorrectQr) {
+            const r = seededRandom(Math.abs(seed) || 1);
+            if (hasCorrectQr) {
+                return Math.floor(80 + r * 16); // 80..95
+            } else {
+                return Math.floor(1 + r * 40);  // 1..40
+            }
+        }
 
-    ["dragenter", "dragover"].forEach(event => {
-      uploadBox.addEventListener(event, () => uploadBox.classList.add("dragover"));
-    });
+        async function callOpenRouter(score, docIdentifier, hasCorrectQr) {
+            if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY === "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") {
+                return {
+                    status: "Skipped",
+                    reasoning: "No OpenRouter API key configured in the HTML. Skipping external AI call."
+                };
+            }
 
-    ["dragleave", "drop"].forEach(event => {
-      uploadBox.addEventListener(event, () => uploadBox.classList.remove("dragover"));
-    });
+            const prompt = `
+You are verifying an academic certificate.
 
-    uploadBox.addEventListener("drop", e => {
-      const file = e.dataTransfer.files[0];
-      if (file && (file.type.startsWith("image/") || file.type === "application/pdf")) {
-        handleFile(file);
-      }
-    });
+Document identifier: ${docIdentifier}
+Deterministic trust score: ${score}/100
+QR / blockchain link status: ${hasCorrectQr ? "PRESENT and considered valid" : "MISSING or considered invalid"}
 
-    uploadBox.addEventListener("click", () => {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "image/*,application/pdf";
-      input.onchange = e => e.target.files[0] && handleFile(e.target.files[0]);
-      input.click();
-    });
+Explain briefly (2–4 sentences) what this score and status imply about the document's authenticity and what a verifier should do next.
+            `.trim();
 
-    function handleFile(file) {
-      currentFile = file;
-      document.getElementById("file-name").textContent = `Selected: ${file.name}`;
-      document.getElementById("file-name").classList.remove("hidden");
-      verifyBtn.classList.remove("opacity-0", "pointer-events-none");
-      verifyBtn.textContent = "Verify Document";
-    }
+            try {
+                const res = await fetch(OPENROUTER_URL, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Bearer " + OPENROUTER_API_KEY,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "openai/gpt-oss-20b:free",
+                        messages: [{ role: "user", content: prompt }],
+                        temperature: 0.2
+                    })
+                });
 
-    verifyBtn.addEventListener("click", async () => {
-      if (!currentFile) return;
+                if (!res.ok) {
+                    throw new Error("HTTP " + res.status);
+                }
 
-      verifyBtn.textContent = "Analyzing...";
-      verifyBtn.disabled = true;
+                const data = await res.json();
+                const content = data?.choices?.[0]?.message?.content || "No response content.";
+                return { status: "Success", reasoning: content };
+            } catch (err) {
+                console.error("OpenRouter error:", err);
+                return {
+                    status: "Failed",
+                    reasoning: "Error calling OpenRouter API: " + err.message + ". This may be due to CORS or network restrictions in the browser."
+                };
+            }
+        }
 
-      const fileHash = await hashFile(currentFile);
-      if (cache.has(fileHash)) {
-        const { score, hasValidQR } = cache.get(fileHash);
-        showResult(score, hasValidQR, "Same document — result from cache");
-        return;
-      }
+        async function showResults({ score, hasCorrectQr, docIdentifier, sourceLabel, fileName }) {
+            const resultSection = document.getElementById("result-section");
+            const trustCircle = document.getElementById("trust-score-circle");
+            const trustValue = document.getElementById("trust-score-value");
+            const statusEl = document.getElementById("verification-status");
+            const commentEl = document.getElementById("verification-comment");
+            const docNameEl = document.getElementById("doc-name");
+            const docHashEl = document.getElementById("doc-hash");
+            const sourceEl = document.getElementById("verification-source");
+            const qrStatusEl = document.getElementById("qr-status");
+            const sigMatchPercentEl = document.getElementById("sig-match-percent");
+            const sigMatchBarEl = document.getElementById("sig-match-bar");
+            const docMatchPercentEl = document.getElementById("doc-match-percent");
+            const docMatchBarEl = document.getElementById("doc-match-bar");
+            const apiStatusEl = document.getElementById("api-status");
+            const apiStatusBarEl = document.getElementById("api-status-bar");
+            const apiReasoningEl = document.getElementById("api-reasoning");
 
-      let qrData = null;
-      let hasValidQR = false;
+            const hash = stringToHash(docIdentifier);
 
-      try {
-        qrData = await detectQR(currentFile);
-        hasValidQR = qrData?.includes("certisure-nu.vercel.app");
-      } catch (e) { console.log("QR detection failed (PDF or complex image)"); }
+            // Basic info
+            trustValue.textContent = score;
+            docNameEl.textContent = fileName || docIdentifier;
+            docHashEl.textContent = String(hash);
+            sourceEl.textContent = sourceLabel;
+            qrStatusEl.textContent = hasCorrectQr ? "Valid CertiSure link (simulated)" : "No valid CertiSure link (simulated)";
 
-      const score = getScore(hasValidQR, fileHash);
-      cache.set(fileHash, { score, hasValidQR });
+            // Circle color & messages
+            trustCircle.classList.remove("trust-score-high", "trust-score-medium", "trust-score-low");
+            if (score >= 80) {
+                trustCircle.classList.add("trust-score-high");
+                statusEl.textContent = "Document Verified Successfully";
+                commentEl.textContent = "High trust score indicates the document is likely authentic.";
+            } else if (score >= 41) {
+                trustCircle.classList.add("trust-score-medium");
+                statusEl.textContent = "Verification Uncertain";
+                commentEl.textContent = "Medium trust score. Manual inspection recommended.";
+            } else {
+                trustCircle.classList.add("trust-score-low");
+                statusEl.textContent = "Verification Failed";
+                commentEl.textContent = "Low trust score. The document may be altered or fraudulent.";
+            }
 
-      // Optional: Run AI vision (comment out if you want pure QR logic)
-      const aiResponse = await verifyWithAI(currentFile);
-      console.log("AI says:", aiResponse);
+            // Simulated metrics (deterministic)
+            const seed = hash || 1;
+            const sigMatch = Math.max(0, Math.min(100,
+                (hasCorrectQr ? 85 : 10) + Math.floor(seededRandom(seed + 1) * 15)
+            ));
+            const docMatch = Math.max(0, Math.min(100,
+                (hasCorrectQr ? 80 : 5) + Math.floor(seededRandom(seed + 2) * 18)
+            ));
 
-      showResult(score, hasValidQR, hasValidQR ? "Official CertiSure Document" : "No valid QR found");
-    });
+            sigMatchPercentEl.textContent = sigMatch + "%";
+            sigMatchBarEl.style.width = sigMatch + "%";
+            docMatchPercentEl.textContent = docMatch + "%";
+            docMatchBarEl.style.width = docMatch + "%";
 
-    function showResult(score, valid, message) {
-      document.getElementById("result-section").classList.remove("result-hidden");
-      document.getElementById("score-text").textContent = score;
-      document.getElementById("final-score").textContent = score;
-      document.getElementById("score-circle").className = `score-circle mx-auto ${valid ? "trust-high" : "trust-low"}`;
-      document.getElementById("result-title").textContent = valid ? "Verified Successfully" : "Verification Failed";
-      document.getElementById("result-desc").textContent = message;
-      document.getElementById("qr-result").textContent = valid ? "Valid CertiSure QR" : "Invalid or Missing QR";
-      document.getElementById("ai-result").textContent = valid ? "Passed" : "Suspicious";
+            // AI call status
+            apiStatusEl.textContent = "Contacting AI…";
+            apiStatusBarEl.style.width = "40%";
+            apiStatusBarEl.className = "bg-yellow-500 h-2.5 rounded-full";
 
-      // Fake extracted data
-      document.getElementById("name").textContent = valid ? "Sarah Johnson" : "Not Recognized";
-      document.getElementById("university").textContent = valid ? "MIT" : "Unknown";
-      document.getElementById("date").textContent = valid ? "May 2024" : "N/A";
+            // Show section early
+            resultSection.style.display = "block";
+            resultSection.scrollIntoView({ behavior: "smooth", block: "start" });
 
-      window.scrollTo({ top: document.getElementById("result-section").offsetTop - 100, behavior: "smooth" });
-      verifyBtn.textContent = "Verified!";
-    }
-  </script>
+            // Call AI (if key set)
+            const ai = await callOpenRouter(score, docIdentifier, hasCorrectQr);
+            apiStatusEl.textContent = ai.status;
+            apiReasoningEl.textContent = ai.reasoning;
+
+            if (ai.status === "Success") {
+                apiStatusBarEl.style.width = "100%";
+                apiStatusBarEl.className = "bg-green-500 h-2.5 rounded-full";
+            } else if (ai.status === "Skipped") {
+                apiStatusBarEl.style.width = "0%";
+                apiStatusBarEl.className = "bg-gray-500 h-2.5 rounded-full";
+            } else {
+                apiStatusBarEl.style.width = "10%";
+                apiStatusBarEl.className = "bg-red-500 h-2.5 rounded-full";
+            }
+        }
+
+        // ---------- Main wiring ----------
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const fileInput = document.getElementById("doc-upload-input");
+            const uploadArea = document.getElementById("doc-upload-area");
+            const fileNameLabel = document.getElementById("doc-file-name");
+            const hasCorrectQrCheckbox = document.getElementById("has-correct-qr");
+            const manualVerifyBtn = document.getElementById("manual-verify-btn");
+            const manualIdInput = document.getElementById("manual-doc-id-input");
+            const manualIdBtn = document.getElementById("manual-id-verify-btn");
+            const verifyAnotherBtn = document.getElementById("verify-another-btn");
+
+            // Upload box click
+            uploadArea.addEventListener("click", () => fileInput.click());
+
+            // Show selected file name
+            fileInput.addEventListener("change", () => {
+                if (fileInput.files && fileInput.files.length > 0) {
+                    fileNameLabel.textContent = "Selected: " + fileInput.files[0].name;
+                } else {
+                    fileNameLabel.textContent = "No file selected";
+                }
+            });
+
+            // Manual file verification
+            manualVerifyBtn.addEventListener("click", async () => {
+                const file = fileInput.files[0];
+                if (!file) {
+                    alert("Please select a document file first.");
+                    return;
+                }
+                manualVerifyBtn.disabled = true;
+                manualVerifyBtn.textContent = "Verifying…";
+
+                const identifier = `${file.name}-${file.size}-${file.lastModified}`;
+                const hasCorrectQr = hasCorrectQrCheckbox.checked;
+                const seed = stringToHash(identifier);
+                const score = generateScore(seed, hasCorrectQr);
+
+                await showResults({
+                    score,
+                    hasCorrectQr,
+                    docIdentifier: identifier,
+                    sourceLabel: "Manual File Upload",
+                    fileName: file.name
+                });
+
+                manualVerifyBtn.disabled = false;
+                manualVerifyBtn.textContent = "Verify Document";
+            });
+
+            // Manual ID verification
+            manualIdBtn.addEventListener("click", async () => {
+                const id = manualIdInput.value.trim();
+                if (!id) {
+                    alert("Please enter a document ID.");
+                    return;
+                }
+                const hasCorrectQr = true; // treat IDs as valid entries
+                const seed = stringToHash(id);
+                const score = generateScore(seed, hasCorrectQr);
+
+                await showResults({
+                    score,
+                    hasCorrectQr,
+                    docIdentifier: id,
+                    sourceLabel: "Manual ID Lookup",
+                    fileName: null
+                });
+            });
+
+            // Verify another
+            verifyAnotherBtn.addEventListener("click", () => {
+                document.getElementById("result-section").style.display = "none";
+                manualIdInput.value = "";
+                fileInput.value = "";
+                fileNameLabel.textContent = "No file selected";
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+
+            // QR Scanner (optional, best-effort)
+            if (window.Instascan) {
+                try {
+                    const video = document.getElementById("preview");
+                    const scanner = new Instascan.Scanner({ video, mirror: false });
+                    scanner.addListener("scan", async (content) => {
+                        const isOfficial = content.includes("certisure-nu.vercel.app");
+                        const seed = stringToHash(content);
+                        const score = generateScore(seed, isOfficial);
+                        await showResults({
+                            score,
+                            hasCorrectQr: isOfficial,
+                            docIdentifier: content,
+                            sourceLabel: "QR Code Scan",
+                            fileName: null
+                        });
+                    });
+                    Instascan.Camera.getCameras().then(cameras => {
+                        if (cameras.length > 0) {
+                            scanner.start(cameras[cameras.length - 1]);
+                        }
+                    }).catch(err => {
+                        console.warn("Camera error:", err);
+                    });
+                } catch (e) {
+                    console.warn("Instascan error:", e);
+                }
+            }
+        });
+    </script>
 </body>
 </html>
