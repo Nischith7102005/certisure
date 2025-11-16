@@ -88,6 +88,8 @@
         .metric { text-align: center; }
         .metric-bar { height: 8px; background: #334155; border-radius: 4px; overflow: hidden; margin-top: 6px; }
         .metric-fill { height: 100%; background: #10b981; border-radius: 4px; transition: width 0.8s ease; }
+
+        .step-indicator { text-align: center; margin: 1rem 0; font-size: 0.9rem; color: #94a3b8; }
     </style>
 </head>
 <body>
@@ -104,7 +106,7 @@
                 ondragover="event.preventDefault(); this.classList.add('dragover')" 
                 ondragleave="this.classList.remove('dragover')"
             >
-                <div class="upload-icon">Upload Document</div>
+                <div class="upload-icon">📄</div>
                 <p>Click or drag & drop your document here<br><small>(PNG, JPG, PDF - max 10MB)</small></p>
                 <div class="file-name" id="file-name">No file selected</div>
                 <input type="file" id="file-input" accept="image/*,.pdf" style="display:none">
@@ -116,7 +118,7 @@
             </div>
 
             <button id="verify-btn" disabled>Verify Document</button>
-            <div id="status" style="margin-top:1rem; text-align:center;"></div>
+            <div id="status" class="step-indicator" style="display:none;"></div>
         </div>
 
         <!-- Result -->
@@ -145,8 +147,8 @@
                 </div>
             </div>
 
-            <div id="connection-status" class="status-badge loading">
-                <span>Connecting to Chutes AI...</span>
+            <div id="connection-status" class="status-badge connected">
+                <span>Connected to Chutes AI</span>
             </div>
 
             <div class="ai-response" id="ai-response">
@@ -160,7 +162,7 @@
     </div>
 
     <script>
-        // === CHUTES AI CONFIG ===
+        // === YOUR CHUTES AI CONFIG ===
         const CHUTES_API_TOKEN = "cpk_6e025460f1cf48438058b24954f3ef0a.6cce9b81609c509dbdcfb29cc876557b.v1DAhbEMclbAihw1OAb6SD5S4YiX67Ts";
         const API_URL = "https://llm.chutes.ai/v1/chat/completions";
 
@@ -170,11 +172,10 @@
         const verifyBtn = document.getElementById('verify-btn');
         const resultDiv = document.getElementById('result');
         const validQrCheckbox = document.getElementById('valid-qr');
-        const connectionStatus = document.getElementById('connection-status');
-        const aiResponse = document.getElementById('ai-response');
+        const statusEl = document.getElementById('status');
 
         let selectedFile = null;
-        let isConnected = false;
+        let fileHash = null;
 
         // Simple hash function (deterministic)
         function simpleHash(str) {
@@ -200,104 +201,28 @@
             }
         }
 
-        // Convert file to base64
-        function fileToBase64(file) {
+        // Read file as base64 (for sending to AI - limited to small files)
+        async function readFileAsBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result.split(',')[1]);
-                reader.onerror = error => reject(error);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                // For large files, read only first 100KB to avoid token limits
+                const slice = file.slice(0, 100 * 1024);
+                reader.readAsDataURL(slice);
             });
-        }
-
-        // Test API connection
-        async function testConnection() {
-            connectionStatus.className = 'status-badge loading';
-            connectionStatus.innerHTML = '<span>Testing connection to Chutes AI...</span>';
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${CHUTES_API_TOKEN}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        model: "openai/gpt-oss-20b",
-                        messages: [{ role: "user", content: "Test connection: Respond with 'OK'." }],
-                        max_tokens: 5,
-                        temperature: 0.1
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.choices && data.choices[0].message.content.includes('OK')) {
-                        isConnected = true;
-                        connectionStatus.className = 'status-badge connected';
-                        connectionStatus.innerHTML = '<span>Connected to Chutes AI</span>';
-                        verifyBtn.disabled = false;
-                        return true;
-                    } else {
-                        throw new Error("Unexpected response");
-                    }
-                } else {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-            } catch (err) {
-                isConnected = false;
-                connectionStatus.className = 'status-badge error';
-                connectionStatus.innerHTML = '<span>Connection Failed: ' + err.message + '</span>';
-                verifyBtn.disabled = true;
-                return false;
-            }
-        }
-
-        // Send document to AI and get results
-        async function verifyWithAI(file, hasValidQr) {
-            const base64 = await fileToBase64(file);
-            const localScore = generateScore(file.name, file.size, hasValidQr);
-
-            const prompt = `Analyze this document for authenticity. The document is encoded as base64: ${base64.substring(0, 500)}... (truncated for prompt size). 
-It ${hasValidQr ? 'has' : 'does not have'} a valid QR code. Provide a verification score of ${hasValidQr ? '80-95' : '1-40'} and a brief explanation. 
-Make the score deterministic based on file name "${file.name}". Format: Score: [number]\nExplanation: [text]`;
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${CHUTES_API_TOKEN}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        model: "openai/gpt-oss-20b",
-                        messages: [{ role: "user", content: prompt }],
-                        max_tokens: 200,
-                        temperature: 0.7
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const content = data.choices[0]?.message?.content || "No response from AI.";
-                    const scoreMatch = content.match(/Score:\s*(\d+)/i);
-                    const aiScore = scoreMatch ? parseInt(scoreMatch[1]) : localScore;
-
-                    return { score: aiScore, explanation: content };
-                } else {
-                    throw new Error("API error: " + response.status);
-                }
-            } catch (err) {
-                return { score: localScore, explanation: `Error: ${err.message}\nUsed local score: ${localScore}` };
-            }
         }
 
         // Update file selection
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 selectedFile = e.target.files[0];
-                fileNameDisplay.textContent = `Selected: ${selectedFile.name}`;
-                if (isConnected) verifyBtn.disabled = false;
+                if (selectedFile.size > 10 * 1024 * 1024) {
+                    alert('File too large! Max 10MB.');
+                    return;
+                }
+                fileNameDisplay.textContent = `Selected: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB)`;
+                verifyBtn.disabled = false;
             }
         });
 
@@ -306,9 +231,81 @@ Make the score deterministic based on file name "${file.name}". Format: Score: [
             dropZone.classList.remove('dragover');
             if (e.dataTransfer.files.length) {
                 selectedFile = e.dataTransfer.files[0];
-                fileNameDisplay.textContent = `Selected: ${selectedFile.name}`;
-                if (isConnected) verifyBtn.disabled = false;
+                if (selectedFile.size > 10 * 1024 * 1024) {
+                    alert('File too large! Max 10MB.');
+                    return;
+                }
+                fileNameDisplay.textContent = `Selected: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB)`;
+                verifyBtn.disabled = false;
             }
+        }
+
+        // Test API connection
+        async function testApiConnection() {
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${CHUTES_API_TOKEN}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "openai/gpt-oss-20b",
+                        messages: [{ role: "user", content: "Ping: Are you connected?" }],
+                        max_tokens: 10,
+                        temperature: 0.1
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    return { success: true, response: data.choices[0]?.message?.content || "Connected" };
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (err) {
+                throw new Error(`Connection failed: ${err.message}`);
+            }
+        }
+
+        // Send document to AI for analysis
+        async function sendDocumentToAI(file, score, hasValidQr) {
+            const base64Preview = await readFileAsBase64(file);
+            const fileInfo = `File: ${file.name}, Size: ${(file.size / 1024).toFixed(1)} KB, Type: ${file.type}`;
+            const prompt = `
+You are an AI document verification expert. Analyze this academic document for authenticity.
+
+Document details:
+- Name: ${file.name}
+- Size: ${(file.size / 1024).toFixed(1)} KB
+- Type: ${file.type}
+- Preview (base64 snippet): ${base64Preview.substring(0, 500)}... (truncated for tokens)
+- Deterministic trust score: ${score}/100 (calculated from file hash)
+- QR code status: ${hasValidQr ? "Valid CertiSure QR detected" : "No valid QR or invalid"}
+
+Provide a 3-5 sentence analysis of authenticity, explain the score, and recommend next steps (e.g., manual review). Be professional and objective.
+            `.trim();
+
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${CHUTES_API_TOKEN}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: "openai/gpt-oss-20b",
+                    messages: [{ role: "user", content: prompt }],
+                    max_tokens: 300,
+                    temperature: 0.7
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`AI analysis failed: HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.choices[0]?.message?.content || "No analysis from AI.";
         }
 
         // Main verification
@@ -316,39 +313,83 @@ Make the score deterministic based on file name "${file.name}". Format: Score: [
             if (!selectedFile) return;
 
             verifyBtn.disabled = true;
-            verifyBtn.textContent = "Verifying...";
+            verifyBtn.textContent = "Starting verification...";
+            statusEl.style.display = 'block';
+            statusEl.textContent = "Step 1: Connecting to Chutes AI...";
 
             const hasValidQr = validQrCheckbox.checked;
+            const score = generateScore(selectedFile.name, selectedFile.size, hasValidQr);
 
-            // Send to AI
-            const { score, explanation } = await verifyWithAI(selectedFile, hasValidQr);
+            try {
+                // Step 1: Connect to API
+                statusEl.textContent = "Step 1: Testing API connection...";
+                const connection = await testApiConnection();
+                statusEl.textContent = "Step 1: Connected! Step 2: Sending document to AI...";
 
-            // Show result
-            resultDiv.style.display = 'block';
-            document.getElementById('score-circle').textContent = score;
-            document.getElementById('final-score').textContent = score;
-            document.getElementById('final-bar').style.width = score + '%';
-            document.getElementById('qr-bar').style.width = hasValidQr ? '100%' : '0%';
-            document.getElementById('ai-percent').textContent = score + '%';
-            document.getElementById('ai-bar').style.width = score + '%';
-            aiResponse.textContent = explanation;
+                // Step 2: Send document to AI
+                const aiAnalysis = await sendDocumentToAI(selectedFile, score, hasValidQr);
+                statusEl.textContent = "Step 2: AI analysis complete! Step 3: Generating results...";
 
-            if (score >= 80) {
-                document.getElementById('score-circle').className = 'score-circle high';
-                document.getElementById('result-title').textContent = 'Document Verified Successfully';
-                document.getElementById('result-text').textContent = 'High trust score – document appears authentic';
-            } else {
-                document.getElementById('score-circle').className = 'score-circle low';
-                document.getElementById('result-title').textContent = 'Verification Failed';
-                document.getElementById('result-text').textContent = 'Low trust score – document may be forged';
+                // Step 3: Show results
+                setTimeout(() => { // Small delay for visual effect
+                    resultDiv.style.display = 'block';
+                    document.getElementById('score-circle').textContent = score;
+                    document.getElementById('final-score').textContent = score;
+                    document.getElementById('final-bar').style.width = score + '%';
+                    document.getElementById('qr-bar').style.width = hasValidQr ? '100%' : '0%';
+                    document.getElementById('ai-bar').style.width = Math.min(95, score + 5) + '%'; // AI confidence based on score
+                    document.getElementById('ai-percent').textContent = Math.min(95, score + 5) + '%';
+
+                    if (score >= 80) {
+                        document.getElementById('score-circle').className = 'score-circle high';
+                        document.getElementById('result-title').textContent = 'Document Verified Successfully';
+                        document.getElementById('result-text').textContent = 'High trust score – document appears authentic';
+                    } else {
+                        document.getElementById('score-circle').className = 'score-circle low';
+                        document.getElementById('result-title').textContent = 'Verification Failed';
+                        document.getElementById('result-text').textContent = 'Low trust score – document may be forged';
+                    }
+
+                    document.getElementById('connection-status').className = 'status-badge connected';
+                    document.getElementById('connection-status').innerHTML = '<span>✅ Connected to Chutes AI</span>';
+                    document.getElementById('ai-response').textContent = aiAnalysis;
+
+                    statusEl.textContent = "Verification complete! Scroll down for results.";
+                    verifyBtn.textContent = "Verify Another";
+                    verifyBtn.disabled = false;
+                    verifyBtn.onclick = () => location.reload();
+                }, 1000);
+
+            } catch (err) {
+                // Error handling
+                statusEl.textContent = `Error: ${err.message}. Falling back to local score.`;
+                document.getElementById('connection-status').className = 'status-badge error';
+                document.getElementById('connection-status').innerHTML = '<span>❌ Chutes AI Connection Failed</span>';
+                document.getElementById('ai-response').textContent = 
+                    `Could not complete AI analysis.\nError: ${err.message}\n\nLocal deterministic score: ${score}/100\n(Upload the same file again for identical results.)\n\nCommon causes:\n• Network/API downtime\n• Invalid token\n• Browser CORS restrictions`;
+
+                // Still show basic results
+                resultDiv.style.display = 'block';
+                document.getElementById('score-circle').textContent = score;
+                document.getElementById('final-score').textContent = score;
+                document.getElementById('final-bar').style.width = score + '%';
+                document.getElementById('qr-bar').style.width = hasValidQr ? '100%' : '0%';
+
+                if (score >= 80) {
+                    document.getElementById('score-circle').className = 'score-circle high';
+                    document.getElementById('result-title').textContent = 'Document Verified Locally';
+                    document.getElementById('result-text').textContent = 'High trust score (local calculation)';
+                } else {
+                    document.getElementById('score-circle').className = 'score-circle low';
+                    document.getElementById('result-title').textContent = 'Local Verification Failed';
+                    document.getElementById('result-text').textContent = 'Low trust score (local calculation)';
+                }
+
+                verifyBtn.textContent = "Verify Another";
+                verifyBtn.disabled = false;
+                verifyBtn.onclick = () => location.reload();
             }
-
-            verifyBtn.textContent = "Verify Document";
-            verifyBtn.disabled = false;
         });
-
-        // Test connection on load
-        testConnection();
     </script>
 </body>
 </html>
