@@ -45,6 +45,30 @@
         .upload-box:hover { border-color: #818cf8; background: rgba(129, 140, 248, 0.1); }
         .upload-box.dragover { border-color: #818cf8; background: rgba(129, 140, 248, 0.15); }
 
+        /* New Preview Styles */
+        .file-preview-container {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #0f172a;
+            border-radius: 12px;
+            text-align: center;
+            display: none;
+            border: 1px solid #334155;
+        }
+        .file-preview-container canvas, .file-preview-container img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #475569;
+        }
+        .preview-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
         button {
             width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: 600;
             background: linear-gradient(90deg, #4f46e5, #7c3aed);
@@ -98,6 +122,12 @@
                 <input type="file" id="file-input" accept=".pdf,image/*" style="display:none">
             </div>
 
+            <!-- Preview Section -->
+            <div id="preview-container" class="file-preview-container">
+                <span class="preview-label">File Preview (Page 1)</span>
+                <div id="preview-content"></div>
+            </div>
+
             <button id="verify-btn" disabled>Start AI Verification</button>
         </div>
 
@@ -136,6 +166,8 @@
         const scoreCircle = document.getElementById('score-circle');
         const verdict = document.getElementById('verdict');
         const statusBadge = document.getElementById('connection-status');
+        const previewContainer = document.getElementById('preview-container');
+        const previewContent = document.getElementById('preview-content');
 
         let selectedFile = null;
 
@@ -150,21 +182,62 @@
             logDiv.scrollTop = logDiv.scrollHeight;
         }
 
-        fileInput.addEventListener('change', (e) => {
+        // Render Preview Function
+        async function renderPreview(file) {
+            previewContainer.style.display = 'block';
+            previewContent.innerHTML = '<p style="color:#94a3b8">Loading preview...</p>';
+            
+            if (file.type === 'application/pdf') {
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    const page = await pdf.getPage(1);
+                    
+                    const scale = 1.5;
+                    const viewport = page.getViewport({ scale });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    
+                    await page.render({ canvasContext: context, viewport }).promise;
+                    
+                    previewContent.innerHTML = '';
+                    previewContent.appendChild(canvas);
+                } catch (err) {
+                    previewContent.innerHTML = '<p style="color:#f87171">Error loading PDF preview</p>';
+                    console.error(err);
+                }
+            } else if (file.type.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                previewContent.innerHTML = '';
+                previewContent.appendChild(img);
+            } else {
+                previewContent.innerHTML = '<p style="color:#94a3b8">No preview available for this file type</p>';
+            }
+        }
+
+        fileInput.addEventListener('change', async (e) => {
             if (e.target.files[0]) {
                 selectedFile = e.target.files[0];
                 verifyBtn.disabled = false;
+                // Show preview
+                await renderPreview(selectedFile);
+                
+                // Reset logs/results if already shown
+                resultDiv.style.display = 'none';
                 log(`File loaded: ${selectedFile.name} (${(selectedFile.size/1024/1024).toFixed(2)} MB)`, "info");
             }
         });
 
-        // Process PDF or Image
+        // Process PDF or Image (Verification logic)
         async function processDocument(file) {
             const isPDF = file.type === 'application/pdf';
             let pagesData = [];
 
             if (isPDF) {
-                log("Loading PDF with pdf.js...", "info");
+                log("Loading PDF for analysis...", "info");
                 const arrayBuffer = await file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                 log(`PDF has ${pdf.numPages} page(s). Scanning each page...`, "info");
@@ -193,6 +266,7 @@
                 }
             } else {
                 // Handle image
+                log("Loading image for analysis...", "info");
                 const img = new Image();
                 img.src = URL.createObjectURL(file);
                 await new Promise(r => img.onload = r);
@@ -225,7 +299,7 @@
             scoreCircle.textContent = "...";
             verdict.textContent = "Processing document...";
             statusBadge.className = 'status-badge loading';
-            statusBadge.innerHTML = '<span>Analyzing PDF pages...</span>';
+            statusBadge.innerHTML = '<span>Analyzing content...</span>';
 
             try {
                 const pagesData = await processDocument(selectedFile);
