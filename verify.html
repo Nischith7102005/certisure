@@ -57,7 +57,7 @@
             cursor: pointer; margin-top: 1rem;
             transition: all 0.2s;
         }
-        button:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4); }
+        button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4); }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .result {
@@ -145,8 +145,8 @@
                 </div>
             </div>
 
-            <div id="connection-status" class="status-badge connected">
-                <span>Connected to Chutes AI</span>
+            <div id="connection-status" class="status-badge loading">
+                <span>Connecting to Chutes AI...</span>
             </div>
 
             <div class="ai-response" id="ai-response">
@@ -160,7 +160,7 @@
     </div>
 
     <script>
-        // === YOUR CHUTES AI CONFIG ===
+        // === CHUTES AI CONFIG ===
         const CHUTES_API_TOKEN = "cpk_6e025460f1cf48438058b24954f3ef0a.6cce9b81609c509dbdcfb29cc876557b.v1DAhbEMclbAihw1OAb6SD5S4YiX67Ts";
         const API_URL = "https://llm.chutes.ai/v1/chat/completions";
 
@@ -170,9 +170,11 @@
         const verifyBtn = document.getElementById('verify-btn');
         const resultDiv = document.getElementById('result');
         const validQrCheckbox = document.getElementById('valid-qr');
+        const connectionStatus = document.getElementById('connection-status');
+        const aiResponse = document.getElementById('ai-response');
 
         let selectedFile = null;
-        let fileHash = null;
+        let isConnected = false;
 
         // Simple hash function (deterministic)
         function simpleHash(str) {
@@ -198,12 +200,104 @@
             }
         }
 
+        // Convert file to base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Test API connection
+        async function testConnection() {
+            connectionStatus.className = 'status-badge loading';
+            connectionStatus.innerHTML = '<span>Testing connection to Chutes AI...</span>';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${CHUTES_API_TOKEN}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "openai/gpt-oss-20b",
+                        messages: [{ role: "user", content: "Test connection: Respond with 'OK'." }],
+                        max_tokens: 5,
+                        temperature: 0.1
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.choices && data.choices[0].message.content.includes('OK')) {
+                        isConnected = true;
+                        connectionStatus.className = 'status-badge connected';
+                        connectionStatus.innerHTML = '<span>Connected to Chutes AI</span>';
+                        verifyBtn.disabled = false;
+                        return true;
+                    } else {
+                        throw new Error("Unexpected response");
+                    }
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (err) {
+                isConnected = false;
+                connectionStatus.className = 'status-badge error';
+                connectionStatus.innerHTML = '<span>Connection Failed: ' + err.message + '</span>';
+                verifyBtn.disabled = true;
+                return false;
+            }
+        }
+
+        // Send document to AI and get results
+        async function verifyWithAI(file, hasValidQr) {
+            const base64 = await fileToBase64(file);
+            const localScore = generateScore(file.name, file.size, hasValidQr);
+
+            const prompt = `Analyze this document for authenticity. The document is encoded as base64: ${base64.substring(0, 500)}... (truncated for prompt size). 
+It ${hasValidQr ? 'has' : 'does not have'} a valid QR code. Provide a verification score of ${hasValidQr ? '80-95' : '1-40'} and a brief explanation. 
+Make the score deterministic based on file name "${file.name}". Format: Score: [number]\nExplanation: [text]`;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${CHUTES_API_TOKEN}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "openai/gpt-oss-20b",
+                        messages: [{ role: "user", content: prompt }],
+                        max_tokens: 200,
+                        temperature: 0.7
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const content = data.choices[0]?.message?.content || "No response from AI.";
+                    const scoreMatch = content.match(/Score:\s*(\d+)/i);
+                    const aiScore = scoreMatch ? parseInt(scoreMatch[1]) : localScore;
+
+                    return { score: aiScore, explanation: content };
+                } else {
+                    throw new Error("API error: " + response.status);
+                }
+            } catch (err) {
+                return { score: localScore, explanation: `Error: ${err.message}\nUsed local score: ${localScore}` };
+            }
+        }
+
         // Update file selection
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 selectedFile = e.target.files[0];
                 fileNameDisplay.textContent = `Selected: ${selectedFile.name}`;
-                verifyBtn.disabled = false;
+                if (isConnected) verifyBtn.disabled = false;
             }
         });
 
@@ -213,7 +307,7 @@
             if (e.dataTransfer.files.length) {
                 selectedFile = e.dataTransfer.files[0];
                 fileNameDisplay.textContent = `Selected: ${selectedFile.name}`;
-                verifyBtn.disabled = false;
+                if (isConnected) verifyBtn.disabled = false;
             }
         }
 
@@ -225,7 +319,9 @@
             verifyBtn.textContent = "Verifying...";
 
             const hasValidQr = validQrCheckbox.checked;
-            const score = generateScore(selectedFile.name, selectedFile.size, hasValidQr);
+
+            // Send to AI
+            const { score, explanation } = await verifyWithAI(selectedFile, hasValidQr);
 
             // Show result
             resultDiv.style.display = 'block';
@@ -233,6 +329,9 @@
             document.getElementById('final-score').textContent = score;
             document.getElementById('final-bar').style.width = score + '%';
             document.getElementById('qr-bar').style.width = hasValidQr ? '100%' : '0%';
+            document.getElementById('ai-percent').textContent = score + '%';
+            document.getElementById('ai-bar').style.width = score + '%';
+            aiResponse.textContent = explanation;
 
             if (score >= 80) {
                 document.getElementById('score-circle').className = 'score-circle high';
@@ -244,51 +343,12 @@
                 document.getElementById('result-text').textContent = 'Low trust score – document may be forged';
             }
 
-            // Call Chutes AI
-            document.getElementById('connection-status').className = 'status-badge loading';
-            document.getElementById('connection-status').innerHTML = '<span>Connecting to Chutes AI...</span>';
-            document.getElementById('ai-response').textContent = "Sending request to AI...";
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${CHUTES_API_TOKEN}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        model: "openai/gpt-oss-20b",
-                        messages: [{
-                            role: "user",
-                            content: `A document was verified with trust score ${score}/100. QR code valid: ${hasValidQr ? "Yes" : "No"}. 
-                                    Explain what this means in simple terms (2-3 sentences).`
-                        }],
-                        max_tokens: 200,
-                        temperature: 0.7
-                    })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const aiText = data.choices[0]?.message?.content || "No response from AI.";
-
-                    document.getElementById('connection-status').className = 'status-badge connected';
-                    document.getElementById('connection-status').innerHTML = '<span>Connected to Chutes AI</span>';
-                    document.getElementById('ai-response').textContent = aiText.trim();
-                } else {
-                    throw new Error("API error: " + response.status);
-                }
-            } catch (err) {
-                document.getElementById('connection-status').className = 'status-badge error';
-                document.getElementById('connection-status').innerHTML = '<span>Chutes AI Connection Failed</span>';
-                document.getElementById('ai-response').textContent = 
-                    `Could not reach Chutes AI.\nError: ${err.message}\n\nThis can happen due to:\n• Network issues\n• API temporarily down\n• CORS restrictions in browser\n\nScore ${score}/100 is still valid and deterministic.`;
-            }
-
-            verifyBtn.textContent = "Verify Another";
+            verifyBtn.textContent = "Verify Document";
             verifyBtn.disabled = false;
-            verifyBtn.onclick = () => location.reload();
         });
+
+        // Test connection on load
+        testConnection();
     </script>
 </body>
 </html>
