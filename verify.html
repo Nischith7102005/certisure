@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CertiSure - DSU AI Verification</title>
-    <!-- QR Code Detection -->
+    <title>CertiSure - DSU PDF Verification</title>
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- QR Detection -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    <!-- Text OCR -->
+    <!-- OCR -->
     <script src="https://unpkg.com/tesseract.js@v4.0.2/dist/tesseract.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -18,10 +20,10 @@
             min-height: 100vh;
             padding: 2rem 1rem;
         }
-        .container { max-width: 900px; margin: 0 auto; }
-        h1 { font-size: 2.3rem; text-align: center; margin-bottom: 0.5rem; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { font-size: 2.4rem; text-align: center; margin-bottom: 0.5rem; }
         h1 span { color: #818cf8; }
-        p.subtitle { text-align: center; color: #94a3b8; margin-bottom: 2rem; font-size: 1.1rem; }
+        p.subtitle { text-align: center; color: #94a3b8; margin-bottom: 2.5rem; font-size: 1.1rem; }
 
         .card {
             background: #1e293b;
@@ -34,7 +36,7 @@
         .upload-box {
             border: 3px dashed #475569;
             border-radius: 16px;
-            padding: 2.5rem;
+            padding: 3rem 2rem;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -42,9 +44,6 @@
         }
         .upload-box:hover { border-color: #818cf8; background: rgba(129, 140, 248, 0.1); }
         .upload-box.dragover { border-color: #818cf8; background: rgba(129, 140, 248, 0.15); }
-
-        .file-preview { margin-top: 1.5rem; max-height: 250px; overflow: hidden; border-radius: 12px; display: none; }
-        .file-preview img { width: 100%; border-radius: 12px; }
 
         button {
             width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: 600;
@@ -56,9 +55,7 @@
         button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4); }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        .result { display: none; margin-top: 2rem; animation: fadeIn 0.6s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
+        .result { display: none; margin-top: 2rem; }
         .score-circle {
             width: 160px; height: 160px; border-radius: 50%; margin: 0 auto 1.5rem;
             display: flex; align-items: center; justify-content: center;
@@ -80,7 +77,7 @@
         .log-box {
             background: #0f172a; padding: 1.2rem; border-radius: 12px; margin-top: 1rem;
             font-family: 'Courier New', monospace; font-size: 0.9rem; color: #94a3b8;
-            max-height: 280px; overflow-y: auto; border-left: 4px solid #6366f1;
+            max-height: 300px; overflow-y: auto; border-left: 4px solid #6366f1;
         }
         .log-entry { margin: 6px 0; }
         .log-success { color: #4ade80; }
@@ -90,38 +87,33 @@
 </head>
 <body>
     <div class="container">
-        <h1>CertiSure - <span>Dayananda Sagar University</span></h1>
-        <p class="subtitle">AI-powered verification with real QR & text analysis</p>
+        <h1>CertiSure - <span>DSU PDF Verification</span></h1>
+        <p class="subtitle">Upload your certificate (PDF or Image) - AI scans every page for QR code and Dayananda Sagar University</p>
 
         <div class="card">
             <div class="upload-box" id="drop-zone" onclick="document.getElementById('file-input').click()">
-                <div style="font-size: 3rem; margin-bottom:12px;">Certificate</div>
-                <p>Upload certificate image</p>
-                <small style="color:#64748b">JPG, PNG • Max 8MB</small>
-                <input type="file" id="file-input" accept="image/*" style="display:none">
-            </div>
-
-            <div class="file-preview" id="preview">
-                <img id="preview-img" src="" alt="Certificate Preview">
+                <div style="font-size: 3rem; margin-bottom:12px;">PDF</div>
+                <p>Click or drop your certificate here</p>
+                <small style="color:#64748b">PDF, PNG, JPG • Max 10MB</small>
+                <input type="file" id="file-input" accept=".pdf,image/*" style="display:none">
             </div>
 
             <button id="verify-btn" disabled>Start AI Verification</button>
         </div>
 
-        <!-- Result -->
         <div class="result" id="result">
             <div class="card">
                 <div style="text-align:center;">
                     <div id="score-circle" class="score-circle green">0</div>
-                    <h2 id="verdict">Analyzing Certificate...</h2>
+                    <h2 id="verdict">Processing PDF...</h2>
                 </div>
 
                 <div id="connection-status" class="status-badge loading">
-                    <span>Connecting to AI...</span>
+                    <span>Initializing...</span>
                 </div>
 
                 <div class="log-box" id="log">
-                    <div class="log-entry">Ready. Upload an image to begin.</div>
+                    <div class="log-entry">Upload a PDF or image to begin verification.</div>
                 </div>
 
                 <button onclick="location.reload()" style="margin-top:1.5rem; background:#475569;">
@@ -132,13 +124,12 @@
     </div>
 
     <script>
-        // YOUR CHUTES AI
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
         const API_TOKEN = "cpk_6e025460f1cf48438058b24954f3ef0a.6cce9b81609c509dbdcfb29cc876557b.v1DAhbEMclbAihw1OAb6SD5S4YiX67Ts";
         const API_URL = "https://llm.chutes.ai/v1/chat/completions";
 
         const fileInput = document.getElementById('file-input');
-        const preview = document.getElementById('preview');
-        const previewImg = document.getElementById('preview-img');
         const verifyBtn = document.getElementById('verify-btn');
         const resultDiv = document.getElementById('result');
         const logDiv = document.getElementById('log');
@@ -162,32 +153,48 @@
         fileInput.addEventListener('change', (e) => {
             if (e.target.files[0]) {
                 selectedFile = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    previewImg.src = ev.target.result;
-                    preview.style.display = 'block';
-                };
-                reader.readAsDataURL(selectedFile);
                 verifyBtn.disabled = false;
-                log("Image loaded. Ready for verification.", "info");
+                log(`File loaded: ${selectedFile.name} (${(selectedFile.size/1024/1024).toFixed(2)} MB)`, "info");
             }
         });
 
-        verifyBtn.addEventListener('click', async () => {
-            if (!selectedFile) return;
+        // Process PDF or Image
+        async function processDocument(file) {
+            const isPDF = file.type === 'application/pdf';
+            let pagesData = [];
 
-            verifyBtn.disabled = true;
-            resultDiv.style.display = 'block';
-            logDiv.innerHTML = '';
-            scoreCircle.textContent = "...";
-            verdict.textContent = "Processing...";
-            statusBadge.className = 'status-badge loading';
-            statusBadge.innerHTML = '<span>Step 1: Detecting QR Code...</span>';
+            if (isPDF) {
+                log("Loading PDF with pdf.js...", "info");
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                log(`PDF has ${pdf.numPages} page(s). Scanning each page...`, "info");
 
-            try {
-                // Step 1: Load image into canvas for QR detection
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 2.0 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    await page.render({ canvasContext: context, viewport }).promise;
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+                    // QR Detection
+                    const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+                    const hasQR = !!qrCode;
+
+                    // OCR
+                    const { data: { text } } = await Tesseract.recognize(canvas.toDataURL(), 'eng');
+
+                    pagesData.push({ page: i, hasQR, text: text.substring(0, 1500) });
+
+                    log(`Page ${i}: QR=${hasQR ? 'YES' : 'NO'}, Text length=${text.length}`, hasQR ? "success" : "normal");
+                }
+            } else {
+                // Handle image
                 const img = new Image();
-                img.src = previewImg.src;
+                img.src = URL.createObjectURL(file);
                 await new Promise(r => img.onload = r);
 
                 const canvas = document.createElement('canvas');
@@ -197,39 +204,59 @@
                 ctx.drawImage(img, 0, 0);
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-                // Step 2: Detect QR Code
                 const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
                 const hasQR = !!qrCode;
-                log(hasQR ? "QR Code found!" : "No QR Code detected.", hasQR ? "success" : "normal");
 
-                // Step 3: Extract text using OCR
-                statusBadge.innerHTML = '<span>Step 2: Reading text from image...</span>';
-                log("Running OCR (this may take 5–15 seconds)...", "info");
-                const { data: { text } } = await Tesseract.recognize(selectedFile, 'eng');
-                log("Text extraction complete.", "success");
+                const { data: { text } } = await Tesseract.recognize(file, 'eng');
 
-                // Step 4: Send everything to AI
-                statusBadge.innerHTML = '<span>Step 3: Asking AI to verify...</span>';
-                log("Sending QR status + extracted text to AI...", "info");
+                pagesData.push({ page: 1, hasQR, text: text.substring(0, 2000) });
+                log(`Image: QR=${hasQR ? 'YES' : 'NO'}, Text length=${text.length}`, hasQR ? "success" : "normal");
+            }
+
+            return pagesData;
+        }
+
+        verifyBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            verifyBtn.disabled = true;
+            resultDiv.style.display = 'block';
+            logDiv.innerHTML = '';
+            scoreCircle.textContent = "...";
+            verdict.textContent = "Processing document...";
+            statusBadge.className = 'status-badge loading';
+            statusBadge.innerHTML = '<span>Analyzing PDF pages...</span>';
+
+            try {
+                const pagesData = await processDocument(selectedFile);
+
+                // Check for QR and DSU name
+                const hasQR = pagesData.some(p => p.hasQR);
+                const allText = pagesData.map(p => p.text).join("\n");
+                const hasDSU = /dayananda\s+sagar\s+university|dsu/i.test(allText);
+
+                statusBadge.innerHTML = '<span>Sending to AI for final scoring...</span>';
+                log("Sending document analysis to Chutes AI...", "info");
 
                 const prompt = `
-You are an official verifier for Dayananda Sagar University certificates.
+You are verifying a Dayananda Sagar University certificate (PDF/Image).
 
-Document Analysis:
-- QR Code Present: ${hasQR ? "YES" : "NO"}
-- Extracted Text (first 1000 chars): "${text.substring(0, 1000)}${text.length > 1000 ? '...' : ''}"
+Analysis from scanner:
+- QR Code found on any page: ${hasQR ? "YES" : "NO"}
+- "Dayananda Sagar University" mentioned: ${hasDSU ? "YES" : "NO"}
+- Total pages scanned: ${pagesData.length}
+- Sample text: "${allText.substring(0, 800)}..."
 
-Task:
-1. Check if the text contains "Dayananda Sagar University" or "DSU" in official context.
-2. If QR is present AND university name is clearly mentioned → Score: 75–99 (genuine)
-3. If only one is present → Score: 40–74 (suspicious)
-4. If neither → Score: 1–39 (fake)
+Scoring Rules:
+- If QR present AND university name found → Score 75–99 (GENUINE)
+- If only one present → Score 40–74 (SUSPICIOUS)
+- If neither → Score 1–39 (FAKE)
 
-Respond exactly in this format:
+Respond exactly:
 SCORE: XX
 STATUS: GENUINE / SUSPICIOUS / FAKE
-REASON: [short explanation in 1-2 sentences]
-                `.trim();
+REASON: [1-2 sentences]
+                `;
 
                 const response = await fetch(API_URL, {
                     method: "POST",
@@ -245,23 +272,15 @@ REASON: [short explanation in 1-2 sentences]
                     })
                 });
 
-                if (!response.ok) throw new Error("AI unreachable");
+                if (!response.ok) throw new Error("AI failed");
 
                 const data = await response.json();
-                const aiResponse = data.choices[0]?.message?.content || "No response";
+                const aiResponse = data.choices[0]?.message?.content || "";
 
-                // Parse AI result
                 const scoreMatch = aiResponse.match(/SCORE:\s*(\d+)/i);
                 const statusMatch = aiResponse.match(/STATUS:\s*(GENUINE|SUSPICIOUS|FAKE)/i);
-                const reasonMatch = aiResponse.match(/REASON:\s*(.+)/i);
-
                 const score = scoreMatch ? parseInt(scoreMatch[1]) : 50;
                 const status = statusMatch ? statusMatch[1].toUpperCase() : "UNKNOWN";
-                const reason = reasonMatch ? reasonMatch[1] : "No reason provided";
-
-                // Final UI Update
-                statusBadge.className = 'status-badge connected';
-                statusBadge.innerHTML = '<span>AI Verification Complete</span>';
 
                 // Animate score
                 let current = 0;
@@ -274,7 +293,10 @@ REASON: [short explanation in 1-2 sentences]
                     scoreCircle.textContent = current;
                 }, 30);
 
-                // Set colors
+                // Final UI
+                statusBadge.className = 'status-badge connected';
+                statusBadge.innerHTML = '<span>AI Verification Complete</span>';
+
                 if (score >= 75) {
                     scoreCircle.className = 'score-circle green';
                     verdict.textContent = "GENUINE CERTIFICATE";
@@ -285,16 +307,16 @@ REASON: [short explanation in 1-2 sentences]
                     verdict.style.color = "#fbbf24";
                 } else {
                     scoreCircle.className = 'score-circle red';
-                    verdict.textContent = "FAKE / INVALID";
+                    verdict.textContent = "FAKE / INVALID CERTIFICATE";
                     verdict.style.color = "#f87171";
                 }
 
-                log(`AI Score: ${score}/100 | Status: ${status}`, "success");
-                log(`AI Reason: ${reason}`, "info");
+                log(`AI Final Score: ${score}/100 | Status: ${status}`, "success");
+                log(`Reason: ${aiResponse.split('REASON:')[1]?.trim() || "N/A"}`, "info");
 
             } catch (err) {
                 statusBadge.className = 'status-badge error';
-                statusBadge.innerHTML = '<span>AI Connection Failed</span>';
+                statusBadge.innerHTML = '<span>Verification Failed</span>';
                 log(`Error: ${err.message}`, "error");
                 verdict.textContent = "Verification Failed";
                 scoreCircle.textContent = "X";
