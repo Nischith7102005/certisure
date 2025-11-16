@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CertiSure - Dayananda Sagar University Verification</title>
+    <title>CertiSure - Document Verification</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -36,7 +38,10 @@
             transition: all 0.3s ease;
             background: rgba(30, 41, 59, 0.5);
         }
-        .upload-box:hover { border-color: #818cf8; background: rgba(129, 140, 248, 0.1); }
+        .upload-box:hover {
+            border-color: #818cf8;
+            background: rgba(129, 140, 248, 0.1);
+        }
         .upload-box.dragover { border-color: #818cf8; background: rgba(129, 140, 248, 0.15); }
 
         .upload-icon { font-size: 3rem; margin-bottom: 1rem; }
@@ -52,43 +57,67 @@
         button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4); }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        .result { margin-top: 3rem; padding: 2rem; background: #1e293b; border-radius: 16px; border: 1px solid rgba(129, 140, 248, 0.3); display: none; }
+        .result {
+            margin-top: 3rem; padding: 2rem; background: #1e293b; border-radius: 16px;
+            border: 1px solid rgba(129, 140, 248, 0.3); display: none;
+        }
         .score-circle {
-            width: 160px; height: 160px; border-radius: 50%; margin: 0 auto 1.5rem;
-            display: flex; align-items: center; justify-content: center; font-size: 3.5rem; font-weight: bold; color: white;
+            width: 140px; height: 140px; border-radius: 50%; margin: 0 auto 1.5rem;
+            display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: bold; color: white;
         }
         .green { background: linear-gradient(135deg, #10b981, #059669); }
         .orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
         .red { background: linear-gradient(135deg, #ef4444, #dc2626); }
 
         .status-badge {
-            display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 50px; font-size: 0.95rem; font-weight: 500; margin: 1rem 0;
+            display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 50px; font-size: 0.9rem; font-weight: 500;
+            margin: 1rem 0;
         }
         .connected { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid #10b981; }
         .error { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; }
         .loading { background: rgba(251, 191, 36, 0.2); color: #fde047; border: 1px solid #f59e0b; }
 
         .ai-response {
-            background: #0f172a; padding: 1.2rem; border-radius: 12px; margin-top: 1rem;
-            font-size: 1rem; line-height: 1.7; max-height: 320px; overflow-y: auto; white-space: pre-wrap;
-            border-left: 4px solid #6366f1;
+            background: #0f172a; padding: 1rem; border-radius: 12px; margin-top: 1rem;
+            font-size: 0.95rem; line-height: 1.6; max-height: 300px; overflow-y: auto; white-space: pre-wrap;
         }
 
-        .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.2rem; margin: 1.8rem 0; }
+        .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
         .metric { text-align: center; }
-        .metric-bar { height: 10px; background: #334155; border-radius: 5px; overflow: hidden; margin-top: 8px; }
-        .metric-fill { height: 100%; border-radius: 5px; transition: width 1s ease; }
-        .green-fill { background: #10b981; }
-        .orange-fill { background: #f59e0b; }
-        .red-fill { background: #ef4444; }
+        .metric-label { font-size: 0.9rem; color: #94a3b8; margin-bottom: 0.5rem; }
+        .metric-value { font-size: 1.2rem; font-weight: 600; }
 
-        .step { text-align: center; margin: 1rem 0; font-size: 0.95rem; color: #94a3b8; }
+        .step-indicator { 
+            text-align: center; 
+            margin: 1rem 0; 
+            padding: 1rem;
+            background: rgba(129, 140, 248, 0.1);
+            border-radius: 8px;
+            font-size: 0.95rem; 
+            color: #94a3b8; 
+            display: none;
+        }
+
+        .extracted-text {
+            background: #0f172a;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        #preview-canvas {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>CertiSure - <span>Dayananda Sagar University</span></h1>
-        <p class="subtitle">Upload your certificate to verify authenticity using AI</p>
+        <h1>CertiSure - <span>Document Verification</span></h1>
+        <p class="subtitle">Upload your academic document for AI-powered authenticity verification</p>
 
         <div class="card">
             <div 
@@ -99,48 +128,51 @@
                 ondragover="event.preventDefault(); this.classList.add('dragover')" 
                 ondragleave="this.classList.remove('dragover')"
             >
-                <div class="upload-icon">Upload Certificate</div>
-                <p>Click or drag & drop your document here<br><small>(Image or PDF - max 8MB)</small></p>
+                <div class="upload-icon">📄</div>
+                <p><strong>Click or drag & drop your document here</strong><br><small>(PNG, JPG - max 10MB)</small></p>
                 <div class="file-name" id="file-name">No file selected</div>
-                <input type="file" id="file-input" accept="image/*,.pdf" style="display:none">
+                <input type="file" id="file-input" accept="image/png,image/jpeg,image/jpg" style="display:none">
             </div>
 
-            <button id="verify-btn" disabled>Verify with AI</button>
-            <div id="status" class="step" style="display:none;"></div>
+            <button id="verify-btn" disabled>Verify Document with AI</button>
+            <div id="status" class="step-indicator"></div>
         </div>
 
         <!-- Result -->
         <div class="result" id="result">
             <div style="text-align:center;">
-                <div id="score-circle" class="score-circle green">96</div>
-                <h2 id="result-title">Genuine Certificate</h2>
-                <p id="result-text">High trust score – issued by Dayananda Sagar University</p>
+                <div id="score-circle" class="score-circle green">95</div>
+                <h2 id="result-title">Document Verified Successfully</h2>
+                <p id="result-text" style="color: #94a3b8; margin-top: 0.5rem;">High trust score indicates authentic document</p>
             </div>
 
             <div class="metrics">
                 <div class="metric">
-                    <div>Institution Match</div>
-                    <div class="metric-bar"><div class="metric-fill green-fill" id="inst-bar" style="width:100%"></div></div>
-                    <strong id="inst-status">Detected</strong>
+                    <div class="metric-label">University Name Found</div>
+                    <div class="metric-value" id="uni-found">✅ Yes</div>
                 </div>
                 <div class="metric">
-                    <div>AI Confidence</div>
-                    <div class="metric-bar"><div class="metric-fill green-fill" id="ai-bar" style="width:96%"></div></div>
-                    <strong id="ai-score">96%</strong>
+                    <div class="metric-label">QR Code Detected</div>
+                    <div class="metric-value" id="qr-found">✅ Yes</div>
                 </div>
                 <div class="metric">
-                    <div>Final Score</div>
-                    <div class="metric-bar"><div class="metric-fill green-fill" id="final-bar" style="width:96%"></div></div>
-                    <strong id="final-score-display">96</strong>
+                    <div class="metric-label">Final Trust Score</div>
+                    <div class="metric-value" id="final-score">95/100</div>
                 </div>
             </div>
 
             <div id="connection-status" class="status-badge connected">
-                <span>Connected to Chutes AI</span>
+                <span>✅ Connected to Chutes AI</span>
             </div>
 
-            <div class="ai-response" id="ai-response">
-                Analyzing document for "Dayananda Sagar University"...
+            <div>
+                <h3 style="margin-bottom: 0.5rem;">Extracted Text (OCR):</h3>
+                <div class="extracted-text" id="extracted-text">Processing...</div>
+            </div>
+
+            <div>
+                <h3 style="margin-bottom: 0.5rem; margin-top: 1.5rem;">AI Analysis:</h3>
+                <div class="ai-response" id="ai-response">Analyzing document... Please wait.</div>
             </div>
 
             <button onclick="location.reload()" style="margin-top:2rem; background:#475569;">
@@ -149,10 +181,13 @@
         </div>
     </div>
 
+    <canvas id="preview-canvas"></canvas>
+
     <script>
-        // === YOUR CHUTES AI CONFIG ===
+        // === CONFIGURATION ===
         const CHUTES_API_TOKEN = "cpk_6e025460f1cf48438058b24954f3ef0a.6cce9b81609c509dbdcfb29cc876557b.v1DAhbEMclbAihw1OAb6SD5S4YiX67Ts";
         const API_URL = "https://llm.chutes.ai/v1/chat/completions";
+        const UNIVERSITY_NAME = "dayananda sagar university";
 
         const fileInput = document.getElementById('file-input');
         const dropZone = document.getElementById('drop-zone');
@@ -163,49 +198,40 @@
 
         let selectedFile = null;
 
-        // Simple deterministic hash
+        // Simple hash for deterministic scoring
         function simpleHash(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) {
-                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
                 hash = hash & hash;
             }
             return Math.abs(hash);
         }
 
-        // Generate deterministic score
-        function generateScore(fileName, fileSize, isDSU) {
-            const seedStr = fileName + fileSize;
+        // Generate score: 75-99 if valid, else 1-74
+        function generateScore(fileName, fileSize, isValid) {
+            const seedStr = fileName + fileSize + (isValid ? "valid" : "invalid");
             const seed = simpleHash(seedStr);
             const rand = (seed % 1000) / 1000;
 
-            if (isDSU) {
+            if (isValid) {
                 return Math.floor(75 + rand * 25); // 75–99
             } else {
                 return Math.floor(1 + rand * 74);  // 1–74
             }
         }
 
-        // Read file as base64 (limit to 1.5MB for token safety)
-        async function readFileAsBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                const maxSize = 1.5 * 1024 * 1024;
-                const blob = file.size > maxSize ? file.slice(0, maxSize) : file;
-                reader.readAsDataURL(blob);
-            });
-        }
-
+        // File selection
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 selectedFile = e.target.files[0];
-                if (selectedFile.size > 8 * 1024 * 1024) {
-                    alert("File too large! Max 8MB.");
+                if (selectedFile.size > 10 * 1024 * 1024) {
+                    alert('File too large! Max 10MB.');
+                    selectedFile = null;
                     return;
                 }
-                fileNameDisplay.textContent = `Selected: ${selectedFile.name}`;
+                fileNameDisplay.textContent = `Selected: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB)`;
                 verifyBtn.disabled = false;
             }
         });
@@ -215,142 +241,183 @@
             dropZone.classList.remove('dragover');
             if (e.dataTransfer.files.length) {
                 selectedFile = e.dataTransfer.files[0];
-                if (selectedFile.size > 8 * 1024 * 1024) {
-                    alert("File too large! Max 8MB.");
+                if (selectedFile.size > 10 * 1024 * 1024) {
+                    alert('File too large! Max 10MB.');
+                    selectedFile = null;
                     return;
                 }
-                fileNameDisplay.textContent = `Selected: ${selectedFile.name}`;
+                fileNameDisplay.textContent = `Selected: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB)`;
                 verifyBtn.disabled = false;
             }
         }
 
+        // Test API connection
+        async function testApiConnection() {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${CHUTES_API_TOKEN}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: "openai/gpt-oss-20b",
+                    messages: [{ role: "user", content: "Test connection. Reply with 'OK'." }],
+                    max_tokens: 5,
+                    temperature: 0.1
+                })
+            });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return await response.json();
+        }
+
+        // OCR: Extract text from image
+        async function extractTextFromImage(file) {
+            const { data: { text } } = await Tesseract.recognize(
+                file,
+                'eng',
+                {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            statusEl.textContent = `Step 2: OCR in progress... ${Math.round(m.progress * 100)}%`;
+                        }
+                    }
+                }
+            );
+            return text;
+        }
+
+        // QR Code detection
+        async function detectQRCode(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                const canvas = document.getElementById('preview-canvas');
+                const ctx = canvas.getContext('2d');
+
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                    resolve(code !== null);
+                };
+
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        // Send to AI for analysis
+        async function analyzeWithAI(extractedText, hasQR, hasUniversity, score) {
+            const prompt = `
+You are an AI document verification expert analyzing an academic certificate.
+
+Document Analysis:
+- Extracted Text (OCR): "${extractedText.substring(0, 500)}..."
+- University Name "${UNIVERSITY_NAME}" found: ${hasUniversity ? "YES" : "NO"}
+- QR Code detected: ${hasQR ? "YES" : "NO"}
+- Calculated Trust Score: ${score}/100
+
+Based on this analysis, provide a professional 3-5 sentence assessment of the document's authenticity. Explain what the score means and recommend next steps.
+            `.trim();
+
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${CHUTES_API_TOKEN}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: "openai/gpt-oss-20b",
+                    messages: [{ role: "user", content: prompt }],
+                    max_tokens: 300,
+                    temperature: 0.7
+                })
+            });
+
+            if (!response.ok) throw new Error(`AI analysis failed: HTTP ${response.status}`);
+
+            const data = await response.json();
+            return data.choices[0]?.message?.content || "No analysis available.";
+        }
+
+        // Main verification
         verifyBtn.addEventListener('click', async () => {
             if (!selectedFile) return;
 
             verifyBtn.disabled = true;
-            verifyBtn.textContent = "Connecting to AI...";
+            verifyBtn.textContent = "Verifying...";
             statusEl.style.display = 'block';
             statusEl.textContent = "Step 1: Connecting to Chutes AI...";
 
             try {
-                // Step 1: Test connection
-                const ping = await fetch(API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${CHUTES_API_TOKEN}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        model: "openai/gpt-oss-20b",
-                        messages: [{ role: "user", content: "Ping" }],
-                        max_tokens: 5
-                    })
-                });
+                // Step 1: Test API
+                await testApiConnection();
+                statusEl.textContent = "Step 1: ✅ Connected! Step 2: Reading document with OCR...";
 
-                if (!ping.ok) throw new Error("API unreachable");
+                // Step 2: OCR
+                const extractedText = await extractTextFromImage(selectedFile);
+                document.getElementById('extracted-text').textContent = extractedText || "No text detected";
 
-                statusEl.textContent = "Step 2: Sending document to AI for analysis...";
+                // Step 3: Check for university name
+                statusEl.textContent = "Step 3: Checking for university name and QR code...";
+                const hasUniversity = extractedText.toLowerCase().includes(UNIVERSITY_NAME.toLowerCase());
+                
+                // Step 4: Detect QR
+                const hasQR = await detectQRCode(selectedFile);
 
-                // Step 2: Send full document to AI
-                const base64 = await readFileAsBase64(selectedFile);
-                const prompt = `
-You are verifying an academic certificate from Dayananda Sagar University.
+                // Determine validity
+                const isValid = hasUniversity && hasQR;
+                const score = generateScore(selectedFile.name, selectedFile.size, isValid);
 
-Analyze this document carefully:
+                // Step 5: Send to AI
+                statusEl.textContent = "Step 4: Sending to AI for analysis...";
+                const aiAnalysis = await analyzeWithAI(extractedText, hasQR, hasUniversity, score);
 
-File: ${selectedFile.name}
-Size: ${(selectedFile.size/1024).toFixed(1)} KB
-Base64 preview: ${base64.substring(0, 800)}...
+                // Step 6: Show results
+                statusEl.textContent = "Step 5: ✅ Verification complete!";
 
-Task:
-1. Look for any mention of "Dayananda Sagar University" in text, logo, or QR code.
-2. If found → respond with: DSU_YES and give a trust score 75–99.
-3. If not found → respond with: DSU_NO and give a trust score 1–74.
-4. Then write 3-4 sentences explaining your conclusion.
-
-Format exactly:
-DSU_YES or DSU_NO
-Score: XX/100
-[Your explanation]
-                `.trim();
-
-                const response = await fetch(API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${CHUTES_API_TOKEN}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        model: "openai/gpt-oss-20b",
-                        messages: [{ role: "user", content: prompt }],
-                        max_tokens: 400,
-                        temperature: 0.3
-                    })
-                });
-
-                if (!response.ok) throw new Error("Analysis failed");
-
-                const data = await response.json();
-                const aiText = data.choices[0]?.message?.content || "";
-                const isDSU = aiText.includes("DSU_YES");
-                const scoreMatch = aiText.match(/Score:\s*(\d+)/i);
-                const aiScore = scoreMatch ? parseInt(scoreMatch[1]) : (isDSU ? 85 : 40);
-
-                // Deterministic fallback score
-                const finalScore = generateScore(selectedFile.name, selectedFile.size, isDSU);
-
-                // Show results
-                resultDiv.style.display = 'block';
-                document.getElementById('score-circle').textContent = finalScore;
-                document.getElementById('final-score-display').textContent = finalScore;
-                document.getElementById('final-bar').style.width = finalScore + '%';
-                document.getElementById('ai-score').textContent = aiScore + '%';
-                document.getElementById('ai-bar').style.width = aiScore + '%';
-
-                const circle = document.getElementById('score-circle');
-                const instBar = document.getElementById('inst-bar');
-                const instStatus = document.getElementById('inst-status');
-
-                if (isDSU) {
-                    circle.className = 'score-circle green';
-                    instBar.className = 'metric-fill green-fill';
-                    instStatus.textContent = 'Dayananda Sagar University';
-                    document.getElementById('result-title').textContent = 'Genuine Certificate';
-                    document.getElementById('result-text').textContent = 'Issued by Dayananda Sagar University';
-                } else {
-                    circle.className = finalScore >= 50 ? 'score-circle orange' : 'score-circle red';
-                    instBar.className = 'metric-fill red-fill';
-                    instStatus.textContent = 'Not DSU';
-                    document.getElementById('result-title').textContent = 'Not from DSU';
-                    document.getElementById('result-text').textContent = 'No mention of Dayananda Sagar University';
-                }
-
-                document.getElementById('connection-status').className = 'status-badge connected';
-                document.getElementById('connection-status').innerHTML = '<span>Connected to Chutes AI</span>';
-                document.getElementById('ai-response').textContent = aiText.trim();
-
-                statusEl.textContent = "Verification complete!";
-                verifyBtn.textContent = "Verify Another";
-                verifyBtn.onclick = () => location.reload();
-
-            } catch (err) {
-                statusEl.textContent = `Error: ${err.message}`;
-                document.getElementById('connection-status').className = 'status-badge error';
-                document.getElementById('connection-status').innerHTML = '<span>Chutes AI Unavailable</span>';
-                document.getElementById('ai-response').textContent = 
-                    `Could not connect to AI service.\nError: ${err.message}\n\nLocal fallback score will be used.`;
-
-                // Fallback: assume not DSU
-                const score = generateScore(selectedFile.name, selectedFile.size, false);
                 resultDiv.style.display = 'block';
                 document.getElementById('score-circle').textContent = score;
-                document.getElementById('score-circle').className = 'score-circle red';
-                document.getElementById('final-score-display').textContent = score;
-                document.getElementById('final-bar').style.width = score + '%';
-                document.getElementById('inst-status').textContent = 'Unknown';
-                document.getElementById('result-title').textContent = 'Verification Failed';
-                document.getElementById('result-text').textContent = 'AI service unavailable';
+                document.getElementById('final-score').textContent = `${score}/100`;
 
+                // Color coding
+                const circle = document.getElementById('score-circle');
+                circle.classList.remove('green', 'orange', 'red');
+                if (score >= 75) {
+                    circle.classList.add('green');
+                    document.getElementById('result-title').textContent = 'Document Verified ✅';
+                    document.getElementById('result-text').textContent = 'High trust score - Document appears authentic';
+                } else if (score >= 40) {
+                    circle.classList.add('orange');
+                    document.getElementById('result-title').textContent = 'Verification Uncertain ⚠️';
+                    document.getElementById('result-text').textContent = 'Medium trust score - Manual review recommended';
+                } else {
+                    circle.classList.add('red');
+                    document.getElementById('result-title').textContent = 'Verification Failed ❌';
+                    document.getElementById('result-text').textContent = 'Low trust score - Document may be fraudulent';
+                }
+
+                // Update metrics
+                document.getElementById('uni-found').textContent = hasUniversity ? '✅ Yes' : '❌ No';
+                document.getElementById('qr-found').textContent = hasQR ? '✅ Yes' : '❌ No';
+
+                // AI response
+                document.getElementById('connection-status').className = 'status-badge connected';
+                document.getElementById('ai-response').textContent = aiAnalysis;
+
+                verifyBtn.textContent = "Verify Another";
+                verifyBtn.onclick = () => location.reload();
+                verifyBtn.disabled = false;
+
+            } catch (err) {
+                statusEl.textContent = `❌ Error: ${err.message}`;
+                document.getElementById('connection-status').className = 'status-badge error';
+                document.getElementById('connection-status').innerHTML = '<span>❌ Process Failed</span>';
+                document.getElementById('ai-response').textContent = `Error: ${err.message}\n\nPlease check:\n• Internet connection\n• API status\n• File is a clear image`;
+                
                 verifyBtn.textContent = "Try Again";
                 verifyBtn.disabled = false;
             }
