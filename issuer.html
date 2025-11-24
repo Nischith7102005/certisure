@@ -3,122 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CertiSure - Document Issuer Portal</title>
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔒</text></svg>">
+    <title>CertiSure - MongoDB Auth Demo</title>
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔒</text></svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <!-- QR Code library -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <!-- PDF-lib for PDF manipulation -->
-    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <!-- AWS SDK -->
-    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1492.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
             color: #e2e8f0;
+            margin: 0;
+            padding: 0;
         }
         .dashboard-bg {
             background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
                         radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.15) 0%, transparent 40%);
         }
-        .card-hover {
-            transition: all 0.3s ease;
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
         }
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        .modal-content {
+            background: #2d3748;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
         }
-        .btn-primary {
-            background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
-            transition: all 0.3s ease;
-        }
-        .btn-primary:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
-        }
-        .btn-secondary {
-            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
-            transition: all 0.3s ease;
-        }
-        .btn-secondary:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
-        }
-        .upload-area {
-            border: 2px dashed rgba(99, 102, 241, 0.5);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        .upload-area:hover, .upload-area.dragover {
-            border-color: #818cf8;
-            background: rgba(79, 70, 229, 0.1);
-        }
-        .progress-bar {
-            height: 8px;
-            background: rgba(79, 70, 229, 0.2);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
-            border-radius: 4px;
-            width: 0%;
-            transition: width 0.5s ease;
-        }
-        .file-info {
-            margin-top: 10px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 6px;
-        }
-        .status-message {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 6px;
-            display: none;
-        }
-        .success {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
-            border: 1px solid #10b981;
-        }
-        .error {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-            border: 1px solid #ef4444;
-        }
-        .s3-status {
+        .mongo-status {
             padding: 8px 12px;
             border-radius: 6px;
             margin-top: 10px;
             font-size: 0.875rem;
         }
-        .s3-uploading {
-            background: rgba(59, 130, 246, 0.2);
-            color: #3b82f6;
-            border: 1px solid #3b82f6;
+        .mongo-connecting {
+            background: rgba(255, 187, 34, 0.2);
+            color: #f59e0b;
+            border: 1px solid #f59e0b;
         }
-        .s3-success {
+        .mongo-success {
             background: rgba(16, 185, 129, 0.2);
             color: #10b981;
             border: 1px solid #10b981;
         }
-        .s3-error {
+        .mongo-error {
             background: rgba(239, 68, 68, 0.2);
             color: #ef4444;
             border: 1px solid #ef4444;
+        }
+        .activity-log {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .activity-item {
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+        .activity-item:hover {
+            transform: translateX(2px);
+        }
+        .activity-item.success {
+            border-left-color: #10b981;
+        }
+        .activity-item.error {
+            border-left-color: #ef4444;
+        }
+        .activity-item.info {
+            border-left-color: #3b82f6;
+        }
+        .code-block {
+            background: #1a202c;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
         }
     </style>
 </head>
 <body class="min-h-screen">
     <!-- Navigation -->
-    <nav class="bg-gray-900 bg-opacity-90 backdrop-blur-sm fixed w-full z-50" data-aos="fade-down">
+    <nav class="bg-gray-900 bg-opacity-90 backdrop-blur-sm fixed w-full z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center">
@@ -126,19 +104,16 @@
                         <i data-feather="shield" class="text-indigo-500 mr-2"></i>
                         <span class="text-xl font-bold text-white">CertiSure</span>
                     </div>
-                    <div class="hidden md:block">
-                        <div class="ml-10 flex items-baseline space-x-4">
-                            <a href="#" class="text-white px-3 py-2 rounded-md text-sm font-medium bg-indigo-600">Issuer Portal</a>
-                        </div>
-                    </div>
                 </div>
-                <div class="hidden md:block">
-                    <div class="flex items-center space-x-4">
-                        <span class="px-3 py-1 bg-green-500 text-green-900 text-sm font-bold rounded-full">LIVE S3</span>
-                        <div class="text-sm text-gray-300">
-                            Real AWS S3 Uploads
-                        </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center">
+                        <div class="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></div>
+                        <span class="text-sm text-gray-300">MongoDB: localhost:27017</span>
                     </div>
+                    <button id="authButton" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white text-sm font-medium transition flex items-center">
+                        <i data-feather="log-in" class="w-4 h-4 mr-2"></i>
+                        <span id="authButtonText">Login</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -149,15 +124,11 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center">
                 <h1 class="text-4xl font-bold leading-tight text-white" data-aos="fade-up">
-                    CertiSure Issuer Portal
+                    CertiSure MongoDB Demo
                 </h1>
                 <p class="mt-4 text-xl text-gray-300 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
-                    Secure document certification with QR codes and AWS S3 storage
+                    Complete authentication system with MongoDB Compass integration
                 </p>
-                <div class="mt-6 inline-flex items-center px-4 py-2 bg-green-600 bg-opacity-20 border border-green-400 rounded-lg" data-aos="fade-up" data-aos-delay="200">
-                    <i data-feather="cloud" class="h-5 w-5 text-green-400 mr-2"></i>
-                    <span class="text-green-300">Live AWS S3 Integration - arn:aws:s3:::certisure</span>
-                </div>
             </div>
         </div>
     </header>
@@ -166,604 +137,654 @@
     <main class="py-8">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Left Column - Document Upload -->
-                <div class="lg:col-span-2">
+                <!-- Left Column - MongoDB Status -->
+                <div class="lg:col-span-2 space-y-8">
+                    <!-- MongoDB Connection Card -->
                     <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
-                        <h2 class="text-xl font-bold text-white mb-6">Issue Certified Document</h2>
-                        
-                        <form id="documentForm">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <!-- Document Details -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Document Type</label>
-                                    <select id="docType" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                                        <option value="">Select document type</option>
-                                        <option value="degree">Degree Certificate</option>
-                                        <option value="transcript">Academic Transcript</option>
-                                        <option value="certificate">Professional Certificate</option>
-                                        <option value="letter">Official Letter</option>
-                                    </select>
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-bold text-white">MongoDB Connection</h2>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse" id="mongoConnectionIndicator"></div>
+                                <span class="text-sm text-gray-300" id="mongoConnectionStatus">Connecting...</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="p-4 bg-gray-700 rounded-lg">
+                                <div class="flex items-center mb-3">
+                                    <i data-feather="database" class="text-green-400 mr-2"></i>
+                                    <span class="font-medium">Database</span>
                                 </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Student/Recipient ID</label>
-                                    <input id="studentId" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter ID" required>
+                                <p class="text-gray-300">certisure</p>
+                                <p class="text-xs text-gray-500 mt-1">Local MongoDB Compass</p>
+                            </div>
+
+                            <div class="p-4 bg-gray-700 rounded-lg">
+                                <div class="flex items-center mb-3">
+                                    <i data-feather="server" class="text-green-400 mr-2"></i>
+                                    <span class="font-medium">Connection</span>
                                 </div>
-                                
-                                <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
-                                    <input id="studentName" type="text" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter full name" required>
+                                <p class="text-gray-300">mongodb://localhost:27017</p>
+                                <p class="text-xs text-gray-500 mt-1">Standard MongoDB port</p>
+                            </div>
+
+                            <div class="p-4 bg-gray-700 rounded-lg">
+                                <div class="flex items-center mb-3">
+                                    <i data-feather="users" class="text-green-400 mr-2"></i>
+                                    <span class="font-medium">Collections</span>
                                 </div>
-                                
-                                <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">QR Code Position</label>
-                                    <select id="qrPosition" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                        <option value="bottom-right">Bottom Right Corner</option>
-                                        <option value="bottom-left">Bottom Left Corner</option>
-                                        <option value="top-right">Top Right Corner</option>
-                                        <option value="top-left">Top Left Corner</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="md:col-span-2">
-                                    <label class="block text-sm font-medium text-gray-300 mb-2">Upload Document (PDF)</label>
-                                    <div class="upload-area rounded-lg p-8 text-center" id="document-upload">
-                                        <i data-feather="upload" class="mx-auto h-12 w-12 text-gray-400"></i>
-                                        <p class="mt-2 text-sm text-gray-400">Click to upload or drag & drop PDF file</p>
-                                        <p class="text-xs text-gray-500">Maximum file size: 10MB</p>
-                                        <input type="file" id="fileInput" class="hidden" accept=".pdf">
-                                    </div>
-                                    <div id="fileInfo" class="file-info hidden">
-                                        <p class="text-sm text-gray-300">Selected file: <span id="fileName" class="font-medium text-white"></span></p>
-                                        <p class="text-xs text-gray-400" id="fileSize"></p>
-                                    </div>
-                                    <div id="statusMessage" class="status-message"></div>
+                                <div class="flex space-x-2">
+                                    <span class="px-2 py-1 bg-gray-600 rounded text-xs">users</span>
+                                    <span class="px-2 py-1 bg-gray-600 rounded text-xs">activity_logs</span>
                                 </div>
                             </div>
-                            
-                            <!-- Progress Bar -->
-                            <div class="mt-8">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="text-sm font-medium text-gray-300">Processing Progress</span>
-                                    <span class="text-sm font-medium text-gray-300" id="progressText">0%</span>
+
+                            <div class="p-4 bg-gray-700 rounded-lg">
+                                <div class="flex items-center mb-3">
+                                    <i data-feather="activity" class="text-green-400 mr-2"></i>
+                                    <span class="font-medium">Status</span>
                                 </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" id="progress-fill"></div>
-                                </div>
-                            </div>
-                            
-                            <!-- Action Buttons -->
-                            <div class="mt-8 flex justify-end space-x-4">
-                                <button type="submit" id="submitBtn" class="btn-primary px-6 py-3 rounded-lg font-medium">
-                                    <span id="buttonText">Generate QR Code</span>
-                                </button>
-                                <button type="button" id="downloadBtn" class="btn-secondary px-6 py-3 rounded-lg font-medium hidden">
-                                    <i data-feather="download" class="inline h-4 w-4 mr-2"></i>
-                                    Download & Upload to S3
-                                </button>
-                            </div>
-                            
-                            <!-- S3 Upload Status -->
-                            <div id="s3Status" class="s3-status hidden mt-6">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center">
-                                        <i data-feather="cloud" class="h-4 w-4 mr-2"></i>
-                                        <span id="s3StatusText">Preparing S3 upload...</span>
-                                    </div>
-                                    <div class="flex space-x-2">
-                                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
-                                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
-                                    </div>
+                                <div id="mongoStats">
+                                    <p class="text-gray-400 text-sm">Users: <span id="userCount">0</span></p>
+                                    <p class="text-gray-400 text-sm mt-1">Logs: <span id="logCount">0</span></p>
                                 </div>
                             </div>
-                        </form>
+                        </div>
+
+                        <div class="mt-6">
+                            <button id="testConnectionBtn" class="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg flex items-center justify-center">
+                                <i data-feather="refresh-cw" class="mr-2"></i>
+                                Test Connection
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- MongoDB Commands Card -->
+                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up" data-aos-delay="100">
+                        <h2 class="text-xl font-bold text-white mb-6">MongoDB Commands</h2>
+
+                        <div class="space-y-4">
+                            <div class="code-block">
+                                <p><span class="text-green-400">// Create a user</span></p>
+                                <p>db.users.insertOne({</p>
+                                <p>&nbsp;&nbsp;email: "user@example.com",</p>
+                                <p>&nbsp;&nbsp;password: "hashed_password",</p>
+                                <p>&nbsp;&nbsp;createdAt: new Date(),</p>
+                                <p>&nbsp;&nbsp;lastLogin: null</p>
+                                <p>})</p>
+                            </div>
+
+                            <div class="code-block">
+                                <p><span class="text-green-400">// Find a user</span></p>
+                                <p>db.users.findOne({ email: "user@example.com" })</p>
+                            </div>
+
+                            <div class="code-block">
+                                <p><span class="text-green-400">// Log an activity</span></p>
+                                <p>db.activity_logs.insertOne({</p>
+                                <p>&nbsp;&nbsp;title: "User Login",</p>
+                                <p>&nbsp;&nbsp;description: "user@example.com logged in",</p>
+                                <p>&nbsp;&nbsp;type: "success",</p>
+                                <p>&nbsp;&nbsp;timestamp: new Date(),</p>
+                                <p>&nbsp;&nbsp;user: "user@example.com"</p>
+                                <p>})</p>
+                            </div>
+
+                            <div class="code-block">
+                                <p><span class="text-green-400">// Get recent activities</span></p>
+                                <p>db.activity_logs.find().sort({ timestamp: -1 }).limit(10)</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- Right Column - Info Panels -->
-                <div class="space-y-6">
-                    <!-- Activity Feed -->
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
-                        <h2 class="text-xl font-bold text-white mb-6">Activity Log</h2>
-                        <div class="space-y-4" id="activityFeed">
-                            <div class="flex items-start text-gray-400">
-                                <div class="flex-shrink-0 mt-1">
-                                    <i data-feather="info" class="h-5 w-5"></i>
-                                </div>
-                                <div class="ml-3">
-                                    <p class="text-sm font-medium">System Initialized</p>
-                                    <p class="text-xs text-gray-500">Ready for document processing</p>
+
+                <!-- Right Column - Activity Log -->
+                <div class="space-y-6" data-aos="fade-up">
+                    <div class="bg-gray-800 rounded-xl shadow-lg p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold text-white">Activity Log</h2>
+                            <button id="refreshLogsBtn" class="text-sm text-gray-400 hover:text-white">
+                                <i data-feather="refresh-cw" class="h-4 w-4"></i>
+                            </button>
+                        </div>
+
+                        <div id="activityFeed" class="activity-log space-y-3">
+                            <!-- Activity items will be added here -->
+                            <div class="activity-item info p-3 bg-gray-700 rounded-lg">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <i data-feather="info" class="h-5 w-5 text-blue-400"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium">System Initialized</p>
+                                        <p class="text-xs text-gray-400">Application started</p>
+                                        <p class="text-xs text-gray-500 mt-1">Just now</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- S3 Configuration Panel -->
+                    <!-- User Management -->
                     <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up" data-aos-delay="100">
-                        <h2 class="text-xl font-bold text-white mb-4">AWS S3 Configuration</h2>
+                        <h2 class="text-xl font-bold text-white mb-4">User Management</h2>
+
                         <div class="space-y-4">
-                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                                <div class="flex items-center">
-                                    <i data-feather="hard-drive" class="h-5 w-5 text-green-400 mr-3"></i>
-                                    <span class="text-sm">S3 Bucket</span>
+                            <div class="p-4 bg-gray-700 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i data-feather="user-plus" class="text-green-400 mr-2"></i>
+                                    <span class="font-medium">Create User</span>
                                 </div>
-                                <span class="text-xs bg-green-500 text-green-900 px-2 py-1 rounded">certisure</span>
+                                <p class="text-sm text-gray-400">Register new users with email and password</p>
                             </div>
-                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                                <div class="flex items-center">
-                                    <i data-feather="folder" class="h-5 w-5 text-green-400 mr-3"></i>
-                                    <span class="text-sm">Storage Path</span>
+
+                            <div class="p-4 bg-gray-700 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i data-feather="log-in" class="text-green-400 mr-2"></i>
+                                    <span class="font-medium">User Login</span>
                                 </div>
-                                <span class="text-xs text-gray-300">docs/</span>
+                                <p class="text-sm text-gray-400">Authenticate existing users</p>
                             </div>
-                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                                <div class="flex items-center">
-                                    <i data-feather="map-pin" class="h-5 w-5 text-green-400 mr-3"></i>
-                                    <span class="text-sm">AWS Region</span>
+
+                            <div class="p-4 bg-gray-700 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i data-feather="activity" class="text-green-400 mr-2"></i>
+                                    <span class="font-medium">Activity Tracking</span>
                                 </div>
-                                <span class="text-xs text-gray-300">eu-north-1</span>
-                            </div>
-                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                                <div class="flex items-center">
-                                    <i data-feather="link" class="h-5 w-5 text-green-400 mr-3"></i>
-                                    <span class="text-sm">ARN</span>
-                                </div>
-                                <span class="text-xs text-gray-300 truncate" title="arn:aws:s3:::certisure">arn:aws:s3:::certisure</span>
+                                <p class="text-sm text-gray-400">Log all user actions and system events</p>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Instructions -->
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up" data-aos-delay="200">
-                        <h2 class="text-xl font-bold text-white mb-4">How It Works</h2>
-                        <ol class="space-y-3 text-sm text-gray-300">
-                            <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">1</span>
-                                <span>Upload PDF document</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">2</span>
-                                <span>Fill recipient details</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">3</span>
-                                <span>Generate QR code</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs mr-3">4</span>
-                                <span>Download & auto-upload to S3</span>
-                            </li>
-                        </ol>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
+    <!-- Auth Modal -->
+    <div id="authModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white" id="authModalTitle">Login</h3>
+                <button id="closeAuthModal" class="text-gray-400 hover:text-white">
+                    <i data-feather="x" class="h-5 w-5"></i>
+                </button>
+            </div>
+
+            <form id="authForm" class="space-y-5">
+                <input type="hidden" id="authMode" value="login">
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                    <input type="email" id="authEmail" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Password</label>
+                    <input type="password" id="authPassword" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+
+                <button type="submit" id="authSubmitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-medium transition">
+                    Login
+                </button>
+            </form>
+
+            <div class="mt-5 pt-4 border-t border-gray-700 text-center">
+                <button id="toggleAuthMode" class="text-sm text-indigo-400 hover:underline">
+                    Don't have an account? Sign Up
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MongoDB Data Modal -->
+    <div id="mongoDataModal" class="modal-overlay hidden">
+        <div class="modal-content max-w-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white">MongoDB Data</h3>
+                <button id="closeMongoDataModal" class="text-gray-400 hover:text-white">
+                    <i data-feather="x" class="h-5 w-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-6">
+                <div>
+                    <h4 class="text-lg font-semibold text-white mb-3">Users Collection</h4>
+                    <div class="bg-gray-700 rounded-lg p-4 max-h-64 overflow-y-auto">
+                        <pre id="usersData" class="text-sm text-gray-300 font-mono">Loading users data...</pre>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-lg font-semibold text-white mb-3">Activity Logs</h4>
+                    <div class="bg-gray-700 rounded-lg p-4 max-h-64 overflow-y-auto">
+                        <pre id="logsData" class="text-sm text-gray-300 font-mono">Loading logs data...</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="bg-gray-900 py-8 border-t border-gray-800">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center text-gray-500">
-                <p class="mb-2">CertiSure - Document Certification System</p>
-                <p class="text-sm">Live AWS S3 Integration | arn:aws:s3:::certisure</p>
+                <p class="mb-2">CertiSure - MongoDB Integration Demo</p>
+                <p class="text-sm">Local MongoDB Compass | Database: certisure</p>
             </div>
         </div>
     </footer>
 
+    <!-- MongoDB Node.js Driver - Loaded from CDN for demo purposes -->
+    <script src="https://unpkg.com/mongodb@4.1.1"></script>
+
     <script>
-        // AWS S3 Configuration - Using your actual credentials
-        const AWS_CONFIG = {
-            region: 'eu-north-1',
-            accessKeyId: 'AKIAS5JBIBYFTSZVE4VA',
-            secretAccessKey: 'p9JqTrNbeHUi2oZ18GeycU/Xl3GNCRzyS27mMdCl',
-            bucketName: 'certisure',
-            folderPath: 'docs/'
-        };
+        // Global variables
+        let currentUser = null;
+        let mongoClient = null;
+        let usersCollection = null;
+        let logsCollection = null;
 
-        // Initialize AWS S3 with your credentials
-        AWS.config.update({
-            region: AWS_CONFIG.region,
-            accessKeyId: AWS_CONFIG.accessKeyId,
-            secretAccessKey: AWS_CONFIG.secretAccessKey,
-            s3ForcePathStyle: true
-        });
-
-        const s3 = new AWS.S3();
-
-        // Initialize AOS and Feather Icons
+        // DOM Elements
         document.addEventListener('DOMContentLoaded', function() {
-            AOS.init({
-                duration: 1000,
-                once: true
-            });
-            
+            // Initialize libraries
+            AOS.init({ duration: 1000, once: true });
             feather.replace();
 
-            // DOM Elements
-            const fileInput = document.getElementById('fileInput');
-            const documentUpload = document.getElementById('document-upload');
-            const fileInfo = document.getElementById('fileInfo');
-            const fileName = document.getElementById('fileName');
-            const fileSize = document.getElementById('fileSize');
-            const progressFill = document.getElementById('progress-fill');
-            const progressText = document.getElementById('progressText');
-            const submitBtn = document.getElementById('submitBtn');
-            const downloadBtn = document.getElementById('downloadBtn');
-            const buttonText = document.getElementById('buttonText');
-            const statusMessage = document.getElementById('statusMessage');
-            const s3Status = document.getElementById('s3Status');
-            const s3StatusText = document.getElementById('s3StatusText');
-            const form = document.getElementById('documentForm');
+            // Get DOM elements
+            const authButton = document.getElementById('authButton');
+            const authButtonText = document.getElementById('authButtonText');
+            const authModal = document.getElementById('authModal');
+            const closeAuthModal = document.getElementById('closeAuthModal');
+            const authForm = document.getElementById('authForm');
+            const toggleAuthMode = document.getElementById('toggleAuthMode');
+            const authModeInput = document.getElementById('authMode');
+            const authModalTitle = document.getElementById('authModalTitle');
+            const authSubmitBtn = document.getElementById('authSubmitBtn');
+            const mongoConnectionIndicator = document.getElementById('mongoConnectionIndicator');
+            const mongoConnectionStatus = document.getElementById('mongoConnectionStatus');
+            const userCount = document.getElementById('userCount');
+            const logCount = document.getElementById('logCount');
             const activityFeed = document.getElementById('activityFeed');
+            const testConnectionBtn = document.getElementById('testConnectionBtn');
+            const refreshLogsBtn = document.getElementById('refreshLogsBtn');
+            const mongoDataModal = document.getElementById('mongoDataModal');
+            const closeMongoDataModal = document.getElementById('closeMongoDataModal');
+            const usersData = document.getElementById('usersData');
+            const logsData = document.getElementById('logsData');
 
-            let selectedFile = null;
-            let qrCodeDataUrl = null;
-            let modifiedPdfBytes = null;
-            let documentMetadata = {};
+            // Event listeners
+            authButton.addEventListener('click', toggleAuth);
+            closeAuthModal.addEventListener('click', () => authModal.classList.add('hidden'));
+            window.addEventListener('click', (e) => {
+                if (e.target === authModal) authModal.classList.add('hidden');
+            });
 
-            // Event Listeners
-            documentUpload.addEventListener('click', () => fileInput.click());
-            fileInput.addEventListener('change', handleFileSelect);
-            form.addEventListener('submit', handleFormSubmit);
-            downloadBtn.addEventListener('click', downloadAndUploadToS3);
+            toggleAuthMode.addEventListener('click', () => {
+                const isLogin = authModeInput.value === 'login';
+                authModeInput.value = isLogin ? 'signup' : 'login';
+                authModalTitle.textContent = isLogin ? 'Sign Up' : 'Login';
+                authSubmitBtn.textContent = isLogin ? 'Sign Up' : 'Login';
+                toggleAuthMode.textContent = isLogin
+                    ? "Already have an account? Login"
+                    : "Don't have an account? Sign Up";
+            });
 
-            // Initialize drag and drop
-            initDragAndDrop();
+            authForm.addEventListener('submit', handleAuthSubmit);
+            testConnectionBtn.addEventListener('click', testMongoConnection);
+            refreshLogsBtn.addEventListener('click', refreshActivityLog);
+            closeMongoDataModal.addEventListener('click', () => mongoDataModal.classList.add('hidden'));
+            window.addEventListener('click', (e) => {
+                if (e.target === mongoDataModal) mongoDataModal.classList.add('hidden');
+            });
 
-            // Test S3 connection on load
-            testS3Connection();
+            // Initialize MongoDB connection
+            connectToMongoDB();
 
             // Functions
-            function handleFileSelect(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                if (!validateFile(file)) {
-                    return;
-                }
-
-                selectedFile = file;
-                displayFileInfo(file);
-                downloadBtn.classList.add('hidden');
-                s3Status.classList.add('hidden');
-                showStatus('File ready for processing', 'success');
-            }
-
-            function validateFile(file) {
-                const validTypes = ['application/pdf'];
-                const maxSize = 10 * 1024 * 1024;
-
-                if (!validTypes.includes(file.type)) {
-                    showStatus('Please select a PDF document only', 'error');
-                    return false;
-                }
-
-                if (file.size > maxSize) {
-                    showStatus('File size must be less than 10MB', 'error');
-                    return false;
-                }
-
-                return true;
-            }
-
-            function displayFileInfo(file) {
-                fileName.textContent = file.name;
-                fileSize.textContent = formatFileSize(file.size);
-                fileInfo.classList.remove('hidden');
-            }
-
-            function formatFileSize(bytes) {
-                if (bytes === 0) return '0 Bytes';
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
-
-            async function handleFormSubmit(e) {
-                e.preventDefault();
-                
-                if (!selectedFile) {
-                    showStatus('Please select a PDF file to upload', 'error');
-                    return;
-                }
-
-                const studentId = document.getElementById('studentId').value;
-                const studentName = document.getElementById('studentName').value;
-                const docType = document.getElementById('docType').value;
-
-                if (!studentId || !studentName || !docType) {
-                    showStatus('Please fill in all required fields', 'error');
-                    return;
-                }
-
-                documentMetadata = {
-                    studentId,
-                    studentName,
-                    docType,
-                    timestamp: new Date().toISOString(),
-                    originalFileName: selectedFile.name
-                };
-
-                try {
-                    updateProgress(10);
-                    buttonText.textContent = 'Generating QR Code...';
-                    submitBtn.disabled = true;
-
-                    await generateQRCode();
-                    updateProgress(40);
-
-                    buttonText.textContent = 'Adding QR Code to PDF...';
-                    await addQRCodeToPDF();
-                    updateProgress(100);
-
-                    showStatus('QR Code generated successfully! Ready for download.', 'success');
-                    addActivity('Document processed', `${docType} for ${studentName}`, 'success');
-                    
-                    downloadBtn.classList.remove('hidden');
-                    feather.replace();
-
-                } catch (error) {
-                    console.error('Processing failed:', error);
-                    showStatus('Processing failed: ' + error.message, 'error');
-                    addActivity('Processing failed', error.message, 'error');
-                } finally {
-                    buttonText.textContent = 'Generate QR Code';
-                    submitBtn.disabled = false;
-                }
-            }
-
-            async function generateQRCode() {
-                return new Promise((resolve, reject) => {
-                    const verificationData = JSON.stringify({
-                        documentId: documentMetadata.studentId + '_' + Date.now(),
-                        type: documentMetadata.docType,
-                        name: documentMetadata.studentName,
-                        timestamp: documentMetadata.timestamp
-                    });
-                    
-                    const qrCodeData = `https://certisure-demo.vercel.app/verify?data=${btoa(verificationData)}`;
-
-                    QRCode.toDataURL(qrCodeData, {
-                        width: 200,
-                        margin: 1,
-                        color: {
-                            dark: '#000000',
-                            light: '#ffffff'
-                        }
-                    }, (error, url) => {
-                        if (error) {
-                            reject(new Error('Error generating QR code'));
-                        } else {
-                            qrCodeDataUrl = url;
-                            resolve();
-                        }
-                    });
-                });
-            }
-
-            async function addQRCodeToPDF() {
-                try {
-                    const arrayBuffer = await selectedFile.arrayBuffer();
-                    const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-                    
-                    const qrImageBytes = await fetch(qrCodeDataUrl).then(res => res.arrayBuffer());
-                    const qrImage = await pdfDoc.embedPng(qrImageBytes);
-                    
-                    const pages = pdfDoc.getPages();
-                    const firstPage = pages[0];
-                    const { width, height } = firstPage.getSize();
-                    
-                    const qrSize = 80;
-                    const margin = 20;
-                    
-                    const position = document.getElementById('qrPosition').value;
-                    let x, y;
-                    
-                    switch(position) {
-                        case 'bottom-right':
-                            x = width - qrSize - margin;
-                            y = margin;
-                            break;
-                        case 'bottom-left':
-                            x = margin;
-                            y = margin;
-                            break;
-                        case 'top-right':
-                            x = width - qrSize - margin;
-                            y = height - qrSize - margin;
-                            break;
-                        case 'top-left':
-                            x = margin;
-                            y = height - qrSize - margin;
-                            break;
-                        default:
-                            x = width - qrSize - margin;
-                            y = margin;
-                    }
-                    
-                    firstPage.drawImage(qrImage, {
-                        x: x,
-                        y: y,
-                        width: qrSize,
-                        height: qrSize,
-                    });
-                    
-                    const fontSize = 8;
-                    firstPage.drawText('CertiSure Verified Document', {
-                        x: x,
-                        y: y - 15,
-                        size: fontSize,
-                        color: PDFLib.rgb(0, 0, 0),
-                    });
-                    
-                    modifiedPdfBytes = await pdfDoc.save();
-                    
-                } catch (error) {
-                    throw new Error('Failed to add QR code to PDF: ' + error.message);
-                }
-            }
-
-            async function downloadAndUploadToS3() {
-                if (!modifiedPdfBytes) {
-                    showStatus('No document ready for download', 'error');
-                    return;
-                }
-
-                try {
-                    // First download the file
-                    const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
-                    const originalName = selectedFile.name.replace('.pdf', '');
-                    const downloadFileName = `${originalName}_certified.pdf`;
-                    
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = downloadFileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    
-                    // Then upload to S3
-                    await uploadToS3(blob, downloadFileName);
-                    
-                } catch (error) {
-                    console.error('Download/Upload error:', error);
-                    showStatus('Operation failed: ' + error.message, 'error');
-                }
-            }
-
-            async function uploadToS3(blob, fileName) {
-                return new Promise((resolve, reject) => {
-                    // Show uploading status
-                    s3Status.className = 's3-status s3-uploading';
-                    s3StatusText.textContent = 'Uploading to AWS S3...';
-                    s3Status.classList.remove('hidden');
-                    feather.replace();
-                    
-                    const timestamp = new Date().getTime();
-                    const s3Key = `${AWS_CONFIG.folderPath}${timestamp}_${fileName}`;
-                    
-                    console.log('Starting S3 upload:', {
-                        bucket: AWS_CONFIG.bucketName,
-                        key: s3Key,
-                        fileSize: blob.size
-                    });
-                    
-                    const params = {
-                        Bucket: AWS_CONFIG.bucketName,
-                        Key: s3Key,
-                        Body: blob,
-                        ContentType: 'application/pdf',
-                        Metadata: {
-                            'student-id': documentMetadata.studentId,
-                            'student-name': documentMetadata.studentName,
-                            'document-type': documentMetadata.docType,
-                            'original-filename': documentMetadata.originalFileName,
-                            'upload-timestamp': documentMetadata.timestamp
-                        }
-                    };
-
-                    s3.upload(params, (err, data) => {
-                        if (err) {
-                            console.error('S3 Upload Error:', err);
-                            s3Status.className = 's3-status s3-error';
-                            s3StatusText.textContent = `S3 Upload Failed: ${err.message}`;
-                            addActivity('S3 Upload Failed', err.message, 'error');
-                            reject(err);
-                        } else {
-                            console.log('S3 Upload Success:', data);
-                            s3Status.className = 's3-status s3-success';
-                            s3StatusText.textContent = `Successfully uploaded to S3: ${s3Key}`;
-                            showStatus('Document downloaded and uploaded to AWS S3 successfully!', 'success');
-                            addActivity('S3 Upload Complete', `s3://certisure/${s3Key}`, 'success');
-                            resolve(data);
-                        }
-                        feather.replace();
-                    });
-                });
-            }
-
-            async function testS3Connection() {
-                try {
-                    console.log('Testing S3 connection...');
-                    
-                    const params = {
-                        Bucket: AWS_CONFIG.bucketName,
-                        MaxKeys: 1
-                    };
-                    
-                    const data = await s3.listObjectsV2(params).promise();
-                    console.log('S3 Connection Test Success:', data);
-                    addActivity('S3 Connection', 'Connected to certisure bucket', 'success');
-                    
-                } catch (error) {
-                    console.error('S3 Connection Test Failed:', error);
-                    addActivity('S3 Connection', 'Failed: ' + error.message, 'error');
-                    showStatus('S3 connection failed. Check credentials and bucket permissions.', 'error');
-                }
-            }
-
-            function updateProgress(percent) {
-                progressFill.style.width = `${percent}%`;
-                progressText.textContent = `${percent}%`;
-            }
-
-            function showStatus(message, type) {
-                statusMessage.textContent = message;
-                statusMessage.className = 'status-message';
-                if (type) {
-                    statusMessage.classList.add(type);
-                    statusMessage.style.display = 'block';
+            function toggleAuth() {
+                if (currentUser) {
+                    // Logout
+                    currentUser = null;
+                    authButtonText.textContent = 'Login';
+                    authButton.innerHTML = `
+                        <i data-feather="log-in" class="w-4 h-4 mr-2"></i>
+                        Login
+                    `;
+                    addActivity('User Logout', 'User logged out', 'info');
                 } else {
-                    statusMessage.style.display = 'none';
+                    // Show login modal
+                    authModal.classList.remove('hidden');
+                    document.getElementById('authEmail').focus();
+                }
+                feather.replace();
+            }
+
+            async function handleAuthSubmit(e) {
+                e.preventDefault();
+                const email = document.getElementById('authEmail').value;
+                const password = document.getElementById('authPassword').value;
+                const mode = authModeInput.value;
+
+                try {
+                    updateConnectionStatus('connecting');
+
+                    if (mode === 'signup') {
+                        // Check if user exists
+                        const existingUser = await usersCollection.findOne({ email: email });
+                        if (existingUser) {
+                            throw new Error('User with this email already exists');
+                        }
+
+                        // Create new user (in a real app, you would hash the password)
+                        await usersCollection.insertOne({
+                            email: email,
+                            password: password, // Note: In production, always hash passwords!
+                            createdAt: new Date(),
+                            lastLogin: null
+                        });
+
+                        addActivity('User Created', email, 'success');
+                        alert('✅ Account created successfully! You can now login.');
+                        toggleAuthMode.click();
+                    } else {
+                        // Login
+                        const user = await usersCollection.findOne({ email: email });
+                        if (!user) {
+                            throw new Error('User not found');
+                        }
+
+                        if (user.password !== password) {
+                            throw new Error('Invalid password');
+                        }
+
+                        // Update last login
+                        await usersCollection.updateOne(
+                            { _id: user._id },
+                            { $set: { lastLogin: new Date() } }
+                        );
+
+                        currentUser = user;
+                        updateConnectionStatus('connected');
+                        addActivity('User Login', email, 'success');
+
+                        authButtonText.textContent = email;
+                        authButton.innerHTML = `
+                            <i data-feather="user-check" class="w-4 h-4 mr-2"></i>
+                            ${email}
+                        `;
+                        authModal.classList.add('hidden');
+                        alert(`✅ Welcome back, ${email}!`);
+                    }
+
+                    // Update counts
+                    updateUserCount();
+                    updateLogCount();
+                    refreshActivityLog();
+
+                    feather.replace();
+                } catch (error) {
+                    console.error('Auth error:', error);
+                    updateConnectionStatus('error');
+                    addActivity('Auth Failed', error.message, 'error');
+                    alert(`❌ ${error.message}`);
+                }
+            }
+
+            async function connectToMongoDB() {
+                try {
+                    updateConnectionStatus('connecting');
+
+                    // Create a new MongoClient
+                    mongoClient = new mongodb.MongoClient('mongodb://localhost:27017', {
+                        serverSelectionTimeoutMS: 3000
+                    });
+
+                    // Connect to the MongoDB server
+                    await mongoClient.connect();
+
+                    // Get the database and collections
+                    const db = mongoClient.db('certisure');
+                    usersCollection = db.collection('users');
+                    logsCollection = db.collection('activity_logs');
+
+                    // Create indexes if they don't exist
+                    await usersCollection.createIndex({ email: 1 }, { unique: true });
+                    await logsCollection.createIndex({ timestamp: -1 });
+
+                    updateConnectionStatus('connected');
+                    addActivity('MongoDB', 'Connected to localhost:27017', 'success');
+
+                    // Update counts
+                    updateUserCount();
+                    updateLogCount();
+                    refreshActivityLog();
+
+                } catch (error) {
+                    console.error('MongoDB connection error:', error);
+                    updateConnectionStatus('error');
+                    addActivity('MongoDB', 'Connection failed: ' + error.message, 'error');
+
+                    // Show error message
+                    alert(`❌ Could not connect to MongoDB: ${error.message}\n\nPlease make sure:\n1. MongoDB is running\n2. MongoDB Compass is connected to localhost:27017\n3. The 'certisure' database exists`);
+                }
+            }
+
+            function updateConnectionStatus(status) {
+                switch(status) {
+                    case 'connecting':
+                        mongoConnectionIndicator.className = 'w-3 h-3 rounded-full bg-yellow-500 animate-pulse';
+                        mongoConnectionStatus.textContent = 'Connecting...';
+                        mongoConnectionStatus.className = 'text-sm text-yellow-500';
+                        break;
+                    case 'connected':
+                        mongoConnectionIndicator.className = 'w-3 h-3 rounded-full bg-green-500';
+                        mongoConnectionStatus.textContent = 'Connected';
+                        mongoConnectionStatus.className = 'text-sm text-green-500';
+                        break;
+                    case 'error':
+                        mongoConnectionIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
+                        mongoConnectionStatus.textContent = 'Connection Failed';
+                        mongoConnectionStatus.className = 'text-sm text-red-500';
+                        break;
+                }
+            }
+
+            async function testMongoConnection() {
+                try {
+                    updateConnectionStatus('connecting');
+
+                    // Test the connection by counting documents
+                    const userCount = await usersCollection.countDocuments();
+                    const logCount = await logsCollection.countDocuments();
+
+                    updateUserCount(userCount);
+                    updateLogCount(logCount);
+
+                    updateConnectionStatus('connected');
+                    addActivity('MongoDB', 'Connection test successful', 'success');
+                    alert('✅ MongoDB connection test successful!');
+
+                    // Show the data modal
+                    showMongoData();
+
+                } catch (error) {
+                    console.error('Connection test error:', error);
+                    updateConnectionStatus('error');
+                    addActivity('MongoDB', 'Connection test failed: ' + error.message, 'error');
+                    alert(`❌ Connection test failed: ${error.message}`);
+                }
+            }
+
+            async function updateUserCount(count) {
+                if (count === undefined) {
+                    try {
+                        count = await usersCollection.countDocuments();
+                    } catch (error) {
+                        console.error('Error counting users:', error);
+                        count = 'Error';
+                    }
+                }
+                userCount.textContent = count;
+            }
+
+            async function updateLogCount(count) {
+                if (count === undefined) {
+                    try {
+                        count = await logsCollection.countDocuments();
+                    } catch (error) {
+                        console.error('Error counting logs:', error);
+                        count = 'Error';
+                    }
+                }
+                logCount.textContent = count;
+            }
+
+            async function refreshActivityLog() {
+                try {
+                    // Get the most recent 10 logs
+                    const logs = await logsCollection.find()
+                        .sort({ timestamp: -1 })
+                        .limit(10)
+                        .toArray();
+
+                    // Clear the activity feed
+                    activityFeed.innerHTML = '';
+
+                    // Add a default message if no logs
+                    if (logs.length === 0) {
+                        const item = document.createElement('div');
+                        item.className = 'activity-item info p-3 bg-gray-700 rounded-lg';
+                        item.innerHTML = `
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <i data-feather="info" class="h-5 w-5 text-blue-400"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium">No activities yet</p>
+                                    <p class="text-xs text-gray-400">Actions will appear here</p>
+                                    <p class="text-xs text-gray-500 mt-1">${new Date().toLocaleTimeString()}</p>
+                                </div>
+                            </div>
+                        `;
+                        activityFeed.appendChild(item);
+                        feather.replace();
+                        return;
+                    }
+
+                    // Add each log to the feed
+                    logs.forEach(log => {
+                        const item = document.createElement('div');
+                        item.className = `activity-item ${log.type} p-3 bg-gray-700 rounded-lg`;
+
+                        const icon = log.type === 'error' ? 'alert-circle' :
+                                    log.type === 'success' ? 'check-circle' : 'info';
+
+                        const iconColor = log.type === 'error' ? 'text-red-400' :
+                                         log.type === 'success' ? 'text-green-400' : 'text-blue-400';
+
+                        item.innerHTML = `
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <i data-feather="${icon}" class="h-5 w-5 ${iconColor}"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium">${log.title}</p>
+                                    <p class="text-xs text-gray-400">${log.description}</p>
+                                    <p class="text-xs text-gray-500 mt-1">${new Date(log.timestamp).toLocaleTimeString()}</p>
+                                </div>
+                            </div>
+                        `;
+                        activityFeed.appendChild(item);
+                    });
+
+                    feather.replace();
+                } catch (error) {
+                    console.error('Error refreshing activity log:', error);
+                    addActivity('Error', 'Failed to refresh activity log: ' + error.message, 'error');
                 }
             }
 
             function addActivity(title, description, type) {
+                // Add to UI
                 const activity = document.createElement('div');
-                activity.className = `flex items-start ${type === 'error' ? 'text-red-400' : 'text-green-400'}`;
+                activity.className = `activity-item ${type} p-3 bg-gray-700 rounded-lg`;
+
+                const icon = type === 'error' ? 'alert-circle' :
+                           type === 'success' ? 'check-circle' : 'info';
+
+                const iconColor = type === 'error' ? 'text-red-400' :
+                                 type === 'success' ? 'text-green-400' : 'text-blue-400';
+
                 activity.innerHTML = `
-                    <div class="flex-shrink-0 mt-1">
-                        <i data-feather="${type === 'error' ? 'alert-circle' : 'check-circle'}" class="h-5 w-5"></i>
-                    </div>
-                    <div class="ml-3">
-                        <p class="text-sm font-medium">${title}</p>
-                        <p class="text-xs text-gray-400">${description}</p>
-                        <p class="text-xs text-gray-500 mt-1">${new Date().toLocaleTimeString()}</p>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i data-feather="${icon}" class="h-5 w-5 ${iconColor}"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium">${title}</p>
+                            <p class="text-xs text-gray-400">${description}</p>
+                            <p class="text-xs text-gray-500 mt-1">${new Date().toLocaleTimeString()}</p>
+                        </div>
                     </div>
                 `;
                 activityFeed.insertBefore(activity, activityFeed.firstChild);
-                feather.replace();
-                
-                while (activityFeed.children.length > 5) {
+
+                // Keep only 10 activities
+                while (activityFeed.children.length > 10) {
                     activityFeed.removeChild(activityFeed.lastChild);
+                }
+
+                // Log to MongoDB if connected
+                if (logsCollection) {
+                    logsCollection.insertOne({
+                        title: title,
+                        description: description,
+                        type: type,
+                        timestamp: new Date(),
+                        user: currentUser ? currentUser.email : 'system'
+                    }).catch(err => {
+                        console.error('Failed to log activity:', err);
+                    });
+                }
+
+                // Update log count
+                updateLogCount();
+
+                feather.replace();
+            }
+
+            async function showMongoData() {
+                try {
+                    // Get all users
+                    const users = await usersCollection.find().toArray();
+                    usersData.textContent = users.length > 0 ?
+                        JSON.stringify(users, null, 2) :
+                        'No users found in the database';
+
+                    // Get recent logs
+                    const logs = await logsCollection.find()
+                        .sort({ timestamp: -1 })
+                        .limit(10)
+                        .toArray();
+                    logsData.textContent = logs.length > 0 ?
+                        JSON.stringify(logs, null, 2) :
+                        'No logs found in the database';
+
+                    mongoDataModal.classList.remove('hidden');
+                } catch (error) {
+                    console.error('Error fetching MongoDB data:', error);
+                    usersData.textContent = 'Error loading users: ' + error.message;
+                    logsData.textContent = 'Error loading logs: ' + error.message;
+                    mongoDataModal.classList.remove('hidden');
                 }
             }
 
-            function initDragAndDrop() {
-                documentUpload.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    documentUpload.classList.add('dragover');
-                });
-
-                documentUpload.addEventListener('dragleave', () => {
-                    documentUpload.classList.remove('dragover');
-                });
-
-                documentUpload.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    documentUpload.classList.remove('dragover');
-                    
-                    if (e.dataTransfer.files.length > 0) {
-                        fileInput.files = e.dataTransfer.files;
-                        const event = new Event('change');
-                        fileInput.dispatchEvent(event);
-                    }
-                });
-            }
+            // Initial data load
+            setTimeout(() => {
+                updateUserCount();
+                updateLogCount();
+                refreshActivityLog();
+            }, 1000);
         });
     </script>
 </body>
