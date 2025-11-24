@@ -106,130 +106,6 @@
         .log-success { color: #4ade80; }
         .log-info { color: #60a5fa; }
         .log-error { color: #f87171; }
-
-        /* MongoDB Verification Logs (certisure DB) */
-        .verification-logs-section {
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid #334155;
-            display: none;
-        }
-        .logs-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-        .logs-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #e5e7eb;
-        }
-        .refresh-btn {
-            width: auto;
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-            margin: 0;
-            background: linear-gradient(90deg, #3b82f6, #2563eb);
-        }
-        .logs-container {
-            background: #0f172a;
-            border-radius: 12px;
-            padding: 1rem;
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid #1e293b;
-        }
-        .verification-log-item {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 10px;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            transition: all 0.2s ease;
-        }
-        .verification-log-item:hover {
-            border-color: #475569;
-            transform: translateX(2px);
-        }
-        .verification-log-item.current {
-            border-color: #818cf8;
-            background: rgba(129, 140, 248, 0.05);
-            box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.3);
-        }
-        .log-item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        .log-file-name {
-            font-weight: 600;
-            color: #f1f5f9;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .log-timestamp {
-            font-size: 0.75rem;
-            color: #64748b;
-        }
-        .status-tag {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 999px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .status-genuine { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
-        .status-suspicious { background: rgba(245, 158, 11, 0.2); color: #fde047; }
-        .status-fake { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
-        .status-unknown { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
-        .log-item-details {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-            font-size: 0.75rem;
-            color: #94a3b8;
-        }
-        .detail-item {
-            display: flex;
-            flex-direction: column;
-        }
-        .detail-label {
-            color: #64748b;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            margin-bottom: 2px;
-        }
-        .detail-value {
-            color: #e2e8f0;
-            font-weight: 500;
-        }
-        .logs-status {
-            margin-top: 0.75rem;
-            font-size: 0.85rem;
-            color: #64748b;
-            text-align: center;
-        }
-        .no-logs {
-            text-align: center;
-            padding: 2rem;
-            color: #64748b;
-        }
-        .current-indicator {
-            display: inline-block;
-            padding: 2px 8px;
-            background: rgba(129, 140, 248, 0.2);
-            color: #818cf8;
-            border-radius: 4px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            margin-left: 0.5rem;
-        }
     </style>
 </head>
 <body>
@@ -268,18 +144,6 @@
                     <div class="log-entry">Upload a PDF or image to begin verification.</div>
                 </div>
 
-                <!-- MongoDB Verification Logs (from certisure DB) -->
-                <div id="verification-logs-section" class="verification-logs-section">
-                    <div class="logs-header">
-                        <h3 class="logs-title">📊 Verification History (certisure DB)</h3>
-                        <button id="refresh-logs-btn" class="refresh-btn">🔄 Refresh</button>
-                    </div>
-                    <div id="logs-container" class="logs-container">
-                        <div class="no-logs">Loading verification history...</div>
-                    </div>
-                    <p id="logs-status" class="logs-status"></p>
-                </div>
-
                 <button onclick="location.reload()" style="margin-top:1.5rem; background:#475569;">
                     Verify Another Document
                 </button>
@@ -288,13 +152,12 @@
     </div>
 
     <script>
-        // Configure PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         // API Configuration
         const AI_API_TOKEN = "cpk_6e025460f1cf48438058b24954f3ef0a.6cce9b81609c509dbdcfb29cc876557b.v1DAhbEMclbAihw1OAb6SD5S4YiX67Ts";
         const AI_API_URL = "https://llm.chutes.ai/v1/chat/completions";
-        const MONGO_API_BASE = "http://localhost:3001/api"; // Points to your certisure DB server
+        const MONGO_API_BASE = "http://localhost:3001/api"; // Your certisure DB server
 
         // DOM Elements
         const fileInput = document.getElementById('file-input');
@@ -306,13 +169,8 @@
         const statusBadge = document.getElementById('connection-status');
         const previewContainer = document.getElementById('preview-container');
         const previewContent = document.getElementById('preview-content');
-        const verificationLogsSection = document.getElementById('verification-logs-section');
-        const logsContainer = document.getElementById('logs-container');
-        const logsStatus = document.getElementById('logs-status');
-        const refreshLogsBtn = document.getElementById('refresh-logs-btn');
 
         let selectedFile = null;
-        let currentVerificationId = null;
 
         // Helper: Add log to UI
         function log(message, type = 'normal') {
@@ -429,8 +287,8 @@
             return pagesData;
         }
 
-        // Save verification to MongoDB (certisure DB)
-        async function saveVerificationToMongoDB(verificationData) {
+        // Send verification log to MongoDB (certisure DB only)
+        async function sendVerificationLogToMongoDB(verificationData) {
             try {
                 const response = await fetch(`${MONGO_API_BASE}/verifications`, {
                     method: 'POST',
@@ -438,94 +296,16 @@
                     body: JSON.stringify(verificationData)
                 });
                 
-                if (!response.ok) throw new Error('Failed to save verification');
+                if (!response.ok) throw new Error('Failed to send log to MongoDB');
                 
-                const result = await response.json();
-                currentVerificationId = result._id; // Store for highlighting
-                log("Verification saved to certisure database", "success");
-                return result;
+                log("✅ Verification log sent to certisure database", "success");
+                return true;
             } catch (error) {
-                console.error('MongoDB save error:', error);
-                log("Could not save to MongoDB (check if server is running on port 3001)", "error");
-                return null;
+                console.error('MongoDB log error:', error);
+                log("❌ Failed to send log to MongoDB (check if server is running on port 3001)", "error");
+                return false;
             }
         }
-
-        // Load verification logs from MongoDB (certisure DB)
-        async function loadVerificationLogs() {
-            logsStatus.textContent = 'Loading from certisure database...';
-            logsContainer.innerHTML = '<div class="no-logs">Loading...</div>';
-            
-            try {
-                const response = await fetch(`${MONGO_API_BASE}/verifications`);
-                
-                if (!response.ok) throw new Error('Failed to fetch logs');
-                
-                const logs = await response.json();
-                
-                if (logs.length === 0) {
-                    logsContainer.innerHTML = '<div class="no-logs">No verification history in certisure DB</div>';
-                    logsStatus.textContent = '';
-                    return;
-                }
-
-                logsContainer.innerHTML = '';
-                
-                logs.forEach((item) => {
-                    const logItem = document.createElement('div');
-                    logItem.className = 'verification-log-item';
-                    
-                    // Highlight current verification
-                    if (item._id === currentVerificationId) {
-                        logItem.classList.add('current');
-                    }
-
-                    // Status tag styling
-                    const statusClass = 
-                        item.status === 'GENUINE' ? 'status-genuine' :
-                        item.status === 'SUSPICIOUS' ? 'status-suspicious' :
-                        item.status === 'FAKE' ? 'status-fake' : 'status-unknown';
-
-                    // Build log item HTML
-                    logItem.innerHTML = `
-                        <div class="log-item-header">
-                            <div class="log-file-name">
-                                ${item.fileName || 'Unknown File'}
-                                <span class="status-tag ${statusClass}">\({item.status || 'UNKNOWN'}</span>
-                                \){item._id === currentVerificationId ? '<span class="current-indicator">CURRENT</span>' : ''}
-                            </div>
-                            <div class="log-timestamp">${new Date(item.createdAt).toLocaleString()}</div>
-                        </div>
-                        <div class="log-item-details">
-                            <div class="detail-item">
-                                <span class="detail-label">Score</span>
-                                <span class="detail-value">${item.score}/100</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">QR Code</span>
-                                <span class="detail-value">${item.hasQR ? '✅ Found' : '❌ Not Found'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">DSU Name</span>
-                                <span class="detail-value">${item.hasDSU ? '✅ Found' : '❌ Not Found'}</span>
-                            </div>
-                        </div>
-                        ${item.reason ? `<div style="margin-top:0.5rem;font-size:0.75rem;color:#94a3b8;font-style:italic;">"${item.reason}"</div>` : ''}
-                    `;
-                    
-                    logsContainer.appendChild(logItem);
-                });
-
-                logsStatus.textContent = `Showing ${logs.length} verification${logs.length !== 1 ? 's' : ''} from certisure DB`;
-            } catch (error) {
-                console.error('MongoDB load error:', error);
-                logsContainer.innerHTML = '<div class="no-logs" style="color:#fca5a5;">Failed to load history. Ensure server.js is running on port 3001.</div>';
-                logsStatus.textContent = '';
-            }
-        }
-
-        // Refresh logs button handler
-        refreshLogsBtn.addEventListener('click', loadVerificationLogs);
 
         // Main verification handler
         verifyBtn.addEventListener('click', async () => {
@@ -539,8 +319,6 @@
             verdict.textContent = "Processing document...";
             statusBadge.className = 'status-badge loading';
             statusBadge.innerHTML = '<span>Analyzing content...</span>';
-            verificationLogsSection.style.display = 'none';
-            currentVerificationId = null;
 
             try {
                 // Step 1: Process document (PDF/OCR/QR)
@@ -630,8 +408,8 @@ REASON: [1-2 sentences]
                 log(`AI Final Score: \({score}/100 | Status: \){status}`, "success");
                 log(`Reason: ${reasonPart}`, "info");
 
-                // Step 3: Save verification to MongoDB (certisure DB)
-                log("Saving result to certisure database...", "info");
+                // Step 3: Send verification log to MongoDB (certisure DB only)
+                log("Sending log to certisure database...", "info");
                 const verificationPayload = {
                     fileName: selectedFile.name,
                     mimeType: selectedFile.type,
@@ -644,11 +422,7 @@ REASON: [1-2 sentences]
                     reason: reasonPart
                 };
 
-                await saveVerificationToMongoDB(verificationPayload);
-
-                // Step 4: Show logs section and load history
-                verificationLogsSection.style.display = 'block';
-                await loadVerificationLogs();
+                await sendVerificationLogToMongoDB(verificationPayload);
 
             } catch (err) {
                 // Handle errors
