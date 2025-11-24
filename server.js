@@ -11,7 +11,7 @@ app.use(express.json());
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017/certisure');
 
-// Schemas
+// Schemas and Models
 const userSchema = new mongoose.Schema({
     email: { type: String, unique: true },
     password: String,
@@ -28,7 +28,7 @@ const logSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 const Log = mongoose.model('Log', logSchema);
 
-// Create demo user
+// Create demo user if it doesn't exist
 User.findOne({ email: 'test@certisure.com' }).then(user => {
     if (!user) {
         bcrypt.hash('password123', 10).then(hash => {
@@ -37,7 +37,7 @@ User.findOne({ email: 'test@certisure.com' }).then(user => {
     }
 });
 
-// Routes
+// Health check
 app.get('/api/health', async (req, res) => {
     try {
         await mongoose.connection.db.admin().ping();
@@ -49,6 +49,7 @@ app.get('/api/health', async (req, res) => {
     }
 });
 
+// Sign up
 app.post('/api/auth/signup', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -62,6 +63,7 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 });
 
+// Login
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -78,6 +80,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+// Generic log endpoint
 app.post('/api/logs', async (req, res) => {
     const { action, data } = req.body;
     const token = req.headers.authorization?.split(' ')[1];
@@ -92,11 +95,35 @@ app.post('/api/logs', async (req, res) => {
     res.json({ success: true });
 });
 
+// Get recent logs (last 50)
 app.get('/api/logs/all', async (req, res) => {
     const logs = await Log.find().sort({ timestamp: -1 }).limit(50);
     res.json(logs);
 });
 
+// Verification log endpoint (for frontend)
+app.post('/api/verifications', async (req, res) => {
+    // Accepts payload with verification details from the frontend
+    const verificationData = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+    let email = 'anonymous';
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, 'secret');
+            email = decoded.email;
+        } catch {}
+    }
+
+    await Log.create({
+        action: 'verification',
+        userEmail: email,
+        data: verificationData
+    });
+
+    res.json({ success: true });
+});
+
+// Start server
 app.listen(3001, () => {
     console.log('✅ Server: http://localhost:3001');
     console.log('✅ MongoDB: mongodb://localhost:27017/certisure');
