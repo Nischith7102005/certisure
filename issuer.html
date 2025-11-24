@@ -4,788 +4,648 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CertiSure - MongoDB Auth Demo</title>
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔒</text></svg">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
-            color: #e2e8f0;
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         }
-        .dashboard-bg {
-            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
-                        radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.15) 0%, transparent 40%);
+        .glass {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
         }
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            transition: all 0.3s ease;
         }
-        .modal-content {
-            background: #2d3748;
-            padding: 2rem;
-            border-radius: 0.5rem;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.5);
         }
-        .mongo-status {
-            padding: 8px 12px;
-            border-radius: 6px;
-            margin-top: 10px;
-            font-size: 0.875rem;
+        .log-item {
+            animation: slideIn 0.3s ease-out;
         }
-        .mongo-connecting {
-            background: rgba(255, 187, 34, 0.2);
-            color: #f59e0b;
-            border: 1px solid #f59e0b;
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
         }
-        .mongo-success {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
-            border: 1px solid #10b981;
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            animation: pulse 2s infinite;
         }
-        .mongo-error {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-            border: 1px solid #ef4444;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
-        .activity-log {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .activity-item {
-            transition: all 0.2s ease;
-            border-left: 3px solid transparent;
-        }
-        .activity-item:hover {
-            transform: translateX(2px);
-        }
-        .activity-item.success {
-            border-left-color: #10b981;
-        }
-        .activity-item.error {
-            border-left-color: #ef4444;
-        }
-        .activity-item.info {
-            border-left-color: #3b82f6;
-        }
-        .code-block {
-            background: #1a202c;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            font-family: 'Courier New', monospace;
-            font-size: 0.875rem;
-            overflow-x: auto;
-        }
+        .connected { background: #10b981; }
+        .connecting { background: #f59e0b; }
+        .disconnected { background: #ef4444; }
     </style>
 </head>
-<body class="min-h-screen">
-    <!-- Navigation -->
-    <nav class="bg-gray-900 bg-opacity-90 backdrop-blur-sm fixed w-full z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 flex items-center">
-                        <i data-feather="shield" class="text-indigo-500 mr-2"></i>
-                        <span class="text-xl font-bold text-white">CertiSure</span>
+<body class="min-h-screen text-gray-100">
+    <!-- Main Container -->
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="glass rounded-xl p-6 mb-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
+                        <i data-feather="database" class="h-6 w-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-white">CertiSure MongoDB Demo</h1>
+                        <p class="text-sm text-gray-400">Authentication & Activity Logging System</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <div class="flex items-center">
-                        <div class="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></div>
-                        <span class="text-sm text-gray-300">MongoDB: localhost:27017</span>
+                    <!-- MongoDB Status -->
+                    <div class="glass px-4 py-2 rounded-lg flex items-center">
+                        <span class="connection-dot" id="mongoStatus"></span>
+                        <span class="text-sm" id="mongoStatusText">Checking...</span>
                     </div>
-                    <button id="authButton" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white text-sm font-medium transition flex items-center">
-                        <i data-feather="log-in" class="w-4 h-4 mr-2"></i>
-                        <span id="authButtonText">Login</span>
-                    </button>
+                    <!-- User Info -->
+                    <div id="userInfo" class="hidden glass px-4 py-2 rounded-lg">
+                        <span class="text-sm text-gray-400">Logged in as:</span>
+                        <span class="text-sm font-medium ml-2" id="currentUserEmail"></span>
+                        <button onclick="logout()" class="ml-4 text-red-400 hover:text-red-300">
+                            <i data-feather="log-out" class="h-4 w-4"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </nav>
 
-    <!-- Dashboard Header -->
-    <header class="dashboard-bg pt-24 pb-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center">
-                <h1 class="text-4xl font-bold leading-tight text-white" data-aos="fade-up">
-                    CertiSure MongoDB Demo
-                </h1>
-                <p class="mt-4 text-xl text-gray-300 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
-                    Complete authentication system with MongoDB Compass integration
-                </p>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="py-8">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Left Column - MongoDB Status -->
-                <div class="lg:col-span-2 space-y-8">
-                    <!-- MongoDB Connection Card -->
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
-                        <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-xl font-bold text-white">MongoDB Connection</h2>
-                            <div class="flex items-center space-x-2">
-                                <div class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse" id="mongoConnectionIndicator"></div>
-                                <span class="text-sm text-gray-300" id="mongoConnectionStatus">Connecting...</span>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="p-4 bg-gray-700 rounded-lg">
-                                <div class="flex items-center mb-3">
-                                    <i data-feather="database" class="text-green-400 mr-2"></i>
-                                    <span class="font-medium">Database</span>
-                                </div>
-                                <p class="text-gray-300">certisure</p>
-                                <p class="text-xs text-gray-500 mt-1">Local MongoDB Compass</p>
-                            </div>
-
-                            <div class="p-4 bg-gray-700 rounded-lg">
-                                <div class="flex items-center mb-3">
-                                    <i data-feather="server" class="text-green-400 mr-2"></i>
-                                    <span class="font-medium">Connection</span>
-                                </div>
-                                <p class="text-gray-300">mongodb://localhost:27017</p>
-                                <p class="text-xs text-gray-500 mt-1">Standard MongoDB port</p>
-                            </div>
-
-                            <div class="p-4 bg-gray-700 rounded-lg">
-                                <div class="flex items-center mb-3">
-                                    <i data-feather="users" class="text-green-400 mr-2"></i>
-                                    <span class="font-medium">Collections</span>
-                                </div>
-                                <div class="flex space-x-2">
-                                    <span class="px-2 py-1 bg-gray-600 rounded text-xs">users</span>
-                                    <span class="px-2 py-1 bg-gray-600 rounded text-xs">activity_logs</span>
-                                </div>
-                            </div>
-
-                            <div class="p-4 bg-gray-700 rounded-lg">
-                                <div class="flex items-center mb-3">
-                                    <i data-feather="activity" class="text-green-400 mr-2"></i>
-                                    <span class="font-medium">Status</span>
-                                </div>
-                                <div id="mongoStats">
-                                    <p class="text-gray-400 text-sm">Users: <span id="userCount">0</span></p>
-                                    <p class="text-gray-400 text-sm mt-1">Logs: <span id="logCount">0</span></p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mt-6">
-                            <button id="testConnectionBtn" class="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg flex items-center justify-center">
-                                <i data-feather="refresh-cw" class="mr-2"></i>
-                                Test Connection
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- MongoDB Commands Card -->
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up" data-aos-delay="100">
-                        <h2 class="text-xl font-bold text-white mb-6">MongoDB Commands</h2>
-
+        <!-- Main Grid -->
+        <div class="grid lg:grid-cols-2 gap-8">
+            <!-- Left Column - Auth Forms -->
+            <div>
+                <!-- Auth Card -->
+                <div class="glass rounded-xl p-6 mb-6">
+                    <h2 class="text-xl font-semibold mb-6" id="authTitle">Login to CertiSure</h2>
+                    
+                    <form id="authForm" onsubmit="handleAuth(event)">
                         <div class="space-y-4">
-                            <div class="code-block">
-                                <p><span class="text-green-400">// Create a user</span></p>
-                                <p>db.users.insertOne({</p>
-                                <p>&nbsp;&nbsp;email: "user@example.com",</p>
-                                <p>&nbsp;&nbsp;password: "hashed_password",</p>
-                                <p>&nbsp;&nbsp;createdAt: new Date(),</p>
-                                <p>&nbsp;&nbsp;lastLogin: null</p>
-                                <p>})</p>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                                <input 
+                                    type="email" 
+                                    id="email" 
+                                    class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+                                    placeholder="test@certisure.com"
+                                    required
+                                >
                             </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                                <input 
+                                    type="password" 
+                                    id="password" 
+                                    class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+                                    placeholder="password123"
+                                    required
+                                >
+                            </div>
+                            <div id="authError" class="hidden p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm"></div>
+                            <div id="authSuccess" class="hidden p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-400 text-sm"></div>
+                            
+                            <button type="submit" class="w-full btn-primary py-3 rounded-lg font-medium text-white">
+                                <span id="authButtonText">Login</span>
+                            </button>
+                            
+                            <div class="text-center">
+                                <button type="button" onclick="toggleAuthMode()" class="text-blue-400 hover:text-blue-300 text-sm">
+                                    <span id="toggleText">Don't have an account? Sign up</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
 
-                            <div class="code-block">
-                                <p><span class="text-green-400">// Find a user</span></p>
-                                <p>db.users.findOne({ email: "user@example.com" })</p>
-                            </div>
+                <!-- MongoDB Info -->
+                <div class="glass rounded-xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">MongoDB Connection Details</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between py-2 border-b border-slate-700">
+                            <span class="text-gray-400">Host</span>
+                            <span class="font-mono text-sm">localhost:27017</span>
+                        </div>
+                        <div class="flex justify-between py-2 border-b border-slate-700">
+                            <span class="text-gray-400">Database</span>
+                            <span class="font-mono text-sm text-blue-400">certisure</span>
+                        </div>
+                        <div class="flex justify-between py-2 border-b border-slate-700">
+                            <span class="text-gray-400">Collections</span>
+                            <span class="font-mono text-sm">users, logs</span>
+                        </div>
+                        <div class="flex justify-between py-2">
+                            <span class="text-gray-400">API Server</span>
+                            <span class="font-mono text-sm">http://localhost:3001</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                        <p class="text-sm text-blue-300 font-medium mb-2">📝 Test Credentials</p>
+                        <p class="text-xs text-gray-300">Email: test@certisure.com</p>
+                        <p class="text-xs text-gray-300">Password: password123</p>
+                    </div>
+                </div>
+            </div>
 
-                            <div class="code-block">
-                                <p><span class="text-green-400">// Log an activity</span></p>
-                                <p>db.activity_logs.insertOne({</p>
-                                <p>&nbsp;&nbsp;title: "User Login",</p>
-                                <p>&nbsp;&nbsp;description: "user@example.com logged in",</p>
-                                <p>&nbsp;&nbsp;type: "success",</p>
-                                <p>&nbsp;&nbsp;timestamp: new Date(),</p>
-                                <p>&nbsp;&nbsp;user: "user@example.com"</p>
-                                <p>})</p>
+            <!-- Right Column - Logs -->
+            <div>
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="glass rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-2xl font-bold" id="totalUsers">0</p>
+                                <p class="text-xs text-gray-400">Total Users</p>
                             </div>
-
-                            <div class="code-block">
-                                <p><span class="text-green-400">// Get recent activities</span></p>
-                                <p>db.activity_logs.find().sort({ timestamp: -1 }).limit(10)</p>
+                            <i data-feather="users" class="h-8 w-8 text-blue-400"></i>
+                        </div>
+                    </div>
+                    <div class="glass rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-2xl font-bold" id="totalLogs">0</p>
+                                <p class="text-xs text-gray-400">Total Logs</p>
                             </div>
+                            <i data-feather="activity" class="h-8 w-8 text-green-400"></i>
+                        </div>
+                    </div>
+                    <div class="glass rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-2xl font-bold" id="activeNow">0</p>
+                                <p class="text-xs text-gray-400">Active Now</p>
+                            </div>
+                            <i data-feather="zap" class="h-8 w-8 text-yellow-400"></i>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Column - Activity Log -->
-                <div class="space-y-6" data-aos="fade-up">
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-bold text-white">Activity Log</h2>
-                            <button id="refreshLogsBtn" class="text-sm text-gray-400 hover:text-white">
-                                <i data-feather="refresh-cw" class="h-4 w-4"></i>
-                            </button>
-                        </div>
-
-                        <div id="activityFeed" class="activity-log space-y-3">
-                            <!-- Activity items will be added here -->
-                            <div class="activity-item info p-3 bg-gray-700 rounded-lg">
-                                <div class="flex items-start">
-                                    <div class="flex-shrink-0">
-                                        <i data-feather="info" class="h-5 w-5 text-blue-400"></i>
-                                    </div>
-                                    <div class="ml-3">
-                                        <p class="text-sm font-medium">System Initialized</p>
-                                        <p class="text-xs text-gray-400">Application started</p>
-                                        <p class="text-xs text-gray-500 mt-1">Just now</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                <!-- Activity Logs -->
+                <div class="glass rounded-xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">MongoDB Activity Logs</h3>
+                        <button onclick="refreshLogs()" class="text-blue-400 hover:text-blue-300">
+                            <i data-feather="refresh-cw" class="h-4 w-4"></i>
+                        </button>
                     </div>
-
-                    <!-- User Management -->
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up" data-aos-delay="100">
-                        <h2 class="text-xl font-bold text-white mb-4">User Management</h2>
-
-                        <div class="space-y-4">
-                            <div class="p-4 bg-gray-700 rounded-lg">
-                                <div class="flex items-center mb-2">
-                                    <i data-feather="user-plus" class="text-green-400 mr-2"></i>
-                                    <span class="font-medium">Create User</span>
-                                </div>
-                                <p class="text-sm text-gray-400">Register new users with email and password</p>
-                            </div>
-
-                            <div class="p-4 bg-gray-700 rounded-lg">
-                                <div class="flex items-center mb-2">
-                                    <i data-feather="log-in" class="text-green-400 mr-2"></i>
-                                    <span class="font-medium">User Login</span>
-                                </div>
-                                <p class="text-sm text-gray-400">Authenticate existing users</p>
-                            </div>
-
-                            <div class="p-4 bg-gray-700 rounded-lg">
-                                <div class="flex items-center mb-2">
-                                    <i data-feather="activity" class="text-green-400 mr-2"></i>
-                                    <span class="font-medium">Activity Tracking</span>
-                                </div>
-                                <p class="text-sm text-gray-400">Log all user actions and system events</p>
-                            </div>
+                    
+                    <div class="space-y-3 max-h-[600px] overflow-y-auto" id="logsContainer">
+                        <div class="text-center text-gray-500 py-8">
+                            <i data-feather="database" class="h-12 w-12 mx-auto mb-3 text-gray-600"></i>
+                            <p>No logs yet. Try logging in!</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </main>
 
-    <!-- Auth Modal -->
-    <div id="authModal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-white" id="authModalTitle">Login</h3>
-                <button id="closeAuthModal" class="text-gray-400 hover:text-white">
-                    <i data-feather="x" class="h-5 w-5"></i>
+        <!-- Test Actions (Only visible when logged in) -->
+        <div id="testActions" class="hidden mt-8 glass rounded-xl p-6">
+            <h3 class="text-lg font-semibold mb-4">Test Actions - Generate Logs</h3>
+            <div class="flex flex-wrap gap-3">
+                <button onclick="logAction('document_view', {doc: 'test.pdf'})" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm">
+                    View Document
                 </button>
-            </div>
-
-            <form id="authForm" class="space-y-5">
-                <input type="hidden" id="authMode" value="login">
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Email</label>
-                    <input type="email" id="authEmail" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-1">Password</label>
-                    <input type="password" id="authPassword" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                </div>
-
-                <button type="submit" id="authSubmitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-medium transition">
-                    Login
+                <button onclick="logAction('document_download', {doc: 'test.pdf', size: '2.5MB'})" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm">
+                    Download Document
                 </button>
-            </form>
-
-            <div class="mt-5 pt-4 border-t border-gray-700 text-center">
-                <button id="toggleAuthMode" class="text-sm text-indigo-400 hover:underline">
-                    Don't have an account? Sign Up
+                <button onclick="logAction('qr_generate', {type: 'certificate'})" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm">
+                    Generate QR
+                </button>
+                <button onclick="logAction('s3_upload', {bucket: 'certisure', key: 'docs/test.pdf'})" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg text-sm">
+                    S3 Upload
+                </button>
+                <button onclick="logAction('verification', {status: 'success', docId: 'DOC123'})" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm">
+                    Verify Document
                 </button>
             </div>
         </div>
     </div>
-
-    <!-- MongoDB Data Modal -->
-    <div id="mongoDataModal" class="modal-overlay hidden">
-        <div class="modal-content max-w-2xl">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-white">MongoDB Data</h3>
-                <button id="closeMongoDataModal" class="text-gray-400 hover:text-white">
-                    <i data-feather="x" class="h-5 w-5"></i>
-                </button>
-            </div>
-
-            <div class="space-y-6">
-                <div>
-                    <h4 class="text-lg font-semibold text-white mb-3">Users Collection</h4>
-                    <div class="bg-gray-700 rounded-lg p-4 max-h-64 overflow-y-auto">
-                        <pre id="usersData" class="text-sm text-gray-300 font-mono">Loading users data...</pre>
-                    </div>
-                </div>
-
-                <div>
-                    <h4 class="text-lg font-semibold text-white mb-3">Activity Logs</h4>
-                    <div class="bg-gray-700 rounded-lg p-4 max-h-64 overflow-y-auto">
-                        <pre id="logsData" class="text-sm text-gray-300 font-mono">Loading logs data...</pre>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="bg-gray-900 py-8 border-t border-gray-800">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center text-gray-500">
-                <p class="mb-2">CertiSure - MongoDB Integration Demo</p>
-                <p class="text-sm">Local MongoDB Compass | Database: certisure</p>
-            </div>
-        </div>
-    </footer>
-
-    <!-- MongoDB Node.js Driver - Loaded from CDN for demo purposes -->
-    <script src="https://unpkg.com/mongodb@4.1.1"></script>
 
     <script>
-        // Global variables
+        // Configuration
+        const API_BASE = 'http://localhost:3001/api';
+        let isLoginMode = true;
         let currentUser = null;
-        let mongoClient = null;
-        let usersCollection = null;
-        let logsCollection = null;
+        let authToken = null;
+        let logsInterval = null;
 
-        // DOM Elements
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize libraries
-            AOS.init({ duration: 1000, once: true });
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
             feather.replace();
+            checkConnection();
+            setInterval(checkConnection, 5000);
+            checkAuthStatus();
+        });
 
-            // Get DOM elements
-            const authButton = document.getElementById('authButton');
-            const authButtonText = document.getElementById('authButtonText');
-            const authModal = document.getElementById('authModal');
-            const closeAuthModal = document.getElementById('closeAuthModal');
-            const authForm = document.getElementById('authForm');
-            const toggleAuthMode = document.getElementById('toggleAuthMode');
-            const authModeInput = document.getElementById('authMode');
-            const authModalTitle = document.getElementById('authModalTitle');
-            const authSubmitBtn = document.getElementById('authSubmitBtn');
-            const mongoConnectionIndicator = document.getElementById('mongoConnectionIndicator');
-            const mongoConnectionStatus = document.getElementById('mongoConnectionStatus');
-            const userCount = document.getElementById('userCount');
-            const logCount = document.getElementById('logCount');
-            const activityFeed = document.getElementById('activityFeed');
-            const testConnectionBtn = document.getElementById('testConnectionBtn');
-            const refreshLogsBtn = document.getElementById('refreshLogsBtn');
-            const mongoDataModal = document.getElementById('mongoDataModal');
-            const closeMongoDataModal = document.getElementById('closeMongoDataModal');
-            const usersData = document.getElementById('usersData');
-            const logsData = document.getElementById('logsData');
-
-            // Event listeners
-            authButton.addEventListener('click', toggleAuth);
-            closeAuthModal.addEventListener('click', () => authModal.classList.add('hidden'));
-            window.addEventListener('click', (e) => {
-                if (e.target === authModal) authModal.classList.add('hidden');
-            });
-
-            toggleAuthMode.addEventListener('click', () => {
-                const isLogin = authModeInput.value === 'login';
-                authModeInput.value = isLogin ? 'signup' : 'login';
-                authModalTitle.textContent = isLogin ? 'Sign Up' : 'Login';
-                authSubmitBtn.textContent = isLogin ? 'Sign Up' : 'Login';
-                toggleAuthMode.textContent = isLogin
-                    ? "Already have an account? Login"
-                    : "Don't have an account? Sign Up";
-            });
-
-            authForm.addEventListener('submit', handleAuthSubmit);
-            testConnectionBtn.addEventListener('click', testMongoConnection);
-            refreshLogsBtn.addEventListener('click', refreshActivityLog);
-            closeMongoDataModal.addEventListener('click', () => mongoDataModal.classList.add('hidden'));
-            window.addEventListener('click', (e) => {
-                if (e.target === mongoDataModal) mongoDataModal.classList.add('hidden');
-            });
-
-            // Initialize MongoDB connection
-            connectToMongoDB();
-
-            // Functions
-            function toggleAuth() {
-                if (currentUser) {
-                    // Logout
-                    currentUser = null;
-                    authButtonText.textContent = 'Login';
-                    authButton.innerHTML = `
-                        <i data-feather="log-in" class="w-4 h-4 mr-2"></i>
-                        Login
-                    `;
-                    addActivity('User Logout', 'User logged out', 'info');
+        // Check MongoDB connection
+        async function checkConnection() {
+            const statusDot = document.getElementById('mongoStatus');
+            const statusText = document.getElementById('mongoStatusText');
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                if (data.mongodb) {
+                    statusDot.className = 'connection-dot connected';
+                    statusText.textContent = `MongoDB Connected (${data.stats?.users || 0} users)`;
+                    
+                    // Update stats
+                    document.getElementById('totalUsers').textContent = data.stats?.users || 0;
+                    document.getElementById('totalLogs').textContent = data.stats?.logs || 0;
+                    
+                    if (currentUser) {
+                        refreshLogs();
+                    }
                 } else {
-                    // Show login modal
-                    authModal.classList.remove('hidden');
-                    document.getElementById('authEmail').focus();
+                    statusDot.className = 'connection-dot disconnected';
+                    statusText.textContent = 'MongoDB Disconnected';
                 }
-                feather.replace();
+            } catch (error) {
+                statusDot.className = 'connection-dot disconnected';
+                statusText.textContent = 'Server Offline - Start backend server';
             }
+        }
 
-            async function handleAuthSubmit(e) {
-                e.preventDefault();
-                const email = document.getElementById('authEmail').value;
-                const password = document.getElementById('authPassword').value;
-                const mode = authModeInput.value;
+        // Toggle between login and signup
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('authTitle').textContent = isLoginMode ? 'Login to CertiSure' : 'Create Account';
+            document.getElementById('authButtonText').textContent = isLoginMode ? 'Login' : 'Sign Up';
+            document.getElementById('toggleText').textContent = isLoginMode ? "Don't have an account? Sign up" : 'Already have an account? Login';
+            clearAuthMessages();
+        }
 
-                try {
-                    updateConnectionStatus('connecting');
+        // Handle authentication
+        async function handleAuth(event) {
+            event.preventDefault();
+            clearAuthMessages();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const button = document.getElementById('authButtonText');
+            
+            button.textContent = isLoginMode ? 'Logging in...' : 'Creating account...';
+            
+            try {
+                const endpoint = isLoginMode ? '/auth/login' : '/auth/signup';
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    authToken = data.token;
+                    currentUser = data.user;
+                    localStorage.setItem('certisure_token', authToken);
+                    localStorage.setItem('certisure_user', JSON.stringify(currentUser));
+                    
+                    showAuthSuccess(isLoginMode ? 'Login successful!' : 'Account created successfully!');
+                    
+                    setTimeout(() => {
+                        setAuthState(true);
+                        document.getElementById('authForm').reset();
+                        clearAuthMessages();
+                    }, 1500);
+                    
+                    // Log the action
+                    await logAction(isLoginMode ? 'user_login' : 'user_signup', { email });
+                    refreshLogs();
+                    
+                } else {
+                    showAuthError(data.error || 'Authentication failed');
+                }
+            } catch (error) {
+                showAuthError('Connection failed. Make sure server is running.');
+            } finally {
+                button.textContent = isLoginMode ? 'Login' : 'Sign Up';
+            }
+        }
 
-                    if (mode === 'signup') {
-                        // Check if user exists
-                        const existingUser = await usersCollection.findOne({ email: email });
-                        if (existingUser) {
-                            throw new Error('User with this email already exists');
-                        }
+        // Check if user is already logged in
+        function checkAuthStatus() {
+            const token = localStorage.getItem('certisure_token');
+            const user = localStorage.getItem('certisure_user');
+            
+            if (token && user) {
+                authToken = token;
+                currentUser = JSON.parse(user);
+                setAuthState(true);
+                refreshLogs();
+            }
+        }
 
-                        // Create new user (in a real app, you would hash the password)
-                        await usersCollection.insertOne({
-                            email: email,
-                            password: password, // Note: In production, always hash passwords!
-                            createdAt: new Date(),
-                            lastLogin: null
-                        });
+        // Set authentication state
+        function setAuthState(isAuthenticated) {
+            const userInfo = document.getElementById('userInfo');
+            const testActions = document.getElementById('testActions');
+            const currentUserEmail = document.getElementById('currentUserEmail');
+            
+            if (isAuthenticated && currentUser) {
+                userInfo.classList.remove('hidden');
+                testActions.classList.remove('hidden');
+                currentUserEmail.textContent = currentUser.email;
+                document.getElementById('activeNow').textContent = '1';
+                
+                // Start auto-refresh logs
+                if (logsInterval) clearInterval(logsInterval);
+                logsInterval = setInterval(refreshLogs, 10000);
+            } else {
+                userInfo.classList.add('hidden');
+                testActions.classList.add('hidden');
+                document.getElementById('activeNow').textContent = '0';
+                
+                if (logsInterval) clearInterval(logsInterval);
+            }
+            feather.replace();
+        }
 
-                        addActivity('User Created', email, 'success');
-                        alert('✅ Account created successfully! You can now login.');
-                        toggleAuthMode.click();
-                    } else {
-                        // Login
-                        const user = await usersCollection.findOne({ email: email });
-                        if (!user) {
-                            throw new Error('User not found');
-                        }
+        // Logout
+        async function logout() {
+            await logAction('user_logout', { email: currentUser?.email });
+            
+            localStorage.removeItem('certisure_token');
+            localStorage.removeItem('certisure_user');
+            authToken = null;
+            currentUser = null;
+            setAuthState(false);
+            
+            document.getElementById('logsContainer').innerHTML = `
+                <div class="text-center text-gray-500 py-8">
+                    <i data-feather="database" class="h-12 w-12 mx-auto mb-3 text-gray-600"></i>
+                    <p>No logs yet. Try logging in!</p>
+                </div>
+            `;
+            feather.replace();
+        }
 
-                        if (user.password !== password) {
-                            throw new Error('Invalid password');
-                        }
+        // Log action to MongoDB
+        async function logAction(action, data = {}) {
+            if (!authToken) return;
+            
+            try {
+                await fetch(`${API_BASE}/logs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ action, data })
+                });
+                
+                // Refresh logs after new action
+                setTimeout(refreshLogs, 500);
+            } catch (error) {
+                console.error('Failed to log action:', error);
+            }
+        }
 
-                        // Update last login
-                        await usersCollection.updateOne(
-                            { _id: user._id },
-                            { $set: { lastLogin: new Date() } }
-                        );
-
-                        currentUser = user;
-                        updateConnectionStatus('connected');
-                        addActivity('User Login', email, 'success');
-
-                        authButtonText.textContent = email;
-                        authButton.innerHTML = `
-                            <i data-feather="user-check" class="w-4 h-4 mr-2"></i>
-                            ${email}
-                        `;
-                        authModal.classList.add('hidden');
-                        alert(`✅ Welcome back, ${email}!`);
+        // Refresh logs from MongoDB
+        async function refreshLogs() {
+            if (!authToken) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/logs/all`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
                     }
-
-                    // Update counts
-                    updateUserCount();
-                    updateLogCount();
-                    refreshActivityLog();
-
-                    feather.replace();
-                } catch (error) {
-                    console.error('Auth error:', error);
-                    updateConnectionStatus('error');
-                    addActivity('Auth Failed', error.message, 'error');
-                    alert(`❌ ${error.message}`);
+                });
+                
+                if (response.ok) {
+                    const logs = await response.json();
+                    displayLogs(logs);
+                    document.getElementById('totalLogs').textContent = logs.length;
                 }
+            } catch (error) {
+                console.error('Failed to fetch logs:', error);
             }
+        }
 
-            async function connectToMongoDB() {
-                try {
-                    updateConnectionStatus('connecting');
-
-                    // Create a new MongoClient
-                    mongoClient = new mongodb.MongoClient('mongodb://localhost:27017', {
-                        serverSelectionTimeoutMS: 3000
-                    });
-
-                    // Connect to the MongoDB server
-                    await mongoClient.connect();
-
-                    // Get the database and collections
-                    const db = mongoClient.db('certisure');
-                    usersCollection = db.collection('users');
-                    logsCollection = db.collection('activity_logs');
-
-                    // Create indexes if they don't exist
-                    await usersCollection.createIndex({ email: 1 }, { unique: true });
-                    await logsCollection.createIndex({ timestamp: -1 });
-
-                    updateConnectionStatus('connected');
-                    addActivity('MongoDB', 'Connected to localhost:27017', 'success');
-
-                    // Update counts
-                    updateUserCount();
-                    updateLogCount();
-                    refreshActivityLog();
-
-                } catch (error) {
-                    console.error('MongoDB connection error:', error);
-                    updateConnectionStatus('error');
-                    addActivity('MongoDB', 'Connection failed: ' + error.message, 'error');
-
-                    // Show error message
-                    alert(`❌ Could not connect to MongoDB: ${error.message}\n\nPlease make sure:\n1. MongoDB is running\n2. MongoDB Compass is connected to localhost:27017\n3. The 'certisure' database exists`);
-                }
+        // Display logs in UI
+        function displayLogs(logs) {
+            const container = document.getElementById('logsContainer');
+            
+            if (logs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <p>No logs found</p>
+                    </div>
+                `;
+                return;
             }
-
-            function updateConnectionStatus(status) {
-                switch(status) {
-                    case 'connecting':
-                        mongoConnectionIndicator.className = 'w-3 h-3 rounded-full bg-yellow-500 animate-pulse';
-                        mongoConnectionStatus.textContent = 'Connecting...';
-                        mongoConnectionStatus.className = 'text-sm text-yellow-500';
-                        break;
-                    case 'connected':
-                        mongoConnectionIndicator.className = 'w-3 h-3 rounded-full bg-green-500';
-                        mongoConnectionStatus.textContent = 'Connected';
-                        mongoConnectionStatus.className = 'text-sm text-green-500';
-                        break;
-                    case 'error':
-                        mongoConnectionIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
-                        mongoConnectionStatus.textContent = 'Connection Failed';
-                        mongoConnectionStatus.className = 'text-sm text-red-500';
-                        break;
-                }
-            }
-
-            async function testMongoConnection() {
-                try {
-                    updateConnectionStatus('connecting');
-
-                    // Test the connection by counting documents
-                    const userCount = await usersCollection.countDocuments();
-                    const logCount = await logsCollection.countDocuments();
-
-                    updateUserCount(userCount);
-                    updateLogCount(logCount);
-
-                    updateConnectionStatus('connected');
-                    addActivity('MongoDB', 'Connection test successful', 'success');
-                    alert('✅ MongoDB connection test successful!');
-
-                    // Show the data modal
-                    showMongoData();
-
-                } catch (error) {
-                    console.error('Connection test error:', error);
-                    updateConnectionStatus('error');
-                    addActivity('MongoDB', 'Connection test failed: ' + error.message, 'error');
-                    alert(`❌ Connection test failed: ${error.message}`);
-                }
-            }
-
-            async function updateUserCount(count) {
-                if (count === undefined) {
-                    try {
-                        count = await usersCollection.countDocuments();
-                    } catch (error) {
-                        console.error('Error counting users:', error);
-                        count = 'Error';
-                    }
-                }
-                userCount.textContent = count;
-            }
-
-            async function updateLogCount(count) {
-                if (count === undefined) {
-                    try {
-                        count = await logsCollection.countDocuments();
-                    } catch (error) {
-                        console.error('Error counting logs:', error);
-                        count = 'Error';
-                    }
-                }
-                logCount.textContent = count;
-            }
-
-            async function refreshActivityLog() {
-                try {
-                    // Get the most recent 10 logs
-                    const logs = await logsCollection.find()
-                        .sort({ timestamp: -1 })
-                        .limit(10)
-                        .toArray();
-
-                    // Clear the activity feed
-                    activityFeed.innerHTML = '';
-
-                    // Add a default message if no logs
-                    if (logs.length === 0) {
-                        const item = document.createElement('div');
-                        item.className = 'activity-item info p-3 bg-gray-700 rounded-lg';
-                        item.innerHTML = `
-                            <div class="flex items-start">
-                                <div class="flex-shrink-0">
-                                    <i data-feather="info" class="h-5 w-5 text-blue-400"></i>
+            
+            container.innerHTML = logs.map(log => {
+                const time = new Date(log.timestamp).toLocaleTimeString();
+                const date = new Date(log.timestamp).toLocaleDateString();
+                const actionColor = getActionColor(log.action);
+                const actionIcon = getActionIcon(log.action);
+                
+                return `
+                    <div class="log-item p-4 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-start space-x-3">
+                                <div class="p-2 bg-${actionColor}-500/20 rounded-lg">
+                                    <i data-feather="${actionIcon}" class="h-4 w-4 text-${actionColor}-400"></i>
                                 </div>
-                                <div class="ml-3">
-                                    <p class="text-sm font-medium">No activities yet</p>
-                                    <p class="text-xs text-gray-400">Actions will appear here</p>
-                                    <p class="text-xs text-gray-500 mt-1">${new Date().toLocaleTimeString()}</p>
+                                <div>
+                                    <p class="font-medium text-sm">${formatAction(log.action)}</p>
+                                    <p class="text-xs text-gray-400 mt-1">by ${log.userEmail || 'anonymous'}</p>
+                                    ${log.data ? `<pre class="text-xs text-gray-500 mt-2 font-mono">${JSON.stringify(log.data, null, 2)}</pre>` : ''}
                                 </div>
                             </div>
-                        `;
-                        activityFeed.appendChild(item);
-                        feather.replace();
-                        return;
-                    }
-
-                    // Add each log to the feed
-                    logs.forEach(log => {
-                        const item = document.createElement('div');
-                        item.className = `activity-item ${log.type} p-3 bg-gray-700 rounded-lg`;
-
-                        const icon = log.type === 'error' ? 'alert-circle' :
-                                    log.type === 'success' ? 'check-circle' : 'info';
-
-                        const iconColor = log.type === 'error' ? 'text-red-400' :
-                                         log.type === 'success' ? 'text-green-400' : 'text-blue-400';
-
-                        item.innerHTML = `
-                            <div class="flex items-start">
-                                <div class="flex-shrink-0">
-                                    <i data-feather="${icon}" class="h-5 w-5 ${iconColor}"></i>
-                                </div>
-                                <div class="ml-3">
-                                    <p class="text-sm font-medium">${log.title}</p>
-                                    <p class="text-xs text-gray-400">${log.description}</p>
-                                    <p class="text-xs text-gray-500 mt-1">${new Date(log.timestamp).toLocaleTimeString()}</p>
-                                </div>
+                            <div class="text-right">
+                                <p class="text-xs text-gray-400">${time}</p>
+                                <p class="text-xs text-gray-500">${date}</p>
                             </div>
-                        `;
-                        activityFeed.appendChild(item);
-                    });
-
-                    feather.replace();
-                } catch (error) {
-                    console.error('Error refreshing activity log:', error);
-                    addActivity('Error', 'Failed to refresh activity log: ' + error.message, 'error');
-                }
-            }
-
-            function addActivity(title, description, type) {
-                // Add to UI
-                const activity = document.createElement('div');
-                activity.className = `activity-item ${type} p-3 bg-gray-700 rounded-lg`;
-
-                const icon = type === 'error' ? 'alert-circle' :
-                           type === 'success' ? 'check-circle' : 'info';
-
-                const iconColor = type === 'error' ? 'text-red-400' :
-                                 type === 'success' ? 'text-green-400' : 'text-blue-400';
-
-                activity.innerHTML = `
-                    <div class="flex items-start">
-                        <div class="flex-shrink-0">
-                            <i data-feather="${icon}" class="h-5 w-5 ${iconColor}"></i>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium">${title}</p>
-                            <p class="text-xs text-gray-400">${description}</p>
-                            <p class="text-xs text-gray-500 mt-1">${new Date().toLocaleTimeString()}</p>
                         </div>
                     </div>
                 `;
-                activityFeed.insertBefore(activity, activityFeed.firstChild);
+            }).join('');
+            
+            feather.replace();
+        }
 
-                // Keep only 10 activities
-                while (activityFeed.children.length > 10) {
-                    activityFeed.removeChild(activityFeed.lastChild);
-                }
+        // Helper functions
+        function formatAction(action) {
+            return action.split('_').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
 
-                // Log to MongoDB if connected
-                if (logsCollection) {
-                    logsCollection.insertOne({
-                        title: title,
-                        description: description,
-                        type: type,
-                        timestamp: new Date(),
-                        user: currentUser ? currentUser.email : 'system'
-                    }).catch(err => {
-                        console.error('Failed to log activity:', err);
-                    });
-                }
+        function getActionColor(action) {
+            const colors = {
+                'user_login': 'green',
+                'user_signup': 'blue',
+                'user_logout': 'gray',
+                'document_view': 'purple',
+                'document_download': 'yellow',
+                'qr_generate': 'indigo',
+                's3_upload': 'pink',
+                'verification': 'cyan',
+                'login_failed': 'red'
+            };
+            return colors[action] || 'gray';
+        }
 
-                // Update log count
-                updateLogCount();
+        function getActionIcon(action) {
+            const icons = {
+                'user_login': 'log-in',
+                'user_signup': 'user-plus',
+                'user_logout': 'log-out',
+                'document_view': 'eye',
+                'document_download': 'download',
+                'qr_generate': 'cpu',
+                's3_upload': 'cloud',
+                'verification': 'check-circle',
+                'login_failed': 'x-circle'
+            };
+            return icons[action] || 'activity';
+        }
 
-                feather.replace();
-            }
+        function showAuthError(message) {
+            const errorDiv = document.getElementById('authError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
 
-            async function showMongoData() {
-                try {
-                    // Get all users
-                    const users = await usersCollection.find().toArray();
-                    usersData.textContent = users.length > 0 ?
-                        JSON.stringify(users, null, 2) :
-                        'No users found in the database';
+        function showAuthSuccess(message) {
+            const successDiv = document.getElementById('authSuccess');
+            successDiv.textContent = message;
+            successDiv.classList.remove('hidden');
+        }
 
-                    // Get recent logs
-                    const logs = await logsCollection.find()
-                        .sort({ timestamp: -1 })
-                        .limit(10)
-                        .toArray();
-                    logsData.textContent = logs.length > 0 ?
-                        JSON.stringify(logs, null, 2) :
-                        'No logs found in the database';
+        function clearAuthMessages() {
+            document.getElementById('authError').classList.add('hidden');
+            document.getElementById('authSuccess').classList.add('hidden');
+        }
+    </script>
 
-                    mongoDataModal.classList.remove('hidden');
-                } catch (error) {
-                    console.error('Error fetching MongoDB data:', error);
-                    usersData.textContent = 'Error loading users: ' + error.message;
-                    logsData.textContent = 'Error loading logs: ' + error.message;
-                    mongoDataModal.classList.remove('hidden');
-                }
-            }
+    <!-- Minimal Backend Server Code (server.js) -->
+    <script type="text/template" id="serverCode">
+/* 
+SAVE THIS AS server.js AND RUN: node server.js
 
-            // Initial data load
-            setTimeout(() => {
-                updateUserCount();
-                updateLogCount();
-                refreshActivityLog();
-            }, 1000);
+const express = require('express');
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const cors = require('cors');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Connect to MongoDB
+mongoose.connect('mongodb://localhost:27017/certisure');
+
+// Schemas
+const userSchema = new mongoose.Schema({
+    email: { type: String, unique: true },
+    password: String,
+    createdAt: { type: Date, default: Date.now }
+});
+
+const logSchema = new mongoose.Schema({
+    action: String,
+    userEmail: String,
+    data: Object,
+    timestamp: { type: Date, default: Date.now }
+});
+
+const User = mongoose.model('User', userSchema);
+const Log = mongoose.model('Log', logSchema);
+
+// Create demo user on startup
+User.findOne({ email: 'test@certisure.com' }).then(user => {
+    if (!user) {
+        bcrypt.hash('password123', 10).then(hash => {
+            User.create({ email: 'test@certisure.com', password: hash });
         });
+    }
+});
+
+// Routes
+app.get('/api/health', async (req, res) => {
+    try {
+        await mongoose.connection.db.admin().ping();
+        const users = await User.countDocuments();
+        const logs = await Log.countDocuments();
+        res.json({ mongodb: true, stats: { users, logs } });
+    } catch (error) {
+        res.json({ mongodb: false });
+    }
+});
+
+app.post('/api/auth/signup', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = await User.create({ email, password: hashedPassword });
+        const token = jwt.sign({ email }, 'secret');
+        await Log.create({ action: 'user_signup', userEmail: email });
+        res.json({ token, user: { email } });
+    } catch (error) {
+        res.status(400).json({ error: 'User already exists' });
+    }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+        if (!user || !await bcrypt.compare(password, user.password)) {
+            await Log.create({ action: 'login_failed', userEmail: email });
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        const token = jwt.sign({ email }, 'secret');
+        await Log.create({ action: 'user_login', userEmail: email });
+        res.json({ token, user: { email } });
+    } catch (error) {
+        res.status(500).json({ error: 'Login failed' });
+    }
+});
+
+app.post('/api/logs', async (req, res) => {
+    const { action, data } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+    let email = 'anonymous';
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, 'secret');
+            email = decoded.email;
+        } catch {}
+    }
+    await Log.create({ action, userEmail: email, data });
+    res.json({ success: true });
+});
+
+app.get('/api/logs/all', async (req, res) => {
+    const logs = await Log.find().sort({ timestamp: -1 }).limit(50);
+    res.json(logs);
+});
+
+app.listen(3001, () => {
+    console.log('Server running on http://localhost:3001');
+    console.log('MongoDB: mongodb://localhost:27017/certisure');
+});
+
+INSTALL: npm install express mongoose bcryptjs jsonwebtoken cors
+*/
     </script>
 </body>
 </html>
