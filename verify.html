@@ -100,12 +100,53 @@
         .log-box {
             background: #0f172a; padding: 1.2rem; border-radius: 12px; margin-top: 1rem;
             font-family: 'Courier New', monospace; font-size: 0.9rem; color: #94a3b8;
-            max-height: 300px; overflow-y: auto; border-left: 4px solid #6366f1;
+            max-height: 400px; overflow-y: auto; border-left: 4px solid #6366f1;
         }
         .log-entry { margin: 6px 0; }
         .log-success { color: #4ade80; }
         .log-info { color: #60a5fa; }
         .log-error { color: #f87171; }
+        .log-warning { color: #fbbf24; }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #334155;
+            border-radius: 3px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .progress-text {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-top: 0.5rem;
+        }
+
+        .extracted-text {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            color: #cbd5e1;
+            display: none;
+        }
+        .extracted-text h4 {
+            color: #818cf8;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -140,8 +181,18 @@
                     <span>Initializing...</span>
                 </div>
 
+                <div class="progress-bar" id="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <p class="progress-text" id="progress-text">Preparing...</p>
+
                 <div class="log-box" id="log">
                     <div class="log-entry">Upload a PDF or image to begin verification.</div>
+                </div>
+
+                <div class="extracted-text" id="extracted-text-box">
+                    <h4>📝 Extracted Text (OCR)</h4>
+                    <pre id="extracted-text-content"></pre>
                 </div>
 
                 <button onclick="location.reload()" style="margin-top:1.5rem; background:#475569;">
@@ -152,12 +203,13 @@
     </div>
 
     <script>
+        // Configure PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         // API Configuration
         const AI_API_TOKEN = "cpk_6e025460f1cf48438058b24954f3ef0a.6cce9b81609c509dbdcfb29cc876557b.v1DAhbEMclbAihw1OAb6SD5S4YiX67Ts";
         const AI_API_URL = "https://llm.chutes.ai/v1/chat/completions";
-        const MONGO_API_BASE = "http://localhost:3001/api"; // Your certisure DB server
+        const MONGO_API_BASE = "http://localhost:3001/api";
 
         // DOM Elements
         const fileInput = document.getElementById('file-input');
@@ -169,8 +221,29 @@
         const statusBadge = document.getElementById('connection-status');
         const previewContainer = document.getElementById('preview-container');
         const previewContent = document.getElementById('preview-content');
+        const progressBar = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        const extractedTextBox = document.getElementById('extracted-text-box');
+        const extractedTextContent = document.getElementById('extracted-text-content');
 
         let selectedFile = null;
+        let tesseractWorker = null;
+
+        // Initialize Tesseract worker
+        async function initTesseract() {
+            if (tesseractWorker) return tesseractWorker;
+            
+            log("Initializing OCR engine (Tesseract)...", "info");
+            tesseractWorker = await Tesseract.createWorker('eng', 1, {
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        updateProgress(30 + Math.floor(m.progress * 40), `OCR: ${Math.floor(m.progress * 100)}%`);
+                    }
+                }
+            });
+            log("OCR engine ready", "success");
+            return tesseractWorker;
+        }
 
         // Helper: Add log to UI
         function log(message, type = 'normal') {
@@ -179,9 +252,16 @@
             if (type === 'success') entry.classList.add('log-success');
             if (type === 'info') entry.classList.add('log-info');
             if (type === 'error') entry.classList.add('log-error');
+            if (type === 'warning') entry.classList.add('log-warning');
             entry.textContent = `> ${message}`;
             logDiv.appendChild(entry);
             logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Update progress bar
+        function updateProgress(percent, text) {
+            progressBar.style.width = `${percent}%`;
+            if (text) progressText.textContent = text;
         }
 
         // Render file preview
@@ -231,63 +311,278 @@
             }
         });
 
-        // Process document (PDF/OCR/QR scan)
-        async function processDocument(file) {
-            const isPDF = file.type === 'application/pdf';
-            let pagesData = [];
+        // Enhanced QR Code Detection - tries multiple methods
+        function detectQRCode(canvas) {
+            const context = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
 
-            if (isPDF) {
-                log("Loading PDF for analysis...", "info");
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                log(`PDF has ${pdf.numPages} page(s). Scanning each page...`, "info");
-
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const viewport = page.getViewport({ scale: 2.0 });
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-
-                    await page.render({ canvasContext: context, viewport }).promise;
-                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-
-                    const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
-                    const hasQR = !!qrCode;
-
-                    const { data: { text } } = await Tesseract.recognize(canvas.toDataURL(), 'eng');
-
-                    pagesData.push({ page: i, hasQR, text: text.substring(0, 1500) });
-
-                    log(`Page \({i}: QR=\){hasQR ? 'YES' : 'NO'}, Text length=${text.length}`, hasQR ? "success" : "normal");
+            // Try detection at different scales and regions
+            const scales = [1.0, 0.75, 0.5, 1.5, 2.0];
+            
+            for (const scale of scales) {
+                // Create scaled canvas
+                const scaledCanvas = document.createElement('canvas');
+                const scaledWidth = Math.floor(width * scale);
+                const scaledHeight = Math.floor(height * scale);
+                scaledCanvas.width = scaledWidth;
+                scaledCanvas.height = scaledHeight;
+                const scaledCtx = scaledCanvas.getContext('2d');
+                
+                // Draw scaled image
+                scaledCtx.drawImage(canvas, 0, 0, scaledWidth, scaledHeight);
+                
+                // Apply grayscale and increase contrast for better QR detection
+                const imageData = scaledCtx.getImageData(0, 0, scaledWidth, scaledHeight);
+                const data = imageData.data;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    // Convert to grayscale
+                    const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                    // Increase contrast
+                    const contrast = 1.5;
+                    const factor = (259 * (contrast * 128 + 255)) / (255 * (259 - contrast * 128));
+                    const newGray = Math.max(0, Math.min(255, factor * (gray - 128) + 128));
+                    data[i] = data[i + 1] = data[i + 2] = newGray;
                 }
-            } else {
-                log("Loading image for analysis...", "info");
-                const img = new Image();
-                img.src = URL.createObjectURL(file);
-                await new Promise(r => img.onload = r);
-
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-                const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
-                const hasQR = !!qrCode;
-
-                const { data: { text } } = await Tesseract.recognize(file, 'eng');
-
-                pagesData.push({ page: 1, hasQR, text: text.substring(0, 2000) });
-                log(`Image: QR=\({hasQR ? 'YES' : 'NO'}, Text length=\){text.length}`, hasQR ? "success" : "normal");
+                
+                // Try QR detection on processed image
+                const qrCode = jsQR(imageData.data, scaledWidth, scaledHeight, {
+                    inversionAttempts: "attemptBoth"
+                });
+                
+                if (qrCode) {
+                    return {
+                        found: true,
+                        data: qrCode.data,
+                        scale: scale
+                    };
+                }
             }
 
+            // Also try on original image without processing
+            const originalImageData = context.getImageData(0, 0, width, height);
+            const qrCode = jsQR(originalImageData.data, width, height, {
+                inversionAttempts: "attemptBoth"
+            });
+            
+            if (qrCode) {
+                return {
+                    found: true,
+                    data: qrCode.data,
+                    scale: 1.0
+                };
+            }
+
+            return { found: false, data: null };
+        }
+
+        // Enhanced OCR with preprocessing
+        async function performOCR(canvas) {
+            const worker = await initTesseract();
+            
+            // Create preprocessed canvas for better OCR
+            const processedCanvas = document.createElement('canvas');
+            processedCanvas.width = canvas.width;
+            processedCanvas.height = canvas.height;
+            const ctx = processedCanvas.getContext('2d');
+            
+            // Draw original
+            ctx.drawImage(canvas, 0, 0);
+            
+            // Apply preprocessing for better OCR
+            const imageData = ctx.getImageData(0, 0, processedCanvas.width, processedCanvas.height);
+            const data = imageData.data;
+            
+            // Convert to high contrast grayscale
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+                // Threshold to black/white for better text recognition
+                const threshold = 128;
+                const newValue = gray > threshold ? 255 : 0;
+                data[i] = data[i + 1] = data[i + 2] = newValue;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            
+            // Perform OCR
+            const { data: { text, confidence } } = await worker.recognize(processedCanvas.toDataURL());
+            
+            return {
+                text: text.trim(),
+                confidence: confidence
+            };
+        }
+
+        // Process PDF document
+        async function processPDF(file) {
+            const pagesData = [];
+            
+            log("Loading PDF for analysis...", "info");
+            updateProgress(5, "Loading PDF...");
+            
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            const numPages = pdf.numPages;
+            
+            log(`PDF has ${numPages} page(s). Scanning each page...`, "info");
+            
+            for (let i = 1; i <= numPages; i++) {
+                updateProgress(10 + (i / numPages) * 20, `Rendering page ${i}/${numPages}...`);
+                log(`Processing page ${i}/${numPages}...`, "info");
+                
+                const page = await pdf.getPage(i);
+                
+                // Use higher scale for better quality
+                const scale = 2.5;
+                const viewport = page.getViewport({ scale });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                await page.render({ canvasContext: context, viewport }).promise;
+                
+                // QR Code Detection
+                updateProgress(30 + (i / numPages) * 10, `Scanning QR on page ${i}...`);
+                const qrResult = detectQRCode(canvas);
+                
+                if (qrResult.found) {
+                    log(`✅ QR Code FOUND on page ${i}! Data: ${qrResult.data.substring(0, 50)}...`, "success");
+                } else {
+                    log(`⚠️ No QR code on page ${i}`, "warning");
+                }
+                
+                // OCR Text Extraction
+                updateProgress(40 + (i / numPages) * 30, `Running OCR on page ${i}...`);
+                log(`Running OCR on page ${i}...`, "info");
+                
+                const ocrResult = await performOCR(canvas);
+                
+                log(`Page ${i} OCR complete: ${ocrResult.text.length} chars, ${ocrResult.confidence.toFixed(1)}% confidence`, 
+                    ocrResult.confidence > 70 ? "success" : "warning");
+                
+                pagesData.push({
+                    page: i,
+                    hasQR: qrResult.found,
+                    qrData: qrResult.data,
+                    text: ocrResult.text,
+                    confidence: ocrResult.confidence
+                });
+            }
+            
             return pagesData;
         }
 
-        // Send verification log to MongoDB (certisure DB only)
+        // Process Image
+        async function processImage(file) {
+            log("Loading image for analysis...", "info");
+            updateProgress(10, "Loading image...");
+            
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            await new Promise(r => img.onload = r);
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            
+            // QR Code Detection
+            updateProgress(30, "Scanning for QR code...");
+            log("Scanning for QR code...", "info");
+            const qrResult = detectQRCode(canvas);
+            
+            if (qrResult.found) {
+                log(`✅ QR Code FOUND! Data: ${qrResult.data.substring(0, 100)}...`, "success");
+            } else {
+                log("⚠️ No QR code detected in image", "warning");
+            }
+            
+            // OCR Text Extraction
+            updateProgress(50, "Running OCR...");
+            log("Running OCR on image...", "info");
+            const ocrResult = await performOCR(canvas);
+            
+            log(`OCR complete: ${ocrResult.text.length} chars, ${ocrResult.confidence.toFixed(1)}% confidence`,
+                ocrResult.confidence > 70 ? "success" : "warning");
+            
+            return [{
+                page: 1,
+                hasQR: qrResult.found,
+                qrData: qrResult.data,
+                text: ocrResult.text,
+                confidence: ocrResult.confidence
+            }];
+        }
+
+        // Main document processor
+        async function processDocument(file) {
+            const isPDF = file.type === 'application/pdf';
+            
+            if (isPDF) {
+                return await processPDF(file);
+            } else {
+                return await processImage(file);
+            }
+        }
+
+        // Analyze extracted text for DSU keywords
+        function analyzeText(text) {
+            const lowerText = text.toLowerCase();
+            
+            // Keywords to look for
+            const dsuKeywords = [
+                'dayananda sagar university',
+                'dayananda sagar',
+                'dsu',
+                'd.s.u',
+                'dayananda sagar institutions',
+                'dayananda sagar college'
+            ];
+            
+            const certificateKeywords = [
+                'certificate',
+                'degree',
+                'diploma',
+                'bachelor',
+                'master',
+                'awarded',
+                'conferred',
+                'university',
+                'examination',
+                'academic',
+                'transcript'
+            ];
+            
+            // Check for DSU mentions
+            let dsuFound = false;
+            let dsuMatch = null;
+            for (const keyword of dsuKeywords) {
+                if (lowerText.includes(keyword)) {
+                    dsuFound = true;
+                    dsuMatch = keyword;
+                    break;
+                }
+            }
+            
+            // Count certificate keywords
+            let certKeywordCount = 0;
+            for (const keyword of certificateKeywords) {
+                if (lowerText.includes(keyword)) {
+                    certKeywordCount++;
+                }
+            }
+            
+            return {
+                hasDSU: dsuFound,
+                dsuMatch: dsuMatch,
+                certificateKeywords: certKeywordCount,
+                isCertificateLike: certKeywordCount >= 2
+            };
+        }
+
+        // Send verification log to MongoDB
         async function sendVerificationLogToMongoDB(verificationData) {
             try {
                 const response = await fetch(`${MONGO_API_BASE}/verifications`, {
@@ -302,7 +597,7 @@
                 return true;
             } catch (error) {
                 console.error('MongoDB log error:', error);
-                log("❌ Failed to send log to MongoDB (check if server is running on port 3001)", "error");
+                log("⚠️ Could not send log to MongoDB (server may be offline)", "warning");
                 return false;
             }
         }
@@ -319,36 +614,61 @@
             verdict.textContent = "Processing document...";
             statusBadge.className = 'status-badge loading';
             statusBadge.innerHTML = '<span>Analyzing content...</span>';
+            extractedTextBox.style.display = 'none';
+            updateProgress(0, "Starting verification...");
 
             try {
                 // Step 1: Process document (PDF/OCR/QR)
                 const pagesData = await processDocument(selectedFile);
+                
+                // Combine all text
+                const allText = pagesData.map(p => p.text).join("\n\n");
                 const hasQR = pagesData.some(p => p.hasQR);
-                const allText = pagesData.map(p => p.text).join("\n");
-                const hasDSU = /dayananda\s+sagar\s+university|dsu/i.test(allText);
+                const qrData = pagesData.find(p => p.hasQR)?.qrData || null;
+                const avgConfidence = pagesData.reduce((sum, p) => sum + p.confidence, 0) / pagesData.length;
+                
+                // Analyze text for keywords
+                updateProgress(75, "Analyzing extracted text...");
+                const textAnalysis = analyzeText(allText);
+                
+                log(`Text analysis: DSU=${textAnalysis.hasDSU ? 'FOUND' : 'NOT FOUND'}, Certificate keywords=${textAnalysis.certificateKeywords}`, 
+                    textAnalysis.hasDSU ? "success" : "warning");
+                
+                // Show extracted text
+                if (allText.length > 0) {
+                    extractedTextBox.style.display = 'block';
+                    extractedTextContent.textContent = allText.substring(0, 2000) + (allText.length > 2000 ? '\n\n... [truncated]' : '');
+                }
 
-                // Step 2: Send to AI for scoring
+                // Step 2: Send to AI for final scoring
+                updateProgress(80, "Sending to AI...");
                 statusBadge.innerHTML = '<span>Sending to AI for final scoring...</span>';
-                log("Sending analysis to Chutes AI...", "info");
+                log("Sending analysis to AI for verification...", "info");
 
                 const prompt = `
-You are verifying a Dayananda Sagar University certificate (PDF/Image).
+You are verifying a Dayananda Sagar University (DSU) certificate.
 
-Analysis from scanner:
-- QR Code found on any page: ${hasQR ? "YES" : "NO"}
-- "Dayananda Sagar University" mentioned: ${hasDSU ? "YES" : "NO"}
-- Total pages scanned: ${pagesData.length}
-- Sample text: "${allText.substring(0, 800)}..."
+Document Analysis Results:
+- QR Code Present: ${hasQR ? "YES" : "NO"}
+${hasQR ? `- QR Data: "${qrData?.substring(0, 100)}..."` : ''}
+- "Dayananda Sagar University" or "DSU" Found: ${textAnalysis.hasDSU ? "YES" : "NO"}
+${textAnalysis.dsuMatch ? `- Matched Keyword: "${textAnalysis.dsuMatch}"` : ''}
+- Certificate-like Keywords Found: ${textAnalysis.certificateKeywords}
+- OCR Confidence: ${avgConfidence.toFixed(1)}%
+- Total Pages: ${pagesData.length}
+
+Extracted Text Sample:
+"${allText.substring(0, 1000)}${allText.length > 1000 ? '...' : ''}"
 
 Scoring Rules:
-- If QR present AND university name found → Score 75–99 (GENUINE)
-- If only one present → Score 40–74 (SUSPICIOUS)
-- If neither → Score 1–39 (FAKE)
+- GENUINE (75-99): QR code present AND DSU/Dayananda Sagar University text found AND certificate keywords present
+- SUSPICIOUS (40-74): Only QR OR only DSU text found, or low OCR confidence
+- FAKE (1-39): Neither QR nor DSU text found, or clearly fake indicators
 
-Respond exactly:
-SCORE: XX
-STATUS: GENUINE / SUSPICIOUS / FAKE
-REASON: [1-2 sentences]
+Respond in EXACTLY this format:
+SCORE: [number 1-99]
+STATUS: [GENUINE or SUSPICIOUS or FAKE]
+REASON: [1-2 sentence explanation]
                 `;
 
                 const aiResponse = await fetch(AI_API_URL, {
@@ -366,15 +686,41 @@ REASON: [1-2 sentences]
                 });
 
                 if (!aiResponse.ok) throw new Error("AI verification failed");
+                
+                updateProgress(90, "Processing AI response...");
                 const aiData = await aiResponse.json();
                 const aiResult = aiData.choices[0]?.message?.content || "";
+
+                log(`AI Response: ${aiResult}`, "info");
 
                 // Parse AI response
                 const scoreMatch = aiResult.match(/SCORE:\s*(\d+)/i);
                 const statusMatch = aiResult.match(/STATUS:\s*(GENUINE|SUSPICIOUS|FAKE)/i);
-                const score = scoreMatch ? parseInt(scoreMatch[1]) : 50;
-                const status = statusMatch ? statusMatch[1].toUpperCase() : "UNKNOWN";
-                const reasonPart = aiResult.split('REASON:')[1]?.trim() || "No reasoning provided";
+                const reasonMatch = aiResult.match(/REASON:\s*(.+?)(?:\n|$)/i);
+                
+                let score = scoreMatch ? parseInt(scoreMatch[1]) : 50;
+                let status = statusMatch ? statusMatch[1].toUpperCase() : "UNKNOWN";
+                let reason = reasonMatch ? reasonMatch[1].trim() : "No reasoning provided";
+
+                // Fallback scoring if AI fails
+                if (!scoreMatch) {
+                    if (hasQR && textAnalysis.hasDSU) {
+                        score = 85;
+                        status = "GENUINE";
+                        reason = "QR code and DSU text both detected.";
+                    } else if (hasQR || textAnalysis.hasDSU) {
+                        score = 55;
+                        status = "SUSPICIOUS";
+                        reason = hasQR ? "QR found but no DSU text." : "DSU text found but no QR code.";
+                    } else {
+                        score = 25;
+                        status = "FAKE";
+                        reason = "Neither QR code nor DSU text found.";
+                    }
+                    log("Using fallback scoring (AI response parse failed)", "warning");
+                }
+
+                updateProgress(100, "Verification complete!");
 
                 // Animate score display
                 let currentScore = 0;
@@ -385,11 +731,11 @@ REASON: [1-2 sentences]
                         clearInterval(scoreTimer);
                     }
                     scoreCircle.textContent = currentScore;
-                }, 30);
+                }, 25);
 
                 // Update UI with final result
                 statusBadge.className = 'status-badge connected';
-                statusBadge.innerHTML = '<span>✅ AI Verification Complete</span>';
+                statusBadge.innerHTML = '<span>✅ Verification Complete</span>';
 
                 if (score >= 75) {
                     scoreCircle.className = 'score-circle green';
@@ -405,33 +751,43 @@ REASON: [1-2 sentences]
                     verdict.style.color = "#f87171";
                 }
 
-                log(`AI Final Score: \({score}/100 | Status: \){status}`, "success");
-                log(`Reason: ${reasonPart}`, "info");
+                log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, "info");
+                log(`FINAL SCORE: ${score}/100`, "success");
+                log(`STATUS: ${status}`, status === 'GENUINE' ? 'success' : status === 'SUSPICIOUS' ? 'warning' : 'error');
+                log(`REASON: ${reason}`, "info");
+                log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`, "info");
 
-                // Step 3: Send verification log to MongoDB (certisure DB only)
-                log("Sending log to certisure database...", "info");
+                // Step 3: Send verification log to MongoDB
+                log("Saving to database...", "info");
                 const verificationPayload = {
                     fileName: selectedFile.name,
                     mimeType: selectedFile.type,
                     sizeBytes: selectedFile.size,
                     pages: pagesData.length,
-                    hasQR,
-                    hasDSU,
-                    score,
-                    status,
-                    reason: reasonPart
+                    hasQR: hasQR,
+                    qrData: qrData,
+                    hasDSU: textAnalysis.hasDSU,
+                    dsuMatch: textAnalysis.dsuMatch,
+                    certificateKeywords: textAnalysis.certificateKeywords,
+                    ocrConfidence: avgConfidence,
+                    extractedTextLength: allText.length,
+                    score: score,
+                    status: status,
+                    reason: reason,
+                    verifiedAt: new Date().toISOString()
                 };
 
                 await sendVerificationLogToMongoDB(verificationPayload);
 
             } catch (err) {
-                // Handle errors
+                console.error('Verification error:', err);
                 statusBadge.className = 'status-badge error';
                 statusBadge.innerHTML = '<span>❌ Verification Failed</span>';
                 log(`Error: ${err.message}`, "error");
                 verdict.textContent = "Verification Failed";
                 scoreCircle.textContent = "X";
                 scoreCircle.className = 'score-circle red';
+                updateProgress(0, "Error occurred");
             }
         });
 
