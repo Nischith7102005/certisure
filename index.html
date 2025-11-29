@@ -3,2010 +3,319 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CertiSure - Secure Document Verification</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollSmoother.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>CertiSure — Secure Document Verification</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --primary: #8B5CF6;
-            --primary-glow: rgba(139, 92, 246, 0.4);
-            --secondary: #10B981;
-            --accent: #EC4899;
-            --bg-dark: #000000;
-            --bg-card: #0a0a0a;
-            --text-primary: #FFFFFF;
-            --text-secondary: #888888;
-            --border-color: #1a1a1a;
+            --bg: #000;
+            --text: #fff;
+            --accent: #8B5CF6;
+            --accent-soft: rgba(139, 92, 246, 0.15);
         }
-
-        html, body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-primary);
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
             overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            cursor: none;
         }
-
-        /* Smooth Scroll Container */
-        #smooth-wrapper {
-            overflow: hidden;
-            position: fixed;
-            height: 100%;
-            width: 100%;
-            top: 0;
-            left: 0;
-        }
-
-        #smooth-content {
-            overflow: visible;
-            width: 100%;
-        }
-
-        /* Custom Cursor */
         .cursor {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--primary);
-            border-radius: 50%;
             position: fixed;
-            pointer-events: none;
-            z-index: 99999;
-            transition: transform 0.15s ease, width 0.3s ease, height 0.3s ease, border-color 0.3s ease;
-            transform: translate(-50%, -50%);
-            mix-blend-mode: difference;
-        }
-
-        .cursor-dot {
-            width: 6px;
-            height: 6px;
-            background: var(--primary);
-            border-radius: 50%;
-            position: fixed;
-            pointer-events: none;
-            z-index: 99999;
-            transform: translate(-50%, -50%);
-        }
-
-        .cursor.hover {
-            width: 60px;
-            height: 60px;
-            border-color: var(--accent);
-            background: rgba(139, 92, 246, 0.1);
-        }
-
-        /* Preloader */
-        .preloader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg-dark);
-            z-index: 100000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-        }
-
-        .preloader-logo {
-            font-size: 3rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 2rem;
-        }
-
-        .preloader-bar {
-            width: 200px;
-            height: 2px;
-            background: var(--border-color);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .preloader-progress {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            border-radius: 2px;
-        }
-
-        /* Navigation */
-        nav {
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 10000;
-            padding: 1.5rem 4rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        nav.scrolled {
-            background: rgba(0, 0, 0, 0.9);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            padding: 1rem 4rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 900;
-            letter-spacing: -0.03em;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            position: relative;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 3rem;
-            align-items: center;
-        }
-
-        .nav-link {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            letter-spacing: 0.02em;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 0;
-            width: 0;
-            height: 1px;
-            background: var(--primary);
-            transition: width 0.3s ease;
-        }
-
-        .nav-link:hover {
-            color: var(--text-primary);
-        }
-
-        .nav-link:hover::after {
-            width: 100%;
-        }
-
-        .nav-btn {
-            padding: 0.8rem 2rem;
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            font-weight: 500;
-            border-radius: 100px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .nav-btn:hover {
-            background: var(--primary);
-            border-color: var(--primary);
-            box-shadow: 0 0 30px var(--primary-glow);
-        }
-
-        /* Hero Section */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            padding: 0 4rem;
-            overflow: hidden;
-        }
-
-        .hero-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-        }
-
-        #hero-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        .hero-gradient {
-            position: absolute;
-            width: 800px;
-            height: 800px;
-            border-radius: 50%;
-            filter: blur(150px);
-            opacity: 0.3;
-        }
-
-        .hero-gradient-1 {
-            background: var(--primary);
-            top: -400px;
-            left: -200px;
-        }
-
-        .hero-gradient-2 {
-            background: var(--accent);
-            bottom: -400px;
-            right: -200px;
-        }
-
-        .hero-content {
-            max-width: 1400px;
-            width: 100%;
-            z-index: 10;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-        }
-
-        .hero-text {
-            padding-right: 2rem;
-        }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: rgba(139, 92, 246, 0.1);
-            border: 1px solid rgba(139, 92, 246, 0.3);
-            border-radius: 100px;
-            font-size: 0.85rem;
-            color: var(--primary);
-            margin-bottom: 2rem;
-        }
-
-        .hero-badge-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--secondary);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-        }
-
-        .hero-title {
-            font-size: clamp(3.5rem, 6vw, 5.5rem);
-            font-weight: 800;
-            line-height: 1.05;
-            letter-spacing: -0.04em;
-            margin-bottom: 1.5rem;
-        }
-
-        .hero-title-line {
-            display: block;
-            overflow: hidden;
-        }
-
-        .hero-title-line span {
-            display: block;
-            transform: translateY(100%);
-        }
-
-        .hero-title .gradient-text {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .hero-description {
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-            line-height: 1.8;
-            margin-bottom: 2.5rem;
-            max-width: 500px;
-        }
-
-        .hero-buttons {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .btn {
-            padding: 1rem 2.5rem;
-            font-size: 0.95rem;
-            font-weight: 600;
-            border-radius: 100px;
-            text-decoration: none;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-            cursor: pointer;
-            border: none;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 0 40px var(--primary-glow);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 50px var(--primary-glow);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: var(--text-secondary);
-        }
-
-        .btn-icon {
-            width: 20px;
-            height: 20px;
-            transition: transform 0.3s ease;
-        }
-
-        .btn:hover .btn-icon {
-            transform: translateX(5px);
-        }
-
-        /* 3D Document Container */
-        .hero-visual {
-            position: relative;
-            height: 600px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #document-canvas {
-            width: 100%;
-            height: 100%;
-        }
-
-        .hero-visual-glow {
-            position: absolute;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
-            border-radius: 50%;
-            filter: blur(60px);
-            animation: glowPulse 4s infinite ease-in-out;
-        }
-
-        @keyframes glowPulse {
-            0%, 100% { opacity: 0.5; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.1); }
-        }
-
-        /* Stats Section */
-        .stats {
-            padding: 6rem 4rem;
-            border-top: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .stats-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 4rem;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 4rem;
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-
-        /* Features Section */
-        .features {
-            padding: 10rem 4rem;
-            position: relative;
-        }
-
-        .features-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 6rem;
-        }
-
-        .section-label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 0.15em;
-            margin-bottom: 1rem;
-        }
-
-        .section-title {
-            font-size: clamp(2.5rem, 5vw, 4rem);
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            margin-bottom: 1.5rem;
-            line-height: 1.1;
-        }
-
-        .section-description {
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-            max-width: 600px;
-            margin: 0 auto;
-            line-height: 1.7;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-        }
-
-        .feature-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            padding: 3rem;
-            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-10px);
-            border-color: rgba(139, 92, 246, 0.5);
-            box-shadow: 0 30px 80px -20px var(--primary-glow);
-        }
-
-        .feature-card:hover::before {
-            opacity: 1;
-        }
-
-        .feature-icon {
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 2rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .feature-icon svg {
-            width: 32px;
-            height: 32px;
-            stroke: white;
-            stroke-width: 2;
-        }
-
-        .feature-number {
-            position: absolute;
-            top: 2rem;
-            right: 2rem;
-            font-size: 5rem;
-            font-weight: 900;
-            color: rgba(255, 255, 255, 0.03);
-            line-height: 1;
-        }
-
-        .feature-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .feature-description {
-            color: var(--text-secondary);
-            line-height: 1.8;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Process Section */
-        .process {
-            padding: 10rem 4rem;
-            background: linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-card) 50%, var(--bg-dark) 100%);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .process-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .process-timeline {
-            display: flex;
-            justify-content: space-between;
-            position: relative;
-            margin-top: 6rem;
-        }
-
-        .process-line {
-            position: absolute;
-            top: 60px;
-            left: 10%;
-            right: 10%;
-            height: 2px;
-            background: var(--border-color);
-        }
-
-        .process-line-progress {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            transition: width 0.5s ease;
-        }
-
-        .process-step {
-            text-align: center;
-            position: relative;
-            flex: 1;
-            padding: 0 2rem;
-        }
-
-        .step-icon {
-            width: 120px;
-            height: 120px;
-            background: var(--bg-dark);
-            border: 2px solid var(--border-color);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 2rem;
-            position: relative;
-            z-index: 1;
-            transition: all 0.5s ease;
-        }
-
-        .step-icon.active {
-            border-color: var(--primary);
-            box-shadow: 0 0 40px var(--primary-glow);
-        }
-
-        .step-number {
-            font-size: 2.5rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .step-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .step-description {
-            color: var(--text-secondary);
-            line-height: 1.7;
-            font-size: 0.95rem;
-        }
-
-        /* Showcase Section */
-        .showcase {
-            padding: 10rem 4rem;
-            position: relative;
-        }
-
-        .showcase-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .showcase-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-            margin-top: 4rem;
-        }
-
-        .showcase-image {
-            position: relative;
-            border-radius: 24px;
-            overflow: hidden;
-            aspect-ratio: 16/10;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-        }
-
-        .showcase-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .showcase-image:hover img {
-            transform: scale(1.05);
-        }
-
-        .showcase-image-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, transparent 50%);
-            pointer-events: none;
-        }
-
-        .showcase-content {
-            padding: 2rem;
-        }
-
-        .showcase-content .section-label {
-            text-align: left;
-        }
-
-        .showcase-content .section-title {
-            text-align: left;
-            font-size: 2.5rem;
-        }
-
-        .showcase-list {
-            margin-top: 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .showcase-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-        }
-
-        .showcase-item-icon {
-            width: 24px;
-            height: 24px;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
-
-        .showcase-item-icon svg {
             width: 12px;
             height: 12px;
-            stroke: white;
+            background: var(--accent);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: difference;
+            transition: transform 0.1s ease;
         }
-
-        .showcase-item-text {
-            color: var(--text-secondary);
-            line-height: 1.6;
+        .cursor-follow {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--accent);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            transform: translate(-50%, -50%);
         }
-
-        /* CTA Section */
-        .cta {
-            padding: 10rem 4rem;
-            text-align: center;
+        nav {
+            position: fixed;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            font-weight: 500;
+            font-size: 15px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        nav a {
+            color: rgba(255,255,255,0.6);
+            text-decoration: none;
+            margin: 0 30px;
+            transition: color 0.4s;
+        }
+        nav a:hover { color: white; }
+        .section {
+            height: 100vh;
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             overflow: hidden;
         }
-
-        .cta-bg {
+        .bg-image {
             position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-size: cover;
+            background-position: center;
+            filter: brightness(0.4) contrast(1.3);
+            transform: scale(1.05);
+        }
+        .content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            max-width: 900px;
+            padding: 0 40px;
+        }
+        h1 {
+            font-size: clamp(4rem, 10vw, 9rem);
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            line-height: 0.9;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff, #aaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        p {
+            font-size: 1.4rem;
+            line-height: 1.7;
+            opacity: 0.8;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .btn {
+            margin-top: 3rem;
+            display: inline-block;
+            padding: 18px 50px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 2px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            transition: all 0.6s ease;
+        }
+        .btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            box-shadow: 0 0 40px rgba(139,92,246,0.4);
+        }
+        #document-canvas {
+            position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 1000px;
-            height: 1000px;
-            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 60%);
-            filter: blur(100px);
-            opacity: 0.3;
+            width: 380px;
+            height: 520px;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.9;
         }
-
-        .cta-container {
-            max-width: 900px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 1;
-        }
-
-        .cta-title {
-            font-size: clamp(3rem, 6vw, 5rem);
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            margin-bottom: 1.5rem;
-            line-height: 1.1;
-        }
-
-        .cta-description {
-            font-size: 1.3rem;
-            color: var(--text-secondary);
-            margin-bottom: 3rem;
-            line-height: 1.7;
-        }
-
-        /* Footer */
         footer {
-            padding: 6rem 4rem 3rem;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .footer-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .footer-top {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
-            gap: 4rem;
-            margin-bottom: 4rem;
-        }
-
-        .footer-brand {
-            max-width: 300px;
-        }
-
-        .footer-brand .logo {
-            margin-bottom: 1.5rem;
-            display: inline-block;
-        }
-
-        .footer-brand p {
-            color: var(--text-secondary);
-            line-height: 1.7;
-            margin-bottom: 1.5rem;
-        }
-
-        .footer-social {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .footer-social a {
-            width: 40px;
-            height: 40px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        .footer-social a:hover {
-            background: var(--primary);
-            border-color: var(--primary);
-            transform: translateY(-3px);
-        }
-
-        .footer-social svg {
-            width: 18px;
-            height: 18px;
-            stroke: var(--text-secondary);
-        }
-
-        .footer-social a:hover svg {
-            stroke: white;
-        }
-
-        .footer-links h4 {
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            color: var(--text-primary);
-        }
-
-        .footer-links ul {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .footer-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        .footer-links a:hover {
-            color: var(--primary);
-            padding-left: 5px;
-        }
-
-        .footer-bottom {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 3rem;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .footer-bottom p {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-        }
-
-        .footer-bottom-links {
-            display: flex;
-            gap: 2rem;
-        }
-
-        .footer-bottom-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.85rem;
-            transition: color 0.3s ease;
-        }
-
-        .footer-bottom-links a:hover {
-            color: var(--primary);
-        }
-
-        /* Scroll Progress */
-        .scroll-progress {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 0%;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            z-index: 100001;
-            transition: width 0.1s ease;
-        }
-
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .hero-content {
-                grid-template-columns: 1fr;
-                text-align: center;
-            }
-
-            .hero-text {
-                padding-right: 0;
-            }
-
-            .hero-description {
-                margin: 0 auto 2.5rem;
-            }
-
-            .hero-buttons {
-                justify-content: center;
-            }
-
-            .hero-visual {
-                display: none;
-            }
-
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .showcase-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 768px) {
-            nav {
-                padding: 1rem 2rem;
-            }
-
-            .nav-links {
-                display: none;
-            }
-
-            .hero {
-                padding: 0 2rem;
-            }
-
-            .stats-container {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 2rem;
-            }
-
-            .process-timeline {
-                flex-direction: column;
-                gap: 3rem;
-            }
-
-            .process-line {
-                display: none;
-            }
-
-            .footer-top {
-                grid-template-columns: 1fr;
-                gap: 2rem;
-            }
-
-            .footer-bottom {
-                flex-direction: column;
-                gap: 1rem;
-                text-align: center;
-            }
-
-            .cursor, .cursor-dot {
-                display: none;
-            }
-        }
-
-        /* Animations */
-        .reveal {
-            opacity: 0;
-            transform: translateY(50px);
-        }
-
-        .reveal.active {
-            opacity: 1;
-            transform: translateY(0);
-            transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        /* Magnetic Button Effect */
-        .magnetic {
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            opacity: 0.5;
+            letter-spacing: 1px;
         }
     </style>
 </head>
 <body>
-    <!-- Preloader -->
-    <div class="preloader" id="preloader">
-        <div class="preloader-logo">CertiSure</div>
-        <div class="preloader-bar">
-            <div class="preloader-progress" id="preloader-progress"></div>
-        </div>
-    </div>
-
-    <!-- Scroll Progress -->
-    <div class="scroll-progress" id="scroll-progress"></div>
 
     <!-- Custom Cursor -->
-    <div class="cursor" id="cursor"></div>
-    <div class="cursor-dot" id="cursor-dot"></div>
+    <div class="cursor"></div>
+    <div class="cursor-follow"></div>
 
     <!-- Navigation -->
-    <nav id="nav">
-        <div class="logo">CertiSure</div>
-        <div class="nav-links">
-            <a href="#features" class="nav-link">Features</a>
-            <a href="#process" class="nav-link">How it Works</a>
-            <a href="#showcase" class="nav-link">Showcase</a>
-            <a href="#" class="nav-link">Pricing</a>
-            <button class="nav-btn magnetic">Get Started</button>
-        </div>
+    <nav>
+        <a href="#">Home</a>
+        <a href="#">Features</a>
+        <a href="#">Verify</a>
+        <a href="#">About</a>
     </nav>
 
-    <!-- Main Content -->
-    <div id="smooth-wrapper">
-        <div id="smooth-content">
-            <!-- Hero Section -->
-            <section class="hero" id="hero">
-                <div class="hero-bg">
-                    <canvas id="hero-canvas"></canvas>
-                    <div class="hero-gradient hero-gradient-1"></div>
-                    <div class="hero-gradient hero-gradient-2"></div>
-                </div>
+    <!-- 3D Document (Always Visible & Floating) -->
+    <canvas id="document-canvas"></canvas>
 
-                <div class="hero-content">
-                    <div class="hero-text">
-                        <div class="hero-badge">
-                            <span class="hero-badge-dot"></span>
-                            <span>Trusted by 10,000+ institutions</span>
-                        </div>
-
-                        <h1 class="hero-title">
-                            <span class="hero-title-line"><span>Secure Your</span></span>
-                            <span class="hero-title-line"><span class="gradient-text">Academic Future</span></span>
-                        </h1>
-
-                        <p class="hero-description">
-                            Revolutionary blockchain & AI-powered document verification. 
-                            Ensure trust and integrity with military-grade security.
-                        </p>
-
-                        <div class="hero-buttons">
-                            <a href="#" class="btn btn-primary magnetic">
-                                Start Verifying
-                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                                </svg>
-                            </a>
-                            <a href="#" class="btn btn-secondary magnetic">
-                                Watch Demo
-                                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polygon points="5 3 19 12 5 21 5 3"/>
-                                </svg>
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="hero-visual">
-                        <div class="hero-visual-glow"></div>
-                        <canvas id="document-canvas"></canvas>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Stats Section -->
-            <section class="stats">
-                <div class="stats-container">
-                    <div class="stat-item reveal">
-                        <div class="stat-number" data-value="10">0</div>
-                        <div class="stat-label">Million+ Documents</div>
-                    </div>
-                    <div class="stat-item reveal">
-                        <div class="stat-number" data-value="99.9">0</div>
-                        <div class="stat-label">% Accuracy Rate</div>
-                    </div>
-                    <div class="stat-item reveal">
-                        <div class="stat-number" data-value="150">0</div>
-                        <div class="stat-label">Countries Served</div>
-                    </div>
-                    <div class="stat-item reveal">
-                        <div class="stat-number" data-value="24">0</div>
-                        <div class="stat-label">/7 Support</div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Features Section -->
-            <section class="features" id="features">
-                <div class="features-container">
-                    <div class="section-header reveal">
-                        <div class="section-label">Features</div>
-                        <h2 class="section-title">Built for the Future</h2>
-                        <p class="section-description">
-                            Experience next-generation document verification with cutting-edge technology designed for security and simplicity.
-                        </p>
-                    </div>
-
-                    <div class="features-grid">
-                        <div class="feature-card reveal">
-                            <span class="feature-number">01</span>
-                            <div class="feature-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                                </svg>
-                            </div>
-                            <h3 class="feature-title">Blockchain Security</h3>
-                            <p class="feature-description">
-                                Documents secured with IPFS and cryptographic hashing. Tamper-proof, immutable, and eternally verifiable.
-                            </p>
-                        </div>
-
-                        <div class="feature-card reveal">
-                            <span class="feature-number">02</span>
-                            <div class="feature-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                                    <path d="M2 17l10 5 10-5"/>
-                                    <path d="M2 12l10 5 10-5"/>
-                                </svg>
-                            </div>
-                            <h3 class="feature-title">AI Trust Score</h3>
-                            <p class="feature-description">
-                                Advanced neural networks analyze patterns, signatures, and metadata to generate precise trust scores.
-                            </p>
-                        </div>
-
-                        <div class="feature-card reveal">
-                            <span class="feature-number">03</span>
-                            <div class="feature-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                                    <path d="M7 7h.01"/>
-                                    <path d="M17 7h.01"/>
-                                    <path d="M7 17h.01"/>
-                                    <path d="M17 17h.01"/>
-                                </svg>
-                            </div>
-                            <h3 class="feature-title">QR Verification</h3>
-                            <p class="feature-description">
-                                Instant document authentication via unique QR codes. Scan with any device, verify in milliseconds.
-                            </p>
-                        </div>
-
-                        <div class="feature-card reveal">
-                            <span class="feature-number">04</span>
-                            <div class="feature-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                                </svg>
-                            </div>
-                            <h3 class="feature-title">Military-Grade Encryption</h3>
-                            <p class="feature-description">
-                                AES-256 encryption protects every document. Your credentials are safer than government secrets.
-                            </p>
-                        </div>
-
-                        <div class="feature-card reveal">
-                            <span class="feature-number">05</span>
-                            <div class="feature-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <path d="M2 12h20"/>
-                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                                </svg>
-                            </div>
-                            <h3 class="feature-title">Global Network</h3>
-                            <p class="feature-description">
-                                Decentralized infrastructure across 150+ countries. Your documents accessible anywhere, anytime.
-                            </p>
-                        </div>
-
-                        <div class="feature-card reveal">
-                            <span class="feature-number">06</span>
-                            <div class="feature-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                                </svg>
-                            </div>
-                            <h3 class="feature-title">Lightning Fast</h3>
-                            <p class="feature-description">
-                                Verification in under 100ms. Real-time authentication without compromising security.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Process Section -->
-            <section class="process" id="process">
-                <div class="process-container">
-                    <div class="section-header reveal">
-                        <div class="section-label">How It Works</div>
-                        <h2 class="section-title">Three Simple Steps</h2>
-                        <p class="section-description">
-                            From issuance to verification, we've streamlined the entire process into an elegant workflow.
-                        </p>
-                    </div>
-
-                    <div class="process-timeline">
-                        <div class="process-line">
-                            <div class="process-line-progress" id="process-progress"></div>
-                        </div>
-
-                        <div class="process-step reveal">
-                            <div class="step-icon active">
-                                <span class="step-number">01</span>
-                            </div>
-                            <h3 class="step-title">Upload Document</h3>
-                            <p class="step-description">
-                                Institutions upload credentials which are instantly watermarked, encrypted, and stored on IPFS.
-                            </p>
-                        </div>
-
-                        <div class="process-step reveal">
-                            <div class="step-icon">
-                                <span class="step-number">02</span>
-                            </div>
-                            <h3 class="step-title">AI Analysis</h3>
-                            <p class="step-description">
-                                Our AI examines the document, comparing signatures and patterns to generate a trust score.
-                            </p>
-                        </div>
-
-                        <div class="process-step reveal">
-                            <div class="step-icon">
-                                <span class="step-number">03</span>
-                            </div>
-                            <h3 class="step-title">Instant Verification</h3>
-                            <p class="step-description">
-                                Recipients scan the QR code to instantly verify authenticity and view the complete trust report.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Showcase Section -->
-            <section class="showcase" id="showcase">
-                <div class="showcase-container">
-                    <div class="showcase-grid">
-                        <div class="showcase-image reveal">
-                            <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&h=500&fit=crop" alt="Tech workspace">
-                            <div class="showcase-image-overlay"></div>
-                        </div>
-
-                        <div class="showcase-content reveal">
-                            <div class="section-label">Why Choose Us</div>
-                            <h2 class="section-title">Trusted by Industry Leaders</h2>
-                            <p class="section-description" style="text-align: left; margin: 0 0 2rem 0;">
-                                Leading institutions worldwide rely on CertiSure for their document verification needs.
-                            </p>
-
-                            <div class="showcase-list">
-                                <div class="showcase-item">
-                                    <div class="showcase-item-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                    </div>
-                                    <span class="showcase-item-text">
-                                        Enterprise-grade security with SOC 2 Type II compliance
-                                    </span>
-                                </div>
-                                <div class="showcase-item">
-                                    <div class="showcase-item-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                    </div>
-                                    <span class="showcase-item-text">
-                                        99.99% uptime SLA with global CDN distribution
-                                    </span>
-                                </div>
-                                <div class="showcase-item">
-                                    <div class="showcase-item-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                    </div>
-                                    <span class="showcase-item-text">
-                                        GDPR compliant with data residency options
-                                    </span>
-                                </div>
-                                <div class="showcase-item">
-                                    <div class="showcase-item-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                    </div>
-                                    <span class="showcase-item-text">
-                                        24/7 dedicated support with 15-minute response time
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="showcase-grid" style="margin-top: 8rem;">
-                        <div class="showcase-content reveal">
-                            <div class="section-label">Advanced Analytics</div>
-                            <h2 class="section-title">Insights That Matter</h2>
-                            <p class="section-description" style="text-align: left; margin: 0 0 2rem 0;">
-                                Comprehensive dashboards and reports to track verification activity across your organization.
-                            </p>
-
-                            <div class="showcase-list">
-                                <div class="showcase-item">
-                                    <div class="showcase-item-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                    </div>
-                                    <span class="showcase-item-text">
-                                        Real-time verification monitoring and alerts
-                                    </span>
-                                </div>
-                                <div class="showcase-item">
-                                    <div class="showcase-item-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                    </div>
-                                    <span class="showcase-item-text">
-                                        Fraud detection with machine learning
-                                    </span>
-                                </div>
-                                <div class="showcase-item">
-                                    <div class="showcase-item-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                            <polyline points="20 6 9 17 4 12"/>
-                                        </svg>
-                                    </div>
-                                    <span class="showcase-item-text">
-                                        Custom reports and API integrations
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="showcase-image reveal">
-                            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=500&fit=crop" alt="Analytics dashboard">
-                            <div class="showcase-image-overlay"></div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- CTA Section -->
-            <section class="cta" id="cta">
-                <div class="cta-bg"></div>
-                <div class="cta-container">
-                    <h2 class="cta-title reveal">
-                        Ready to Secure<br>Your Credentials?
-                    </h2>
-                    <p class="cta-description reveal">
-                        Join thousands of institutions and millions of individuals who trust CertiSure for document verification.
-                    </p>
-                    <div class="hero-buttons reveal" style="justify-content: center;">
-                        <a href="#" class="btn btn-primary magnetic">
-                            Get Started Free
-                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M5 12h14M12 5l7 7-7 7"/>
-                            </svg>
-                        </a>
-                        <a href="#" class="btn btn-secondary magnetic">
-                            Contact Sales
-                        </a>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Footer -->
-            <footer>
-                <div class="footer-container">
-                    <div class="footer-top">
-                        <div class="footer-brand">
-                            <div class="logo">CertiSure</div>
-                            <p>
-                                Securing academic credentials with blockchain technology and AI-powered verification.
-                            </p>
-                            <div class="footer-social">
-                                <a href="#">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"/>
-                                    </svg>
-                                </a>
-                                <a href="#">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-                                        <rect x="2" y="9" width="4" height="12"/>
-                                        <circle cx="4" cy="4" r="2"/>
-                                    </svg>
-                                </a>
-                                <a href="#">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
-                                    </svg>
-                                </a>
-                            </div>
-                        </div>
-
-                        <div class="footer-links">
-                            <h4>Product</h4>
-                            <ul>
-                                <li><a href="#">Features</a></li>
-                                <li><a href="#">Pricing</a></li>
-                                <li><a href="#">API Docs</a></li>
-                                <li><a href="#">Integrations</a></li>
-                            </ul>
-                        </div>
-
-                        <div class="footer-links">
-                            <h4>Company</h4>
-                            <ul>
-                                <li><a href="#">About</a></li>
-                                <li><a href="#">Blog</a></li>
-                                <li><a href="#">Careers</a></li>
-                                <li><a href="#">Contact</a></li>
-                            </ul>
-                        </div>
-
-                        <div class="footer-links">
-                            <h4>Resources</h4>
-                            <ul>
-                                <li><a href="#">Documentation</a></li>
-                                <li><a href="#">Help Center</a></li>
-                                <li><a href="#">Community</a></li>
-                                <li><a href="#">Status</a></li>
-                            </ul>
-                        </div>
-
-                        <div class="footer-links">
-                            <h4>Legal</h4>
-                            <ul>
-                                <li><a href="#">Privacy</a></li>
-                                <li><a href="#">Terms</a></li>
-                                <li><a href="#">Security</a></li>
-                                <li><a href="#">Cookies</a></li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div class="footer-bottom">
-                        <p>© 2024 CertiSure. All rights reserved.</p>
-                        <div class="footer-bottom-links">
-                            <a href="#">Privacy Policy</a>
-                            <a href="#">Terms of Service</a>
-                            <a href="#">Cookie Settings</a>
-                        </div>
-                    </div>
-                </div>
-            </footer>
+    <!-- Section 1 - Hero -->
+    <section class="section">
+        <div class="bg-image" style="background-image: url('https://images.unsplash.com/photo-1518770660439-4636190af475?w=1920&q=90')"></div>
+        <div class="content">
+            <h1>CertiSure</h1>
+            <p>Blockchain-powered academic credential verification. Tamper-proof. Instant. Beautiful.</p>
+            <a href="#" class="btn">Get Started</a>
         </div>
-    </div>
+    </section>
+
+    <!-- Section 2 -->
+    <section class="section">
+        <div class="bg-image" style="background-image: url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1920&q=90')"></div>
+        <div class="content">
+            <h1>Trust Redefined</h1>
+            <p>Every document is cryptographically sealed on IPFS and verified with AI-powered trust scoring.</p>
+        </div>
+    </section>
+
+    <!-- Section 3 -->
+    <section class="section">
+        <div class="bg-image" style="background-image: url('https://images.unsplash.com/photo-1617791160505-6f00504e3519?w=1920&q=90')"></div>
+        <div class="content">
+            <h1>Scan & Verify</h1>
+            <p>One QR code. Instant authenticity. Works on any smartphone — no app required.</p>
+        </div>
+    </section>
+
+    <!-- Section 4 -->
+    <section class="section">
+        <div class="bg-image" style="background-image: url('https://images.unsplash.com/photo-1639413561294-2f1d15705766?w=1920&q=90')"></div>
+        <div class="content">
+            <h1>Future-Proof Security</h1>
+            <p>Decentralized. Immutable. Globally accessible. Forever.</p>
+            <a href="#" class="btn">Join the Revolution</a>
+        </div>
+    </section>
+
+    <footer>© 2024 CertiSure — Built with passion and precision</footer>
 
     <script>
-        // ============================================
-        // GSAP & ScrollTrigger Registration
-        // ============================================
+        // Custom Cursor
+        const cursor = document.querySelector('.cursor');
+        const follower = document.querySelector('.cursor-follow');
+        document.addEventListener('mousemove', e => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            follower.style.left = e.clientX + 'px';
+            follower.style.top = e.clientY + 'px';
+        });
+
+        // 3D Document with Three.js
+        const canvas = document.getElementById('document-canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, 380/520, 0.1, 100);
+        camera.position.z = 8;
+
+        // Document Group
+        const docGroup = new THREE.Group();
+        scene.add(docGroup);
+
+        // Card (minimalist)
+        const cardGeo = new THREE.BoxGeometry(3.8, 5.2, 0.15);
+        const cardMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            roughness: 0.1,
+            metalness: 0.1,
+            transmission: 0.95,
+            thickness: 0.5,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0
+        });
+        const card = new THREE.Mesh(cardGeo, cardMat);
+        docGroup.add(card);
+
+        // Purple border glow
+        const borderGeo = new THREE.BoxGeometry(3.95, 5.35, 0.05);
+        const borderMat = new THREE.MeshBasicMaterial({
+            color: 0x8B5CF6,
+            transparent: true,
+            opacity: 0.4
+        });
+        const border = new THREE.Mesh(borderGeo, borderMat);
+        border.position.z = -0.1;
+        docGroup.add(border);
+
+        // QR Code
+        const qrGeo = new THREE.PlaneGeometry(0.8, 0.8);
+        const qrMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const qr = new THREE.Mesh(qrGeo, qrMat);
+        qr.position.set(1.1, -1.8, 0.08);
+        docGroup.add(qr);
+
+        // Soft glow light
+        const light = new THREE.PointLight(0x8B5CF6, 2, 10);
+        light.position.set(0, 0, 3);
+        scene.add(light);
+
+        // Animation
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Scroll-based rotation
+            const scrollY = window.scrollY;
+            docGroup.rotation.y = scrollY * 0.0008;
+            docGroup.rotation.x = Math.sin(scrollY * 0.0005) * 0.15;
+
+            // Gentle floating
+            docGroup.position.y = Math.sin(Date.now() * 0.001) * 0.15;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = 380/520;
+            camera.updateProjectionMatrix();
+            renderer.setSize(380, 520);
+        });
+
+        // GSAP Scroll Animations
         gsap.registerPlugin(ScrollTrigger);
 
-        // ============================================
-        // Preloader
-        // ============================================
-        const preloader = document.getElementById('preloader');
-        const preloaderProgress = document.getElementById('preloader-progress');
-        let progress = 0;
-
-        const preloaderInterval = setInterval(() => {
-            progress += Math.random() * 30;
-            if (progress >= 100) {
-                progress = 100;
-                clearInterval(preloaderInterval);
-                
-                gsap.to(preloaderProgress, {
-                    width: '100%',
-                    duration: 0.3,
-                    onComplete: () => {
-                        gsap.to(preloader, {
-                            opacity: 0,
-                            duration: 0.8,
-                            ease: 'power4.out',
-                            onComplete: () => {
-                                preloader.style.display = 'none';
-                                initAnimations();
-                            }
-                        });
-                    }
-                });
-            } else {
-                gsap.to(preloaderProgress, {
-                    width: progress + '%',
-                    duration: 0.3
-                });
-            }
-        }, 200);
-
-        // ============================================
-        // Custom Cursor
-        // ============================================
-        const cursor = document.getElementById('cursor');
-        const cursorDot = document.getElementById('cursor-dot');
-        let mouseX = 0, mouseY = 0;
-        let cursorX = 0, cursorY = 0;
-
-        document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-        });
-
-        function animateCursor() {
-            cursorX += (mouseX - cursorX) * 0.15;
-            cursorY += (mouseY - cursorY) * 0.15;
-            
-            cursor.style.left = cursorX + 'px';
-            cursor.style.top = cursorY + 'px';
-            cursorDot.style.left = mouseX + 'px';
-            cursorDot.style.top = mouseY + 'px';
-            
-            requestAnimationFrame(animateCursor);
-        }
-        animateCursor();
-
-        // Cursor hover effects
-        document.querySelectorAll('a, button, .feature-card, .showcase-image').forEach(el => {
-            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
-            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
-        });
-
-        // ============================================
-        // Magnetic Buttons
-        // ============================================
-        document.querySelectorAll('.magnetic').forEach(btn => {
-            btn.addEventListener('mousemove', (e) => {
-                const rect = btn.getBoundingClientRect();
-                const x = e.clientX - rect.left - rect.width / 2;
-                const y = e.clientY - rect.top - rect.height / 2;
-                
-                gsap.to(btn, {
-                    x: x * 0.3,
-                    y: y * 0.3,
-                    duration: 0.3,
-                    ease: 'power2.out'
-                });
-            });
-            
-            btn.addEventListener('mouseleave', () => {
-                gsap.to(btn, {
-                    x: 0,
-                    y: 0,
-                    duration: 0.5,
-                    ease: 'elastic.out(1, 0.5)'
-                });
-            });
-        });
-
-        // ============================================
-        // Scroll Progress Bar
-        // ============================================
-        window.addEventListener('scroll', () => {
-            const scrollProgress = document.getElementById('scroll-progress');
-            const scrollTop = window.pageYOffset;
-            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-            const scrollPercent = (scrollTop / docHeight) * 100;
-            scrollProgress.style.width = scrollPercent + '%';
-        });
-
-        // ============================================
-        // Navigation Scroll Effect
-        // ============================================
-        window.addEventListener('scroll', () => {
-            const nav = document.getElementById('nav');
-            if (window.scrollY > 50) {
-                nav.classList.add('scrolled');
-            } else {
-                nav.classList.remove('scrolled');
-            }
-        });
-
-        // ============================================
-        // THREE.js 3D Document
-        // ============================================
-        let scene, camera, renderer, documentGroup;
-        let targetRotationX = 0, targetRotationY = 0;
-        let currentRotationX = 0, currentRotationY = 0;
-
-        function init3D() {
-            const canvas = document.getElementById('document-canvas');
-            if (!canvas) return;
-
-            scene = new THREE.Scene();
-            
-            camera = new THREE.PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-            camera.position.z = 6;
-
-            renderer = new THREE.WebGLRenderer({
-                canvas: canvas,
-                antialias: true,
-                alpha: true
-            });
-            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-            // Create document group
-            documentGroup = new THREE.Group();
-            scene.add(documentGroup);
-
-            // Main document
-            const docGeometry = new THREE.BoxGeometry(3, 4, 0.1);
-            const docMaterial = new THREE.MeshPhysicalMaterial({
-                color: 0xffffff,
-                metalness: 0.1,
-                roughness: 0.3,
-                clearcoat: 0.5,
-                clearcoatRoughness: 0.1
-            });
-            const document = new THREE.Mesh(docGeometry, docMaterial);
-            documentGroup.add(document);
-
-            // Document border/frame
-            const borderGeometry = new THREE.BoxGeometry(3.2, 4.2, 0.05);
-            const borderMaterial = new THREE.MeshPhysicalMaterial({
-                color: 0x8B5CF6,
-                metalness: 0.8,
-                roughness: 0.2,
-                transparent: true,
-                opacity: 0.3
-            });
-            const border = new THREE.Mesh(borderGeometry, borderMaterial);
-            border.position.z = -0.05;
-            documentGroup.add(border);
-
-            // Seal
-            const sealGeometry = new THREE.CircleGeometry(0.4, 32);
-            const sealMaterial = new THREE.MeshPhysicalMaterial({
-                color: 0x8B5CF6,
-                metalness: 0.5,
-                roughness: 0.3,
-                emissive: 0x8B5CF6,
-                emissiveIntensity: 0.2
-            });
-            const seal = new THREE.Mesh(sealGeometry, sealMaterial);
-            seal.position.set(0, 0.8, 0.06);
-            documentGroup.add(seal);
-
-            // Text lines
-            for (let i = 0; i < 8; i++) {
-                const lineWidth = i === 0 ? 2 : 1.5 + Math.random() * 0.8;
-                const lineGeometry = new THREE.PlaneGeometry(lineWidth, 0.08);
-                const lineMaterial = new THREE.MeshBasicMaterial({
-                    color: 0xcccccc,
-                    transparent: true,
-                    opacity: 0.5
-                });
-                const line = new THREE.Mesh(lineGeometry, lineMaterial);
-                line.position.set((2.5 - lineWidth) / 2 - 0.2, 0.2 - i * 0.35, 0.06);
-                documentGroup.add(line);
-            }
-
-            // QR Code
-            const qrGeometry = new THREE.PlaneGeometry(0.6, 0.6);
-            const qrMaterial = new THREE.MeshBasicMaterial({
-                color: 0x1a1a1a
-            });
-            const qr = new THREE.Mesh(qrGeometry, qrMaterial);
-            qr.position.set(0.9, -1.3, 0.06);
-            documentGroup.add(qr);
-
-            // Floating particles
-            const particlesGeometry = new THREE.BufferGeometry();
-            const particlesCount = 100;
-            const positions = new Float32Array(particlesCount * 3);
-
-            for (let i = 0; i < particlesCount * 3; i += 3) {
-                positions[i] = (Math.random() - 0.5) * 10;
-                positions[i + 1] = (Math.random() - 0.5) * 10;
-                positions[i + 2] = (Math.random() - 0.5) * 10;
-            }
-
-            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-            const particlesMaterial = new THREE.PointsMaterial({
-                size: 0.02,
-                color: 0x8B5CF6,
-                transparent: true,
-                opacity: 0.6
-            });
-
-            const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-            scene.add(particles);
-
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-            directionalLight.position.set(5, 5, 5);
-            scene.add(directionalLight);
-
-            const pointLight = new THREE.PointLight(0x8B5CF6, 1, 20);
-            pointLight.position.set(-5, 2, 5);
-            scene.add(pointLight);
-
-            // Animation
-            function animate() {
-                requestAnimationFrame(animate);
-
-                // Smooth rotation interpolation
-                currentRotationX += (targetRotationX - currentRotationX) * 0.05;
-                currentRotationY += (targetRotationY - currentRotationY) * 0.05;
-
-                documentGroup.rotation.x = currentRotationX;
-                documentGroup.rotation.y = currentRotationY;
-
-                // Floating animation
-                documentGroup.position.y = Math.sin(Date.now() * 0.001) * 0.1;
-
-                // Particle rotation
-                particles.rotation.y += 0.001;
-
-                renderer.render(scene, camera);
-            }
-            animate();
-
-            // Handle resize
-            window.addEventListener('resize', () => {
-                camera.aspect = canvas.clientWidth / canvas.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-            });
-        }
-
-        // ============================================
-        // Scroll-based 3D rotation
-        // ============================================
-        window.addEventListener('scroll', () => {
-            const scrollY = window.pageYOffset;
-            targetRotationY = scrollY * 0.002;
-            targetRotationX = Math.sin(scrollY * 0.001) * 0.3;
-        });
-
-        // Mouse-based rotation
-        document.addEventListener('mousemove', (e) => {
-            const mouseXNorm = (e.clientX / window.innerWidth) * 2 - 1;
-            const mouseYNorm = (e.clientY / window.innerHeight) * 2 - 1;
-            
-            targetRotationY += mouseXNorm * 0.02;
-            targetRotationX += mouseYNorm * 0.01;
-        });
-
-        // ============================================
-        // Initialize Animations
-        // ============================================
-        function initAnimations() {
-            // Hero animations
-            gsap.to('.hero-title-line span', {
-                y: 0,
-                duration: 1.2,
-                stagger: 0.1,
-                ease: 'power4.out'
-            });
-
-            gsap.from('.hero-badge', {
-                opacity: 0,
-                y: 30,
-                duration: 1,
-                delay: 0.5,
-                ease: 'power4.out'
-            });
-
-            gsap.from('.hero-description', {
-                opacity: 0,
-                y: 30,
-                duration: 1,
-                delay: 0.7,
-                ease: 'power4.out'
-            });
-
-            gsap.from('.hero-buttons', {
-                opacity: 0,
-                y: 30,
-                duration: 1,
-                delay: 0.9,
-                ease: 'power4.out'
-            });
-
-            // Reveal animations on scroll
-            document.querySelectorAll('.reveal').forEach((el, i) => {
-                gsap.fromTo(el,
-                    {
-                        opacity: 0,
-                        y: 80
-                    },
-                    {
-                        opacity: 1,
-                        y: 0,
-                        duration: 1,
-                        ease: 'power4.out',
-                        scrollTrigger: {
-                            trigger: el,
-                            start: 'top 85%',
-                            toggleActions: 'play none none reverse'
-                        }
-                    }
-                );
-            });
-
-            // Stats counter animation
-            document.querySelectorAll('.stat-number').forEach(stat => {
-                const value = parseFloat(stat.dataset.value);
-                
-                ScrollTrigger.create({
-                    trigger: stat,
-                    start: 'top 80%',
-                    onEnter: () => {
-                        gsap.to(stat, {
-                            innerHTML: value,
-                            duration: 2,
-                            snap: { innerHTML: value % 1 === 0 ? 1 : 0.1 },
-                            ease: 'power2.out'
-                        });
-                    }
-                });
-            });
-
-            // Process line animation
-            ScrollTrigger.create({
-                trigger: '.process-timeline',
-                start: 'top 60%',
-                end: 'bottom 40%',
-                onUpdate: (self) => {
-                    gsap.to('.process-line-progress', {
-                        width: (self.progress * 100) + '%',
-                        duration: 0.3
-                    });
-
-                    // Update step icons
-                    document.querySelectorAll('.step-icon').forEach((icon, i) => {
-                        if (self.progress > (i / 3)) {
-                            icon.classList.add('active');
-                        } else {
-                            icon.classList.remove('active');
-                        }
-                    });
+        gsap.utils.toArray('.section').forEach((section, i) => {
+            const bg = section.querySelector('.bg-image');
+            gsap.to(bg, {
+                yPercent: -30,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: section,
+                    start: "top top",
+                    end: "bottom top",
+                    scrub: true
                 }
             });
+        });
 
-            // Feature cards stagger
-            gsap.from('.feature-card', {
-                scrollTrigger: {
-                    trigger: '.features-grid',
-                    start: 'top 70%'
-                },
-                opacity: 0,
+        // Fade in content on scroll
+        gsap.utils.toArray('.content').forEach(content => {
+            gsap.from(content.children, {
                 y: 100,
-                duration: 1,
-                stagger: 0.15,
-                ease: 'power4.out'
-            });
-
-            // Parallax effects
-            gsap.to('.hero-gradient-1', {
-                y: 200,
+                opacity: 0,
+                duration: 1.2,
+                stagger: 0.2,
+                ease: "power4.out",
                 scrollTrigger: {
-                    trigger: '.hero',
-                    start: 'top top',
-                    end: 'bottom top',
-                    scrub: 1
-                }
-            });
-
-            gsap.to('.hero-gradient-2', {
-                y: -200,
-                scrollTrigger: {
-                    trigger: '.hero',
-                    start: 'top top',
-                    end: 'bottom top',
-                    scrub: 1
-                }
-            });
-
-            // Initialize 3D
-            init3D();
-        }
-
-        // ============================================
-        // Smooth Scroll for anchor links
-        // ============================================
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    gsap.to(window, {
-                        duration: 1.5,
-                        scrollTo: {
-                            y: target,
-                            offsetY: 100
-                        },
-                        ease: 'power4.inOut'
-                    });
+                    trigger: content,
+                    start: "top 70%",
                 }
             });
         });
-
-        // ============================================
-        // Hero Canvas Background
-        // ============================================
-        function initHeroCanvas() {
-            const canvas = document.getElementById('hero-canvas');
-            if (!canvas) return;
-
-            const ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            const particles = [];
-            const particleCount = 80;
-
-            for (let i = 0; i < particleCount; i++) {
-                particles.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    vx: (Math.random() - 0.5) * 0.5,
-                    vy: (Math.random() - 0.5) * 0.5,
-                    radius: Math.random() * 2 + 1,
-                    opacity: Math.random() * 0.5 + 0.2
-                });
-            }
-
-            function draw() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                particles.forEach((p, i) => {
-                    p.x += p.vx;
-                    p.y += p.vy;
-
-                    if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-                    if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = `rgba(139, 92, 246, ${p.opacity})`;
-                    ctx.fill();
-
-                    // Connect nearby particles
-                    particles.slice(i + 1).forEach(p2 => {
-                        const dx = p.x - p2.x;
-                        const dy = p.y - p2.y;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-
-                        if (distance < 150) {
-                            ctx.beginPath();
-                            ctx.moveTo(p.x, p.y);
-                            ctx.lineTo(p2.x, p2.y);
-                            ctx.strokeStyle = `rgba(139, 92, 246, ${0.1 * (1 - distance / 150)})`;
-                            ctx.stroke();
-                        }
-                    });
-                });
-
-                requestAnimationFrame(draw);
-            }
-
-            draw();
-
-            window.addEventListener('resize', () => {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            });
-        }
-
-        initHeroCanvas();
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollToPlugin.min.js"></script>
 </body>
 </html>
