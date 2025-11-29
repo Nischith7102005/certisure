@@ -1,1053 +1,1364 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CertiSure | AI-Powered Document Verification</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/ScrollTrigger.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/ScrollSmoother.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lenis@1.0.42/bundled/lenis.min.js"></script>
-  <style>
-    :root {
-      --bg: #000000;
-      --bg-card: #0a0a0a;
-      --text: #ffffff;
-      --text-muted: #888888;
-      --primary: #8b5cf6;
-      --primary-glow: rgba(139, 92, 246, 0.3);
-      --secondary: #10b981;
-      --border: #222222;
-      --radius: 16px;
-      --transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html {
-      scroll-behavior: smooth;
-      overflow-x: hidden;
-    }
-
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: var(--bg);
-    }
-    ::-webkit-scrollbar-thumb {
-      background: var(--primary);
-      border-radius: 3px;
-    }
-
-    /* Smooth Scroll Container */
-    #smooth-wrapper {
-      overflow: hidden;
-      position: fixed;
-      height: 100%;
-      width: 100%;
-      top: 0;
-      left: 0;
-    }
-
-    #smooth-content {
-      overflow: visible;
-      width: 100%;
-    }
-
-    /* Layout */
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 2rem;
-    }
-
-    section {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      padding: 8rem 0;
-      position: relative;
-    }
-
-    /* Navigation */
-    nav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      z-index: 1000;
-      padding: 1.5rem 0;
-      background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .nav-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 2rem;
-    }
-
-    .logo {
-      font-size: 1.5rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, var(--primary), #a855f7);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .logo-icon {
-      width: 24px;
-      height: 24px;
-      background: linear-gradient(135deg, var(--primary), #a855f7);
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.8rem;
-      font-weight: 700;
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 2rem;
-      align-items: center;
-    }
-
-    .nav-link {
-      color: var(--text-muted);
-      text-decoration: none;
-      font-weight: 500;
-      transition: color 0.3s;
-      position: relative;
-    }
-
-    .nav-link::after {
-      content: '';
-      position: absolute;
-      bottom: -2px;
-      left: 0;
-      width: 0;
-      height: 1px;
-      background: var(--primary);
-      transition: width 0.3s;
-    }
-
-    .nav-link:hover {
-      color: var(--text);
-    }
-
-    .nav-link:hover::after {
-      width: 100%;
-    }
-
-    .btn {
-      padding: 0.75rem 1.5rem;
-      border-radius: 50px;
-      text-decoration: none;
-      font-weight: 500;
-      transition: var(--transition);
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      border: none;
-      cursor: pointer;
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: white;
-      box-shadow: 0 4px 12px var(--primary-glow);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px var(--primary-glow);
-    }
-
-    .btn-secondary {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
-    .btn-secondary:hover {
-      background: var(--border);
-    }
-
-    /* Hero Section */
-    .hero {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4rem;
-      align-items: center;
-      position: relative;
-    }
-
-    .hero-content h1 {
-      font-size: clamp(3rem, 8vw, 5rem);
-      font-weight: 800;
-      line-height: 1.1;
-      margin-bottom: 1.5rem;
-    }
-
-    .hero-content h1 .highlight {
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .hero-subtitle {
-      font-size: 1.2rem;
-      color: var(--text-muted);
-      margin-bottom: 2rem;
-      max-width: 500px;
-    }
-
-    .hero-buttons {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .hero-visual {
-      position: relative;
-      height: 500px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #document-3d {
-      width: 100%;
-      height: 100%;
-      position: relative;
-      z-index: 2;
-    }
-
-    .hero-bg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle at center, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
-      z-index: 1;
-    }
-
-    /* Tech Images Section */
-    .tech-section {
-      padding: 6rem 0;
-    }
-
-    .tech-images {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 2rem;
-      margin-top: 4rem;
-    }
-
-    .tech-image {
-      aspect-ratio: 16/10;
-      border-radius: var(--radius);
-      overflow: hidden;
-      position: relative;
-      transform: translateY(20px);
-      opacity: 0;
-      transition: var(--transition);
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-    }
-
-    .tech-image.visible {
-      transform: translateY(0);
-      opacity: 1;
-    }
-
-    .tech-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.5s;
-    }
-
-    .tech-image:hover img {
-      transform: scale(1.05);
-    }
-
-    .image-overlay {
-      position: absolute;
-      bottom: 1rem;
-      left: 1rem;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      backdrop-filter: blur(8px);
-    }
-
-    /* Features Section */
-    .features-section {
-      padding: 6rem 0;
-    }
-
-    .features-header {
-      text-align: center;
-      margin-bottom: 4rem;
-    }
-
-    .section-label {
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--primary);
-      margin-bottom: 1rem;
-    }
-
-    .section-title {
-      font-size: clamp(2.5rem, 6vw, 4rem);
-      font-weight: 800;
-      line-height: 1.1;
-      margin-bottom: 1.5rem;
-    }
-
-    .section-title .highlight {
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .section-description {
-      font-size: 1.2rem;
-      color: var(--text-muted);
-      max-width: 600px;
-      margin: 0 auto;
-    }
-
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
-      margin-top: 4rem;
-    }
-
-    .feature-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 2rem;
-      transform: translateY(20px);
-      opacity: 0;
-      transition: var(--transition);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .feature-card.visible {
-      transform: translateY(0);
-      opacity: 1;
-    }
-
-    .feature-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--primary), transparent);
-      transform: scaleX(0);
-      transition: transform 0.5s ease;
-    }
-
-    .feature-card:hover::before {
-      transform: scaleX(1);
-    }
-
-    .feature-icon {
-      width: 50px;
-      height: 50px;
-      background: rgba(139, 92, 246, 0.1);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 1.5rem;
-    }
-
-    .feature-icon svg {
-      width: 24px;
-      height: 24px;
-      stroke: var(--primary);
-    }
-
-    .feature-card h3 {
-      font-size: 1.3rem;
-      margin-bottom: 1rem;
-    }
-
-    .feature-card p {
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
-
-    /* Process Section */
-    .process-section {
-      padding: 6rem 0;
-      background: radial-gradient(circle at center, rgba(139, 92, 246, 0.05) 0%, transparent 70%);
-    }
-
-    .process-header {
-      text-align: center;
-      margin-bottom: 4rem;
-    }
-
-    .process-timeline {
-      display: flex;
-      flex-direction: column;
-      gap: 4rem;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-
-    .process-step {
-      display: grid;
-      grid-template-columns: 1fr 2fr;
-      gap: 3rem;
-      align-items: center;
-      opacity: 0.5;
-      transition: var(--transition);
-    }
-
-    .process-step.active {
-      opacity: 1;
-    }
-
-    .step-number {
-      font-size: 4rem;
-      font-weight: 700;
-      color: var(--primary);
-      opacity: 0.3;
-    }
-
-    .step-content h3 {
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .step-content p {
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
-
-    .process-line {
-      position: absolute;
-      top: 0;
-      left: 50%;
-      width: 2px;
-      height: 100%;
-      background: var(--border);
-      transform: translateX(-50%);
-    }
-
-    .process-line-progress {
-      position: absolute;
-      top: 0;
-      left: 50%;
-      width: 2px;
-      height: 0%;
-      background: var(--primary);
-      transform: translateX(-50%);
-      transition: height 0.5s ease;
-    }
-
-    /* CTA Section */
-    .cta-section {
-      padding: 8rem 0;
-      text-align: center;
-      background: radial-gradient(circle at center, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
-    }
-
-    .cta-title {
-      font-size: clamp(3rem, 6vw, 5rem);
-      font-weight: 800;
-      line-height: 1.1;
-      margin-bottom: 1.5rem;
-    }
-
-    .cta-description {
-      font-size: 1.2rem;
-      color: var(--text-muted);
-      margin-bottom: 2rem;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    /* Footer */
-    footer {
-      padding: 4rem 0;
-      border-top: 1px solid var(--border);
-    }
-
-    .footer-content {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 2rem;
-    }
-
-    .footer-column h4 {
-      margin-bottom: 1rem;
-      font-size: 1.1rem;
-    }
-
-    .footer-column a {
-      color: var(--text-muted);
-      text-decoration: none;
-      display: block;
-      margin-bottom: 0.5rem;
-      transition: color 0.3s;
-    }
-
-    .footer-column a:hover {
-      color: var(--text);
-    }
-
-    .footer-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 2rem;
-      padding-top: 2rem;
-      border-top: 1px solid var(--border);
-      font-size: 0.9rem;
-      color: var(--text-muted);
-    }
-
-    /* 3D Document */
-    #document-container {
-      width: 100%;
-      height: 100%;
-      perspective: 1000px;
-    }
-
-    .document-wrapper {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      transform-style: preserve-3d;
-      transition: transform 0.5s cubic-bezier(0.17, 0.67, 0.12, 0.99);
-    }
-
-    .document {
-      position: absolute;
-      width: 300px;
-      height: 200px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-      transform: rotateX(10deg) rotateY(-15deg);
-      transition: all 0.5s cubic-bezier(0.17, 0.67, 0.12, 0.99);
-    }
-
-    .document-front {
-      background: linear-gradient(145deg, #ffffff, #f8f9fa);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      backface-visibility: hidden;
-    }
-
-    .document-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-      color: #333;
-    }
-
-    .document-lines {
-      width: 80%;
-      height: 2px;
-      background: repeating-linear-gradient(to right, #ddd 0px, #ddd 20px, transparent 20px, transparent 40px);
-      margin-bottom: 1rem;
-    }
-
-    .document-qr {
-      width: 60px;
-      height: 60px;
-      background: #333;
-      border-radius: 4px;
-    }
-
-    .document-back {
-      background: #f8f9fa;
-      transform: rotateY(180deg);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      backface-visibility: hidden;
-    }
-
-    .document-seal {
-      width: 80px;
-      height: 80px;
-      background: radial-gradient(circle, #8b5cf6 0%, #a855f7 100%);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 700;
-    }
-
-    /* Scroll Indicator */
-    .scroll-indicator {
-      position: fixed;
-      bottom: 2rem;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 30px;
-      height: 30px;
-      border: 2px solid var(--text-muted);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: bounce 2s infinite;
-      z-index: 1000;
-    }
-
-    .scroll-indicator::after {
-      content: '';
-      width: 2px;
-      height: 8px;
-      background: var(--text-muted);
-      border-radius: 1px;
-    }
-
-    @keyframes bounce {
-      0%, 20%, 50%, 80%, 100% {
-        transform: translateX(-50%) translateY(0);
-      }
-      40% {
-        transform: translateX(-50%) translateY(-10px);
-      }
-      60% {
-        transform: translateX(-50%) translateY(-5px);
-      }
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .hero {
-        grid-template-columns: 1fr;
-        text-align: center;
-      }
-
-      .hero-visual {
-        height: 300px;
-      }
-
-      .tech-images {
-        grid-template-columns: 1fr;
-      }
-
-      .features-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .process-step {
-        grid-template-columns: 1fr;
-        text-align: center;
-      }
-
-      .step-number {
-        font-size: 3rem;
-      }
-
-      section {
-        padding: 4rem 0;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CertiSure - The Future of Digital Trust</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none;
+        }
+
+        :root {
+            --primary: #00D9FF;
+            --secondary: #7000FF;
+            --accent: #FF006E;
+            --dark: #000000;
+            --light: #FFFFFF;
+            --glass: rgba(255, 255, 255, 0.01);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Space Grotesk', -apple-system, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* LOADING SCREEN */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1s ease, visibility 1s ease;
+        }
+
+        .loader-content {
+            text-align: center;
+        }
+
+        .loader-logo {
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: pulse 2s infinite;
+        }
+
+        .loader-bar {
+            width: 300px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 2rem auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loader-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
+            box-shadow: 0 0 20px var(--primary);
+        }
+
+        /* CUSTOM CURSOR */
+        .cursor {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            position: fixed;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 9999;
+            transition: all 0.15s ease;
+            backdrop-filter: invert(1);
+            mix-blend-mode: difference;
+        }
+
+        .cursor-follower {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            position: fixed;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        .cursor.active {
+            width: 80px;
+            height: 80px;
+            border-color: var(--accent);
+            background: rgba(255, 0, 110, 0.1);
+        }
+
+        /* NAVIGATION */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 2rem 4rem;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            transition: all 0.5s ease;
+        }
+
+        nav.scrolled {
+            padding: 1rem 4rem;
+            background: rgba(0, 0, 0, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            position: relative;
+        }
+
+        .logo::after {
+            content: '®';
+            position: absolute;
+            top: 0;
+            right: -15px;
+            font-size: 0.5rem;
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 3rem;
+            list-style: none;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.9rem;
+            position: relative;
+            transition: color 0.3s ease;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0%;
+            height: 1px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: white;
+        }
+
+        .nav-link:hover::before {
+            width: 100%;
+        }
+
+        /* HERO SECTION */
+        .hero {
+            height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            max-width: 1200px;
+            padding: 0 2rem;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 100px;
+            margin-bottom: 2rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .badge-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.5); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 10vw, 8rem);
+            font-weight: 700;
+            line-height: 0.9;
+            letter-spacing: -0.05em;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-title-line {
+            display: block;
+            overflow: hidden;
+        }
+
+        .hero-title-text {
+            display: inline-block;
+            transform: translateY(100%);
+            animation: slideUp 1s ease forwards;
+        }
+
+        @keyframes slideUp {
+            to { transform: translateY(0); }
+        }
+
+        .gradient-text {
+            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% auto;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            to { background-position: 200% center; }
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 3rem;
+            font-weight: 300;
+        }
+
+        .typed-cursor {
+            color: var(--primary);
+        }
+
+        .hero-cta {
+            display: inline-flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 100px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            box-shadow: 0 10px 40px rgba(0, 217, 255, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 60px rgba(0, 217, 255, 0.6);
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        /* FLOATING CARDS */
+        .floating-cards {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .floating-card {
+            position: absolute;
+            width: 300px;
+            height: 200px;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(112, 0, 255, 0.1));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 1.5rem;
+            animation: floatCard 20s ease-in-out infinite;
+        }
+
+        .floating-card:nth-child(1) {
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-card:nth-child(2) {
+            top: 60%;
+            right: 10%;
+            animation-delay: 5s;
+        }
+
+        .floating-card:nth-child(3) {
+            bottom: 10%;
+            left: 15%;
+            animation-delay: 10s;
+        }
+
+        @keyframes floatCard {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-20px) rotate(5deg); }
+            50% { transform: translateY(0) rotate(-5deg); }
+            75% { transform: translateY(20px) rotate(3deg); }
+        }
+
+        /* STATS SECTION */
+        .stats {
+            padding: 8rem 4rem;
+            background: linear-gradient(to bottom, #000, #0a0a0a);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stats-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 3rem;
+        }
+
+        .stat-card {
+            text-align: center;
+            position: relative;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            background: rgba(0, 217, 255, 0.05);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(0, 217, 255, 0.3);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* FEATURES SECTION */
+        .features {
+            padding: 8rem 4rem;
+            background: #000;
+            position: relative;
+        }
+
+        .features-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 5rem;
+        }
+
+        .section-label {
+            font-size: 0.9rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(45deg, white, rgba(255, 255, 255, 0.6));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.6);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .feature-card {
+            padding: 2.5rem;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.03), rgba(112, 0, 255, 0.03));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            transition: all 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            animation: scan 3s linear infinite;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        @keyframes scan {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(112, 0, 255, 0.1));
+            border-color: var(--primary);
+            box-shadow: 0 30px 60px rgba(0, 217, 255, 0.3);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .icon-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border-radius: 20px;
+            opacity: 0.2;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover .icon-bg {
+            opacity: 0.3;
+            transform: scale(1.1);
+        }
+
+        .icon-symbol {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--primary);
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .feature-description {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+
+        /* SHOWCASE SECTION */
+        .showcase {
+            padding: 8rem 0;
+            background: linear-gradient(to bottom, #0a0a0a, #000);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .showcase-container {
+            max-width: 100%;
+            position: relative;
+        }
+
+        .showcase-track {
+            display: flex;
+            animation: scroll 30s linear infinite;
+        }
+
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .showcase-item {
+            min-width: 400px;
+            margin: 0 1rem;
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            height: 500px;
+        }
+
+        .showcase-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .showcase-item:hover .showcase-image {
+            transform: scale(1.1);
+        }
+
+        .showcase-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.8));
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 2rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .showcase-item:hover .showcase-overlay {
+            opacity: 1;
+        }
+
+        .showcase-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .showcase-description {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* CTA SECTION */
+        .cta {
+            padding: 8rem 4rem;
+            background: #000;
+            position: relative;
+            text-align: center;
+        }
+
+        .cta-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 4rem;
+            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05), rgba(112, 0, 255, 0.05));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(
+                from 0deg at 50% 50%,
+                transparent,
+                var(--primary),
+                transparent,
+                var(--secondary),
+                transparent
+            );
+            animation: rotate 10s linear infinite;
+            opacity: 0.1;
+        }
+
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .cta-subtitle {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 3rem;
+        }
+
+        /* FOOTER */
+        footer {
+            padding: 4rem;
+            background: #000;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-text {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-link {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-link:hover {
+            color: var(--primary);
+        }
+
+        /* PARALLAX BACKGROUND */
+        .parallax-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .parallax-layer {
+            position: absolute;
+            width: 110%;
+            height: 110%;
+            top: -5%;
+            left: -5%;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                padding: 1rem 2rem;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .hero-title {
+                font-size: 3rem;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .showcase-track {
+                animation: none;
+                flex-direction: column;
+            }
+            
+            .footer-container {
+                flex-direction: column;
+                gap: 2rem;
+                text-align: center;
+            }
+        }
+    </style>
 </head>
 <body>
-  <!-- Navigation -->
-  <nav>
-    <div class="nav-container">
-      <div class="logo">
-        <div class="logo-icon">C</div>
-        CertiSure
-      </div>
-      <div class="nav-links">
-        <a href="#features" class="nav-link">Features</a>
-        <a href="#process" class="nav-link">Process</a>
-        <a href="#cta" class="nav-link">Pricing</a>
-        <a href="#" class="btn btn-primary">Get Started</a>
-      </div>
+    <!-- LOADER -->
+    <div class="loader" id="loader">
+        <div class="loader-content">
+            <div class="loader-logo">CertiSure</div>
+            <div class="loader-bar">
+                <div class="loader-progress" id="loader-progress"></div>
+            </div>
+        </div>
     </div>
-  </nav>
 
-  <!-- Smooth Scroll Wrapper -->
-  <div id="smooth-wrapper">
-    <div id="smooth-content">
-      <!-- Hero Section -->
-      <section class="hero container">
+    <!-- CUSTOM CURSOR -->
+    <div class="cursor" id="cursor"></div>
+    <div class="cursor-follower" id="cursor-follower"></div>
+
+    <!-- PARALLAX BACKGROUND -->
+    <div class="parallax-bg">
+        <div class="parallax-layer" id="parallax-1"></div>
+        <div class="parallax-layer" id="parallax-2"></div>
+        <div class="parallax-layer" id="parallax-3"></div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <nav id="nav">
+        <div class="nav-container">
+            <div class="logo">CertiSure</div>
+            <ul class="nav-links">
+                <li><a href="#features" class="nav-link">Features</a></li>
+                <li><a href="#showcase" class="nav-link">Showcase</a></li>
+                <li><a href="#stats" class="nav-link">Statistics</a></li>
+                <li><a href="#cta" class="nav-link">Get Started</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <div id="canvas-container"></div>
+        
+        <div class="floating-cards">
+            <div class="floating-card">
+                <div style="font-size: 0.8rem; color: var(--primary); margin-bottom: 0.5rem;">VERIFIED</div>
+                <div style="font-size: 1.2rem; font-weight: 600;">BSc Computer Science</div>
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem;">MIT • 2024</div>
+            </div>
+            <div class="floating-card">
+                <div style="font-size: 0.8rem; color: var(--secondary); margin-bottom: 0.5rem;">TRUST SCORE</div>
+                <div style="font-size: 2rem; font-weight: 700;">98.7%</div>
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem;">AI Verified</div>
+            </div>
+            <div class="floating-card">
+                <div style="font-size: 0.8rem; color: var(--accent); margin-bottom: 0.5rem;">BLOCKCHAIN</div>
+                <div style="font-size: 1rem; font-weight: 600;">0x7f3a...9b2c</div>
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem;">IPFS Hash</div>
+            </div>
+        </div>
+
         <div class="hero-content">
-          <h1>Secure Your <span class="highlight">Academic Future</span></h1>
-          <p class="hero-subtitle">
-            AI-powered document verification with blockchain technology for unparalleled trust and integrity.
-          </p>
-          <div class="hero-buttons">
-            <a href="#cta" class="btn btn-primary">
-              Start Verifying
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
-            </a>
-            <a href="#process" class="btn btn-secondary">Learn More</a>
-          </div>
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                <span>Next-Gen Verification Platform</span>
+            </div>
+            
+            <h1 class="hero-title">
+                <span class="hero-title-line">
+                    <span class="hero-title-text">Trust</span>
+                </span>
+                <span class="hero-title-line">
+                    <span class="hero-title-text gradient-text">Redefined</span>
+                </span>
+            </h1>
+            
+            <p class="hero-subtitle">
+                <span id="typed"></span>
+            </p>
+            
+            <div class="hero-cta">
+                <a href="#" class="btn btn-primary">Start Verifying</a>
+                <a href="#" class="btn btn-secondary">Watch Demo</a>
+            </div>
         </div>
-        <div class="hero-visual">
-          <div class="hero-bg"></div>
-          <div id="document-3d">
-            <div id="document-container">
-              <div class="document-wrapper">
-                <div class="document">
-                  <div class="document-front">
-                    <div class="document-title">ACADEMIC CERTIFICATE</div>
-                    <div class="document-lines"></div>
-                    <div class="document-lines" style="height: 1px;"></div>
-                    <div class="document-qr"></div>
-                  </div>
-                  <div class="document-back">
-                    <div class="document-seal">CERTISURE</div>
-                  </div>
+    </section>
+
+    <!-- STATS SECTION -->
+    <section class="stats" id="stats">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" data-target="2.3">0</div>
+                <div class="stat-label">Million Documents</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" data-target="99.8">0</div>
+                <div class="stat-label">% Accuracy</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" data-target="150">0</div>
+                <div class="stat-label">Universities</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" data-target="0.3">0</div>
+                <div class="stat-label">Sec Verification</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section class="features" id="features">
+        <div class="features-container">
+            <div class="section-header">
+                <div class="section-label">Features</div>
+                <h2 class="section-title">Technology That Matters</h2>
+                <p class="section-subtitle">
+                    Revolutionary verification powered by cutting-edge blockchain and AI
+                </p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <div class="icon-bg"></div>
+                        <div class="icon-symbol">🔐</div>
+                    </div>
+                    <h3 class="feature-title">Quantum Encryption</h3>
+                    <p class="feature-description">
+                        Military-grade AES-256 encryption with quantum-resistant algorithms protecting every document
+                    </p>
                 </div>
-              </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <div class="icon-bg"></div>
+                        <div class="icon-symbol">🧠</div>
+                    </div>
+                    <h3 class="feature-title">Neural Verification</h3>
+                    <p class="feature-description">
+                        Deep learning models analyze patterns, signatures, and metadata with 99.8% accuracy
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <div class="icon-bg"></div>
+                        <div class="icon-symbol">⚡</div>
+                    </div>
+                    <h3 class="feature-title">Lightning Network</h3>
+                    <p class="feature-description">
+                        Sub-second verification across 150+ global nodes with zero downtime guarantee
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <div class="icon-bg"></div>
+                        <div class="icon-symbol">🌐</div>
+                    </div>
+                    <h3 class="feature-title">IPFS Storage</h3>
+                    <p class="feature-description">
+                        Decentralized, immutable storage ensuring permanent availability and censorship resistance
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <div class="icon-bg"></div>
+                        <div class="icon-symbol">📊</div>
+                    </div>
+                    <h3 class="feature-title">Real-time Analytics</h3>
+                    <p class="feature-description">
+                        Advanced dashboards with predictive insights and fraud detection algorithms
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <div class="icon-bg"></div>
+                        <div class="icon-symbol">🔍</div>
+                    </div>
+                    <h3 class="feature-title">Smart Verification</h3>
+                    <p class="feature-description">
+                        QR-based instant verification with biometric authentication support
+                    </p>
+                </div>
             </div>
-          </div>
         </div>
-      </section>
+    </section>
 
-      <!-- Tech Images Section -->
-      <section class="tech-section container">
-        <div class="tech-images">
-          <div class="tech-image">
-            <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80" alt="Server room">
-            <div class="image-overlay">Decentralized Network</div>
-          </div>
-          <div class="tech-image">
-            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80" alt="Data analysis">
-            <div class="image-overlay">AI Verification</div>
-          </div>
-          <div class="tech-image">
-            <img src="https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&w=800&q=80" alt="Blockchain">
-            <div class="image-overlay">Blockchain Security</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Features Section -->
-      <section id="features" class="features-section container">
-        <div class="features-header">
-          <div class="section-label">Features</div>
-          <h2 class="section-title">Built for <span class="highlight">Security</span></h2>
-          <p class="section-description">
-            Experience next-generation document verification with cutting-edge technology designed for security and simplicity.
-          </p>
-        </div>
-        <div class="features-grid">
-          <div class="feature-card">
-            <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
+    <!-- SHOWCASE SECTION -->
+    <section class="showcase" id="showcase">
+        <div class="showcase-container">
+            <div class="section-header">
+                <div class="section-label">Showcase</div>
+                <h2 class="section-title">See It In Action</h2>
             </div>
-            <h3>Blockchain Security</h3>
-            <p>Documents secured with IPFS and cryptographic hashing. Tamper-proof, immutable, and eternally verifiable.</p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                <path d="M2 17l10 5 10-5"></path>
-                <path d="M2 12l10 5 10-5"></path>
-              </svg>
+
+            <div class="showcase-track">
+                <!-- First set of images -->
+                <div class="showcase-item">
+                    <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&h=800&fit=crop" alt="Tech Infrastructure" class="showcase-image">
+                    <div class="showcase-overlay">
+                        <h3 class="showcase-title">Global Infrastructure</h3>
+                        <p class="showcase-description">150+ data centers worldwide</p>
+                    </div>
+                </div>
+                
+                <div class="showcase-item">
+                    <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=800&fit=crop" alt="Neural Network" class="showcase-image">
+                    <div class="showcase-overlay">
+                        <h3 class="showcase-title">AI Processing</h3>
+                        <p class="showcase-description">Deep learning verification</p>
+                    </div>
+                </div>
+
+                <div class="showcase-item">
+                    <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&h=800&fit=crop" alt="Data Matrix" class="showcase-image">
+                    <div class="showcase-overlay">
+                        <h3 class="showcase-title">Blockchain Network</h3>
+                        <p class="showcase-description">Immutable ledger technology</p>
+                    </div>
+                </div>
+
+                <div class="showcase-item">
+                    <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&h=800&fit=crop" alt="Server Room" class="showcase-image">
+                    <div class="showcase-overlay">
+                        <h3 class="showcase-title">Enterprise Security</h3>
+                        <p class="showcase-description">SOC 2 Type II compliant</p>
+                    </div>
+                </div>
+
+                <!-- Duplicate for continuous scroll -->
+                <div class="showcase-item">
+                    <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&h=800&fit=crop" alt="Tech Infrastructure" class="showcase-image">
+                    <div class="showcase-overlay">
+                        <h3 class="showcase-title">Global Infrastructure</h3>
+                        <p class="showcase-description">150+ data centers worldwide</p>
+                    </div>
+                </div>
+                
+                <div class="showcase-item">
+                    <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=800&fit=crop" alt="Neural Network" class="showcase-image">
+                    <div class="showcase-overlay">
+                        <h3 class="showcase-title">AI Processing</h3>
+                        <p class="showcase-description">Deep learning verification</p>
+                    </div>
+                </div>
+
+                <div class="showcase-item">
+                    <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&h=800&fit=crop" alt="Data Matrix" class="showcase-image">
+                    <div class="showcase-overlay">
+                        <h3 class="showcase-title">Blockchain Network</h3>
+                        <p class="showcase-description">Immutable ledger technology</p>
+                    </div>
+                </div>
+
+                <div class="showcase-item">
+                    <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&h=800&fit=crop" alt="Server Room" class="showcase-image">
+                    <div class="showcase-overlay">
+                        <h3 class="showcase-title">Enterprise Security</h3>
+                        <p class="showcase-description">SOC 2 Type II compliant</p>
+                    </div>
+                </div>
             </div>
-            <h3>AI Trust Scoring</h3>
-            <p>Advanced AI models analyze documents to generate precise trust scores from 1-100.</p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <path d="M9 9h6v6H9z"></path>
-              </svg>
+        </div>
+    </section>
+
+    <!-- CTA SECTION -->
+    <section class="cta" id="cta">
+        <div class="cta-container">
+            <div class="cta-content">
+                <h2 class="cta-title">Ready to Transform Your Verification?</h2>
+                <p class="cta-subtitle">
+                    Join 150+ universities and 2.3 million users trusting CertiSure
+                </p>
+                <div class="hero-cta">
+                    <a href="#" class="btn btn-primary">Get Started Free</a>
+                    <a href="#" class="btn btn-secondary">Schedule Demo</a>
+                </div>
             </div>
-            <h3>QR Verification</h3>
-            <p>Instantly verify documents by scanning unique QR codes with any smartphone.</p>
-          </div>
         </div>
-      </section>
+    </section>
 
-      <!-- Process Section -->
-      <section id="process" class="process-section container">
-        <div class="process-header">
-          <div class="section-label">Process</div>
-          <h2 class="section-title">Simple <span class="highlight">Three-Step</span> Process</h2>
-          <p class="section-description">
-            From issuance to verification, we've streamlined the entire process into an elegant workflow.
-          </p>
-        </div>
-        <div class="process-timeline" style="position: relative;">
-          <div class="process-line">
-            <div class="process-line-progress" id="process-progress"></div>
-          </div>
-          <div class="process-step active">
-            <div class="step-number">01</div>
-            <div class="step-content">
-              <h3>Document Issuance</h3>
-              <p>Institutions upload documents which are watermarked, hashed, and stored on IPFS with a unique QR code.</p>
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-container">
+            <div class="footer-text">
+                © 2024 CertiSure. All rights reserved.
             </div>
-          </div>
-          <div class="process-step">
-            <div class="step-number">02</div>
-            <div class="step-content">
-              <h3>AI Verification</h3>
-              <p>Our AI models compare signatures and reference documents to generate a trust score (1-100).</p>
+            <div class="footer-links">
+                <a href="#" class="footer-link">Privacy</a>
+                <a href="#" class="footer-link">Terms</a>
+                <a href="#" class="footer-link">Security</a>
+                <a href="#" class="footer-link">API</a>
             </div>
-          </div>
-          <div class="process-step">
-            <div class="step-number">03</div>
-            <div class="step-content">
-              <h3>Instant Results</h3>
-              <p>Users scan the QR code to instantly verify document authenticity and view the trust score.</p>
-            </div>
-          </div>
         </div>
-      </section>
+    </footer>
 
-      <!-- CTA Section -->
-      <section id="cta" class="cta-section container">
-        <h2 class="cta-title">Ready to Secure Your Documents?</h2>
-        <p class="cta-description">
-          Join thousands of institutions and individuals who trust CertiSure for document verification.
-        </p>
-        <a href="#" class="btn btn-primary">Get Started Today</a>
-      </section>
+    <script>
+        // LOADING ANIMATION
+        window.addEventListener('load', () => {
+            let progress = 0;
+            const progressBar = document.getElementById('loader-progress');
+            const loader = document.getElementById('loader');
+            
+            const interval = setInterval(() => {
+                progress += Math.random() * 30;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    progressBar.style.width = progress + '%';
+                    
+                    setTimeout(() => {
+                        loader.style.opacity = '0';
+                        loader.style.visibility = 'hidden';
+                        initAnimations();
+                    }, 500);
+                } else {
+                    progressBar.style.width = progress + '%';
+                }
+            }, 200);
+        });
 
-      <!-- Footer -->
-      <footer class="container">
-        <div class="footer-content">
-          <div class="footer-column">
-            <h4>CertiSure</h4>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Secure document verification powered by blockchain and AI.</p>
-          </div>
-          <div class="footer-column">
-            <h4>Product</h4>
-            <a href="#">Features</a>
-            <a href="#">Pricing</a>
-            <a href="#">API Docs</a>
-            <a href="#">Integrations</a>
-          </div>
-          <div class="footer-column">
-            <h4>Company</h4>
-            <a href="#">About</a>
-            <a href="#">Blog</a>
-            <a href="#">Careers</a>
-            <a href="#">Contact</a>
-          </div>
-          <div class="footer-column">
-            <h4>Legal</h4>
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
-            <a href="#">Security</a>
-            <a href="#">Cookies</a>
-          </div>
-        </div>
-        <div class="footer-bottom">
-          <p>© 2024 CertiSure. All rights reserved.</p>
-          <div>
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Service</a>
-          </div>
-        </div>
-      </footer>
-    </div>
-  </div>
+        // CUSTOM CURSOR
+        const cursor = document.getElementById('cursor');
+        const follower = document.getElementById('cursor-follower');
 
-  <!-- Scroll Indicator -->
-  <div class="scroll-indicator"></div>
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            
+            setTimeout(() => {
+                follower.style.left = e.clientX + 'px';
+                follower.style.top = e.clientY + 'px';
+            }, 100);
+        });
 
-  <script>
-    // Initialize Lenis for ultra-smooth scrolling
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      smoothWheel: true,
-      smoothTouch: false,
-      touchMultiplier: 2,
-    });
+        document.querySelectorAll('a, button, .feature-card, .stat-card').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('active'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('active'));
+        });
 
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
-
-    // Initialize GSAP
-    gsap.registerPlugin(ScrollTrigger);
-
-    // Smooth Scroll Setup
-    const smoother = ScrollSmoother.create({
-      smooth: 1.2,
-      effects: true,
-      smoothTouch: false,
-    });
-
-    // 3D Document Animation
-    const documentWrapper = document.querySelector('.document-wrapper');
-    let rotationX = 10;
-    let rotationY = -15;
-
-    // Mouse move effect
-    document.addEventListener('mousemove', (e) => {
-      const x = (e.clientX / window.innerWidth) * 2 - 1;
-      const y = (e.clientY / window.innerHeight) * 2 - 1;
-
-      rotationY = -15 + x * 10;
-      rotationX = 10 + y * 5;
-
-      gsap.to(documentWrapper, {
-        rotationX: rotationX,
-        rotationY: rotationY,
-        duration: 0.5
-      });
-    });
-
-    // Scroll effect
-    window.addEventListener('scroll', () => {
-      const scrollY = window.scrollY;
-      const scrollFactor = scrollY / 500;
-
-      gsap.to(documentWrapper, {
-        rotationX: rotationX + scrollFactor,
-        rotationY: rotationY + scrollFactor * 2,
-        duration: 0.5
-      });
-    });
-
-    // Scroll-triggered animations
-    gsap.utils.toArray('.tech-image, .feature-card').forEach((element, i) => {
-      gsap.from(element, {
-        scrollTrigger: {
-          trigger: element,
-          start: 'top 80%',
-          toggleActions: 'play none none none'
-        },
-        y: 20,
-        opacity: 0,
-        duration: 0.8,
-        delay: i * 0.1,
-        ease: 'back.out(1.7)'
-      });
-    });
-
-    // Process step animation
-    gsap.utils.toArray('.process-step').forEach((step, i) => {
-      ScrollTrigger.create({
-        trigger: step,
-        start: 'top 60%',
-        onEnter: () => {
-          gsap.to(step, {
-            opacity: 1,
-            duration: 0.5
-          });
-
-          // Update progress line
-          const progress = ((i + 1) / 3) * 100;
-          document.getElementById('process-progress').style.height = progress + '%';
-        },
-        onLeaveBack: () => {
-          if (i !== 0) {
-            gsap.to(step, {
-              opacity: 0.5,
-              duration: 0.5
+        // TYPED.JS
+        function initTyped() {
+            new Typed('#typed', {
+                strings: [
+                    'Blockchain-powered verification',
+                    'AI-driven trust scores',
+                    'Instant QR authentication',
+                    'Quantum-resistant security'
+                ],
+                typeSpeed: 50,
+                backSpeed: 30,
+                backDelay: 2000,
+                loop: true
             });
-          }
         }
-      });
-    });
 
-    // Initial animation
-    gsap.from('.hero-content h1', {
-      y: 50,
-      opacity: 0,
-      duration: 1,
-      delay: 0.2,
-      ease: 'power3.out'
-    });
+        // THREE.JS BACKGROUND
+        function initThree() {
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ 
+                alpha: true,
+                antialias: true 
+            });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-    gsap.from('.hero-subtitle', {
-      y: 30,
-      opacity: 0,
-      duration: 1,
-      delay: 0.4,
-      ease: 'power3.out'
-    });
+            // Create particles
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 5000;
+            const posArray = new Float32Array(particlesCount * 3);
 
-    gsap.from('.btn', {
-      y: 30,
-      opacity: 0,
-      duration: 1,
-      delay: 0.6,
-      ease: 'power3.out',
-      stagger: 0.2
-    });
+            for(let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 10;
+            }
 
-    gsap.from('.document', {
-      scale: 0.8,
-      opacity: 0,
-      duration: 1.5,
-      delay: 0.5,
-      ease: 'elastic.out(1, 0.75)'
-    });
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
-    // Scroll indicator fade out
-    window.addEventListener('scroll', () => {
-      const scrollIndicator = document.querySelector('.scroll-indicator');
-      if (window.scrollY > 100) {
-        scrollIndicator.style.opacity = '0';
-      } else {
-        scrollIndicator.style.opacity = '1';
-      }
-    });
-  </script>
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.005,
+                color: 0x00D9FF,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+
+            // Create wireframe sphere
+            const sphereGeometry = new THREE.SphereGeometry(2, 32, 32);
+            const sphereMaterial = new THREE.MeshBasicMaterial({
+                color: 0x7000FF,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.1
+            });
+            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            scene.add(sphere);
+
+            camera.position.z = 5;
+
+            // Mouse interaction
+            let mouseX = 0, mouseY = 0;
+            document.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            // Animation
+            function animate() {
+                requestAnimationFrame(animate);
+
+                particlesMesh.rotation.y += 0.001;
+                particlesMesh.rotation.x += 0.0005;
+
+                sphere.rotation.x += 0.002;
+                sphere.rotation.y += 0.002;
+
+                // Mouse parallax
+                camera.position.x = mouseX * 0.5;
+                camera.position.y = mouseY * 0.5;
+                camera.lookAt(scene.position);
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // SCROLL ANIMATIONS
+        function initScrollAnimations() {
+            // Navigation scroll effect
+            window.addEventListener('scroll', () => {
+                const nav = document.getElementById('nav');
+                if (window.scrollY > 50) {
+                    nav.classList.add('scrolled');
+                } else {
+                    nav.classList.remove('scrolled');
+                }
+            });
+
+            // Parallax layers
+            window.addEventListener('scroll', () => {
+                const scrollY = window.pageYOffset;
+                
+                document.getElementById('parallax-1').style.transform = `translateY(${scrollY * 0.5}px)`;
+                document.getElementById('parallax-2').style.transform = `translateY(${scrollY * 0.3}px)`;
+                document.getElementById('parallax-3').style.transform = `translateY(${scrollY * 0.1}px)`;
+            });
+
+            // Stats counter animation
+            const observerOptions = {
+                threshold: 0.5
+            };
+
+            const statsObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const statNumbers = entry.target.querySelectorAll('.stat-number');
+                        statNumbers.forEach(stat => {
+                            const target = parseFloat(stat.getAttribute('data-target'));
+                            let current = 0;
+                            const increment = target / 100;
+                            const timer = setInterval(() => {
+                                current += increment;
+                                if (current >= target) {
+                                    current = target;
+                                    clearInterval(timer);
+                                }
+                                stat.textContent = current.toFixed(1) + (stat.parentElement.querySelector('.stat-label').textContent.includes('Million') ? 'M' : '');
+                            }, 20);
+                        });
+                        statsObserver.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            const statsSection = document.querySelector('.stats');
+            if (statsSection) {
+                statsObserver.observe(statsSection);
+            }
+
+            // ScrollTrigger animations
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Feature cards animation
+            gsap.from('.feature-card', {
+                scrollTrigger: {
+                    trigger: '.features',
+                    start: 'top 80%',
+                    toggleActions: 'play none none none'
+                },
+                y: 100,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.2,
+                ease: 'power3.out'
+            });
+
+            // Floating cards animation
+            gsap.to('.floating-card', {
+                y: 'random(-20, 20)',
+                rotation: 'random(-5, 5)',
+                duration: 'random(3, 5)',
+                repeat: -1,
+                yoyo: true,
+                ease: 'power1.inOut',
+                stagger: {
+                    each: 0.5,
+                    from: 'random'
+                }
+            });
+        }
+
+        // Initialize everything
+        function initAnimations() {
+            initTyped();
+            initThree();
+            initScrollAnimations();
+        }
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>
