@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CertiSure - Secure Document Verification</title>
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔒</text></svg>">
+    <title>CertiSure - 3D Secure Verification</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         
@@ -23,8 +21,6 @@
         :root {
             --primary: #8B5CF6;
             --primary-dark: #7C3AED;
-            --secondary: #EC4899;
-            --accent: #10B981;
             --bg-dark: #0A0A0A;
             --bg-card: #111111;
             --text-primary: #FFFFFF;
@@ -32,42 +28,47 @@
             --border-color: #1F1F1F;
         }
 
-        html {
-            scroll-snap-type: y mandatory;
-            scroll-behavior: smooth;
-        }
-
         body {
             font-family: 'Inter', sans-serif;
             background: var(--bg-dark);
             color: var(--text-primary);
             overflow-x: hidden;
-            cursor: none;
+            position: relative;
+        }
+
+        /* 3D Document Container */
+        #document-scene {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
         }
 
         /* Custom Cursor */
         .cursor {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             border: 2px solid var(--primary);
             border-radius: 50%;
             position: fixed;
             pointer-events: none;
-            z-index: 99999;
-            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 9999;
+            transition: all 0.1s ease;
             transform: translate(-50%, -50%);
-            mix-blend-mode: difference;
         }
-
+        
         .cursor-follower {
-            width: 12px;
-            height: 12px;
+            width: 8px;
+            height: 8px;
             background: var(--primary);
             border-radius: 50%;
             position: fixed;
             pointer-events: none;
-            z-index: 99999;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 9999;
+            transition: all 0.3s ease;
             transform: translate(-50%, -50%);
         }
 
@@ -76,11 +77,12 @@
             position: fixed;
             width: 100%;
             top: 0;
-            z-index: 10000;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(30px);
+            z-index: 1000;
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-color);
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
         }
 
         .nav-container {
@@ -93,539 +95,818 @@
         }
 
         .logo {
-            font-size: 1.75rem;
+            font-size: 1.8rem;
             font-weight: 900;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            cursor: none;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
         }
 
         /* Hero Section */
         .hero {
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
-            scroll-snap-align: start;
+            padding: 0 2rem;
             overflow: hidden;
-        }
-
-        #hero-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
         }
 
         .hero-content {
             max-width: 1200px;
-            width: 100%;
             text-align: center;
-            z-index: 10;
-            position: relative;
+            z-index: 2;
         }
 
         .hero-title {
-            font-size: clamp(4rem, 10vw, 9rem);
+            font-size: clamp(3.5rem, 8vw, 8rem);
             font-weight: 900;
-            line-height: 0.9;
-            letter-spacing: -0.05em;
+            line-height: 1;
+            letter-spacing: -0.04em;
             margin-bottom: 2rem;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary) 50%, var(--secondary) 100%);
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 60px rgba(139, 92, 246, 0.5);
+            opacity: 0;
+            transform: translateY(50px);
+            animation: fadeUp 1s forwards 0.5s;
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .hero-subtitle {
-            font-size: clamp(1.3rem, 3vw, 1.8rem);
+            font-size: clamp(1.2rem, 2vw, 1.8rem);
             color: var(--text-secondary);
-            margin-bottom: 4rem;
+            margin-bottom: 3rem;
             font-weight: 400;
-            max-width: 900px;
+            max-width: 800px;
             margin-left: auto;
             margin-right: auto;
-            line-height: 1.7;
-            opacity: 0.9;
+            line-height: 1.6;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 1s forwards 0.8s;
         }
 
-        /* Section Styles */
-        .section {
-            height: 100vh;
-            scroll-snap-align: start;
+        /* Buttons */
+        .btn-group {
             display: flex;
-            align-items: center;
-            padding: 0 2rem;
-            position: relative;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 1s forwards 1.1s;
         }
 
-        .container {
+        .btn {
+            padding: 1.2rem 2.8rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 16px;
+            text-decoration: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(4px);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 10px 40px -10px rgba(139, 92, 246, 0.6);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px -10px rgba(139, 92, 246, 0.8);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            background: rgba(139, 92, 246, 0.1);
+            transform: translateY(-5px);
+        }
+
+        /* Feature Cards */
+        .features {
+            padding: 8rem 2rem;
             max-width: 1400px;
             margin: 0 auto;
-            width: 100%;
         }
 
         .section-label {
-            font-size: 0.875rem;
-            font-weight: 700;
+            font-size: 0.9rem;
+            font-weight: 600;
             color: var(--primary);
             text-transform: uppercase;
             letter-spacing: 0.15em;
             margin-bottom: 1rem;
-            opacity: 0.8;
         }
 
         .section-title {
-            font-size: clamp(3rem, 7vw, 6rem);
+            font-size: clamp(2.8rem, 6vw, 5rem);
             font-weight: 900;
             letter-spacing: -0.04em;
-            margin-bottom: 2rem;
-            line-height: 1;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 1s forwards 0.3s;
         }
 
         .section-description {
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             color: var(--text-secondary);
             margin-bottom: 5rem;
-            max-width: 900px;
-            line-height: 1.8;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 1s forwards 0.6s;
         }
 
-        /* Floating Cards */
-        .floating-grid {
+        .feature-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 3rem;
-            perspective: 1000px;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2.5rem;
+            margin-top: 4rem;
         }
 
-        .floating-card {
-            background: rgba(17, 17, 17, 0.8);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(139, 92, 246, 0.3);
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
             border-radius: 24px;
             padding: 3rem;
-            transform-style: preserve-3d;
-            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
             overflow: hidden;
+            opacity: 0;
+            transform: translateY(50px);
         }
 
-        .floating-card:hover {
-            transform: translateY(-20px) rotateX(5deg) rotateY(5deg) scale(1.02);
-            border-color: var(--primary);
-            box-shadow: 0 40px 100px -20px rgba(139, 92, 246, 0.4);
-        }
+        .feature-card:nth-child(1) { animation: fadeUp 0.8s forwards 0.4s; }
+        .feature-card:nth-child(2) { animation: fadeUp 0.8s forwards 0.6s; }
+        .feature-card:nth-child(3) { animation: fadeUp 0.8s forwards 0.8s; }
+        .feature-card:nth-child(4) { animation: fadeUp 0.8s forwards 1.0s; }
+        .feature-card:nth-child(5) { animation: fadeUp 0.8s forwards 1.2s; }
+        .feature-card:nth-child(6) { animation: fadeUp 0.8s forwards 1.4s; }
 
-        .floating-card::before {
+        .feature-card::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, var(--primary), var(--secondary), transparent);
-            transform: scaleX(0);
-            transition: transform 0.8s ease;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.7s ease;
         }
 
-        .floating-card:hover::before {
-            transform: scaleX(1);
+        .feature-card:hover::before {
+            transform: translateX(100%);
         }
 
-        /* Buttons */
-        .btn {
-            padding: 1.2rem 3rem;
-            font-size: 1.1rem;
-            font-weight: 700;
-            border-radius: 16px;
-            text-decoration: none;
-            display: inline-flex;
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary);
+            box-shadow: 0 30px 80px -20px rgba(139, 92, 246, 0.4);
+        }
+
+        .feature-icon {
+            width: 70px;
+            height: 70px;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 18px;
+            display: flex;
             align-items: center;
-            gap: 1rem;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: none;
+            justify-content: center;
+            margin-bottom: 1.8rem;
+            transition: all 0.4s ease;
+        }
+
+        .feature-card:hover .feature-icon {
+            background: rgba(139, 92, 246, 0.2);
+            transform: scale(1.1);
+        }
+
+        .feature-icon svg {
+            width: 32px;
+            height: 32px;
+            stroke: var(--primary);
+        }
+
+        .feature-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 1.2rem;
+            letter-spacing: -0.02em;
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: 1.1rem;
+        }
+
+        /* Process Section */
+        .process {
+            padding: 8rem 2rem;
+            background: var(--bg-card);
             position: relative;
             overflow: hidden;
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            box-shadow: 0 20px 60px -15px rgba(139, 92, 246, 0.4);
+        .process-container {
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
-        .btn-primary:hover {
-            transform: translateY(-4px) scale(1.05);
-            box-shadow: 0 30px 80px -20px rgba(139, 92, 246, 0.6);
-        }
-
-        /* Process Section */
         .process-grid {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 4rem;
-            height: 80%;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 5rem;
+            margin-top: 5rem;
         }
 
         .process-step {
-            flex: 1;
             text-align: center;
-            opacity: 0.7;
-            transition: all 0.6s ease;
+            position: relative;
+            opacity: 0;
+            transform: translateY(50px);
         }
 
-        .process-step.active {
-            opacity: 1;
-            transform: scale(1.1);
-        }
+        .process-step:nth-child(1) { animation: fadeUp 0.8s forwards 0.3s; }
+        .process-step:nth-child(2) { animation: fadeUp 0.8s forwards 0.5s; }
+        .process-step:nth-child(3) { animation: fadeUp 0.8s forwards 0.7s; }
 
         .step-number {
             font-size: 8rem;
             font-weight: 900;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, transparent 70%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 1.5rem;
-            filter: drop-shadow(0 20px 40px rgba(139, 92, 246, 0.3));
+            line-height: 1;
+            position: relative;
+            display: inline-block;
         }
 
-        /* Particles Background */
-        .particles {
+        .step-number::after {
+            content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
         }
 
-        /* Responsive */
+        .step-title {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 1.2rem;
+            letter-spacing: -0.02em;
+        }
+
+        .step-description {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            font-size: 1.1rem;
+        }
+
+        /* CTA Section */
+        .cta {
+            padding: 8rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 1200px;
+            height: 1200px;
+            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
+            opacity: 0.15;
+            z-index: 0;
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .cta-title {
+            font-size: clamp(3rem, 7vw, 6rem);
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.04em;
+            opacity: 0;
+            transform: translateY(50px);
+            animation: fadeUp 1s forwards 0.2s;
+        }
+
+        .cta-subtitle {
+            font-size: 1.4rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            opacity: 0;
+            transform: translateY(40px);
+            animation: fadeUp 1s forwards 0.5s;
+        }
+
+        .btn-cta-group {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            opacity: 0;
+            transform: translateY(40px);
+            animation: fadeUp 1s forwards 0.8s;
+        }
+
+        /* Footer */
+        footer {
+            padding: 5rem 2rem 3rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 4rem;
+            margin-bottom: 4rem;
+        }
+
+        .footer-brand {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .footer-brand h3 {
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .footer-links h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+            transform: translateX(5px);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 3rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
         @media (max-width: 768px) {
-            .cursor, .cursor-follower {
+            .nav-links {
                 display: none;
             }
             
-            html {
-                scroll-snap-type: none;
-            }
-            
-            .floating-grid {
+            .feature-grid, .process-grid {
                 grid-template-columns: 1fr;
             }
             
-            .process-grid {
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .btn-group, .btn-cta-group {
                 flex-direction: column;
+                width: 100%;
+                max-width: 500px;
+                margin: 0 auto;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .cursor, .cursor-follower {
+                display: none;
             }
         }
     </style>
 </head>
 <body>
+    <!-- 3D Document Scene -->
+    <div id="document-scene"></div>
+
     <!-- Custom Cursor -->
     <div class="cursor"></div>
     <div class="cursor-follower"></div>
 
     <!-- Navigation -->
-    <nav id="nav">
+    <nav>
         <div class="nav-container">
             <div class="logo">CertiSure</div>
             <div class="nav-links">
-                <a href="#features" class="nav-link">Features</a>
-                <a href="#process" class="nav-link">Process</a>
-                <a href="#about" class="nav-link">About</a>
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="issuer.html" class="nav-link">Issuer Portal</a>
+                <a href="verify.html" class="nav-link">Verify</a>
+                <a href="about.html" class="nav-link">About</a>
                 <a href="#" class="btn btn-primary">Get Started</a>
             </div>
+            <button class="mobile-menu-btn">
+                <i data-feather="menu"></i>
+            </button>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero" id="hero">
-        <canvas id="hero-canvas"></canvas>
-        <div class="particles" id="particles"></div>
+    <section class="hero">
         <div class="hero-content">
-            <h1 class="hero-title" data-aos="fade-up">
-                Secure Academic<br><span>Credentials</span>
-            </h1>
-            <p class="hero-subtitle" data-aos="fade-up" data-aos-delay="200">
-                Revolutionary blockchain & AI-powered document verification for unparalleled trust
-            </p>
-            <div class="btn-group" data-aos="fade-up" data-aos-delay="400">
-                <a href="#issuer" class="btn btn-primary">
-                    <i data-feather="rocket"></i>
-                    Start as Issuer
-                </a>
-                <a href="#verify" class="btn btn-secondary">
-                    <i data-feather="search"></i>
-                    Verify Document
-                </a>
+            <h1 class="hero-title">Next-Gen Academic Verification</h1>
+            <p class="hero-subtitle">Experience document authentication reimagined with 3D-secured blockchain technology and AI-powered trust scores.</p>
+            <div class="btn-group">
+                <a href="issuer.html" class="btn btn-primary">Start Issuing</a>
+                <a href="verify.html" class="btn btn-secondary">Instant Verify</a>
             </div>
         </div>
     </section>
 
     <!-- Features Section -->
-    <section class="section" id="features">
-        <div class="container">
-            <div data-aos="fade-up">
-                <div class="section-label">Features</div>
-                <h2 class="section-title">Built for Security</h2>
-                <p class="section-description">
-                    Cutting-edge technology meets intuitive design for the ultimate verification experience
-                </p>
+    <section class="features">
+        <div class="section-label">FEATURES</div>
+        <h2 class="section-title">Smarter Security, <br> Simpler Verification</h2>
+        <p class="section-description">Our platform combines cutting-edge technology with intuitive design.</p>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-feather="cube"></i>
+                </div>
+                <h3 class="feature-title">3D Document Model</h3>
+                <p class="feature-description">Interactive 3D representation of academic documents that responds to your scroll position.</p>
             </div>
-
-            <div class="floating-grid">
-                <div class="floating-card" data-aos="fade-up" data-aos-delay="100">
-                    <div style="font-size: 3rem; margin-bottom: 1.5rem;">
-                        <i data-feather="lock" style="width: 100%; height: 100%; stroke: var(--primary);"></i>
-                    </div>
-                    <h3 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 1rem;">Blockchain Security</h3>
-                    <p style="color: var(--text-secondary); line-height: 1.8;">
-                        IPFS storage with tamper-proof cryptographic hashing ensures complete document integrity
-                    </p>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-feather="cpu"></i>
                 </div>
-
-                <div class="floating-card" data-aos="fade-up" data-aos-delay="200">
-                    <div style="font-size: 3rem; margin-bottom: 1.5rem;">
-                        <i data-feather="cpu" style="width: 100%; height: 100%; stroke: var(--accent);"></i>
-                    </div>
-                    <h3 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 1rem;">AI Trust Score</h3>
-                    <p style="color: var(--text-secondary); line-height: 1.8;">
-                        Advanced neural networks analyze signatures & patterns for 99.9% accurate trust scoring
-                    </p>
+                <h3 class="feature-title">AI Trust Score</h3>
+                <p class="feature-description">Advanced machine learning algorithms analyze documents and generate reliability scores.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-feather="shield"></i>
                 </div>
-
-                <div class="floating-card" data-aos="fade-up" data-aos-delay="300">
-                    <div style="font-size: 3rem; margin-bottom: 1.5rem;">
-                        <i data-feather="smartphone" style="width: 100%; height: 100%; stroke: var(--secondary);"></i>
-                    </div>
-                    <h3 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 1rem;">QR Verification</h3>
-                    <p style="color: var(--text-secondary); line-height: 1.8;">
-                        Instant verification through unique QR codes readable by any smartphone camera worldwide
-                    </p>
+                <h3 class="feature-title">Blockchain Security</h3>
+                <p class="feature-description">Tamper-proof storage on decentralized IPFS network with cryptographic hashing.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-feather="smartphone"></i>
                 </div>
+                <h3 class="feature-title">Instant QR Scanning</h3>
+                <p class="feature-description">Verify documents in seconds by scanning QR codes with any smartphone camera.</p>
             </div>
         </div>
     </section>
 
-    <!-- Process Section -->
-    <section class="section" id="process">
-        <div class="container">
-            <div data-aos="fade-up">
-                <div class="section-label">How It Works</div>
-                <h2 class="section-title">3 Simple Steps</h2>
-            </div>
-
+    <!-- How It Works -->
+    <section class="process">
+        <div class="process-container">
+            <div class="section-label">PROCESS</div>
+            <h2 class="section-title">Verification in 3D Space</h2>
+            
             <div class="process-grid">
-                <div class="process-step" data-aos="fade-up" data-aos-delay="100">
+                <div class="process-step">
                     <div class="step-number">01</div>
-                    <h3 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 1rem;">Issue Document</h3>
-                    <p style="color: var(--text-secondary); font-size: 1.1rem; line-height: 1.7;">
-                        Watermark, hash & store on IPFS with unique QR code
-                    </p>
+                    <h3 class="step-title">Upload & Scan</h3>
+                    <p class="step-description">Institutions upload documents which are scanned and converted into 3D models.</p>
                 </div>
-                <div class="process-step active" data-aos="fade-up" data-aos-delay="200">
+                
+                <div class="process-step">
                     <div class="step-number">02</div>
-                    <h3 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 1rem;">AI Analysis</h3>
-                    <p style="color: var(--text-secondary); font-size: 1.1rem; line-height: 1.7;">
-                        Neural networks generate comprehensive trust scores
-                    </p>
+                    <h3 class="step-title">AI Analysis</h3>
+                    <p class="step-description">Our AI examines patterns, signatures and generates a trust score in real-time.</p>
                 </div>
-                <div class="process-step" data-aos="fade-up" data-aos-delay="300">
+                
+                <div class="process-step">
                     <div class="step-number">03</div>
-                    <h3 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 1rem;">Instant Verify</h3>
-                    <p style="color: var(--text-secondary); font-size: 1.1rem; line-height: 1.7;">
-                        Scan QR for immediate authenticity confirmation
-                    </p>
+                    <h3 class="step-title">3D Verification</h3>
+                    <p class="step-description">Users interact with the 3D document as they scroll to verify authenticity.</p>
                 </div>
             </div>
         </div>
     </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="cta-content">
+            <h2 class="cta-title">Ready for the Future of Verification?</h2>
+            <p class="cta-subtitle">Join thousands of institutions trusting CertiSure with next-gen 3D verification.</p>
+            <div class="btn-cta-group">
+                <a href="issuer.html" class="btn btn-primary">Become an Issuer</a>
+                <a href="verify.html" class="btn btn-secondary">Verify Now</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h3>CertiSure</h3>
+                <p>Securing academic credentials through 3D technology and blockchain innovation.</p>
+            </div>
+            
+            <div class="footer-links">
+                <h4>Product</h4>
+                <ul>
+                    <li><a href="#">Issuer Portal</a></li>
+                    <li><a href="#">Verification</a></li>
+                    <li><a href="#">API</a></li>
+                    <li><a href="#">Pricing</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-links">
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#">About Us</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">Blog</a></li>
+                    <li><a href="#">Contact</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="#">Privacy</a></li>
+                    <li><a href="#">Terms</a></li>
+                    <li><a href="#">Security</a></li>
+                    <li><a href="#">Compliance</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2023 CertiSure. All rights reserved.</p>
+        </div>
+    </footer>
 
     <script>
-        // Global Variables
-        let mouseX = 0, mouseY = 0;
-        let scrollY = 0;
-        let time = 0;
+        // Initialize AOS
+        AOS.init({
+            duration: 800,
+            once: true,
+            offset: 50
+        });
+        
+        // Initialize Feather Icons
+        feather.replace();
 
         // Custom Cursor
         const cursor = document.querySelector('.cursor');
         const follower = document.querySelector('.cursor-follower');
+        
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+            
+            gsap.to(follower, {
+                x: e.clientX,
+                y: e.clientY,
+                duration: 0.3
+            });
+        });
 
-        // THREE.js 3D Document Scene
-        let scene, camera, renderer, documentGroup, controls;
-        let documentMesh, pages = [];
+        // Interactive Elements Hover
+        const interactiveElements = document.querySelectorAll('a, button, .feature-card');
+        
+        interactiveElements.forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                cursor.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                cursor.style.borderColor = 'var(--primary)';
+                follower.style.transform = 'translate(-50%, -50%) scale(2)';
+            });
+            
+            el.addEventListener('mouseleave', () => {
+                cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+                cursor.style.borderColor = 'var(--primary)';
+                follower.style.transform = 'translate(-50%, -50%) scale(1)';
+            });
+        });
 
-        function init3D() {
-            // Scene setup
+        // === 3D DOCUMENT SCENE ===
+        let scene, camera, renderer, documentModel;
+        let scrollPosition = 0;
+
+        function init3DScene() {
+            // Scene Setup
             scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x0a0a0a, 10, 100);
-
+            scene.background = null;
+            
             // Camera
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 0, 8);
-
+            camera = new THREE.PerspectiveCamera(
+                75, 
+                window.innerWidth / window.innerHeight, 
+                0.1, 
+                1000
+            );
+            camera.position.z = 5;
+            
             // Renderer
-            const canvas = document.getElementById('hero-canvas');
+            const container = document.getElementById('document-scene');
             renderer = new THREE.WebGLRenderer({ 
-                canvas: canvas,
-                antialias: true,
-                alpha: true 
+                alpha: true,
+                antialias: true 
             });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-            // 3D Document Creation
-            createDocument();
-
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+            
             // Lighting
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(ambientLight);
-
-            const directionalLight = new THREE.DirectionalLight(0x8B5CF6, 1);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
             directionalLight.position.set(5, 5, 5);
-            directionalLight.castShadow = true;
             scene.add(directionalLight);
-
-            const pointLight = new THREE.PointLight(0xEC4899, 0.8, 50);
-            pointLight.position.set(-5, 3, 5);
-            scene.add(pointLight);
-
-            // Controls
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.enableZoom = false;
-            controls.enablePan = false;
-
-            // Particles
-            createParticles();
-
-            // Animation loop
-            function animate() {
-                requestAnimationFrame(animate);
-                
-                time += 0.01;
-                
-                // Rotate document based on scroll and mouse
-                documentGroup.rotation.y = (mouseX * 0.3) + (scrollY * 0.001) + Math.sin(time * 0.5) * 0.1;
-                documentGroup.rotation.x = (mouseY * 0.2) - 0.2 + Math.cos(time * 0.3) * 0.05;
-                documentGroup.position.y = Math.sin(scrollY * 0.0005) * 0.5;
-
-                // Animate pages
-                pages.forEach((page, index) => {
-                    page.rotation.z = Math.sin(time + index) * 0.1;
-                    page.position.y = Math.cos(time * 0.8 + index * 0.3) * 0.02;
-                });
-
-                controls.update();
-                renderer.render(scene, camera);
-            }
-            animate();
-
-            window.addEventListener('resize', onWindowResize);
-        }
-
-        function createDocument() {
-            documentGroup = new THREE.Group();
-            scene.add(documentGroup);
-
-            // Document cover
-            const coverGeometry = new THREE.BoxGeometry(4, 5.5, 0.3);
-            const coverMaterial = new THREE.MeshPhysicalMaterial({
-                color: 0x1a1a2e,
-                metalness: 0.1,
-                roughness: 0.3,
-                clearcoat: 0.8,
-                clearcoatRoughness: 0.1
-            });
-            documentMesh = new THREE.Mesh(coverGeometry, coverMaterial);
-            documentMesh.castShadow = true;
-            documentMesh.receiveShadow = true;
-            documentGroup.add(documentMesh);
-
-            // Document pages
-            for(let i = 0; i < 20; i++) {
-                const pageGeometry = new THREE.PlaneGeometry(3.8, 5.3, 4, 6);
-                const pageMaterial = new THREE.MeshPhysicalMaterial({
-                    color: 0xffffff,
-                    side: THREE.DoubleSide,
-                    transparent: true,
-                    opacity: 0.92 - i * 0.02,
-                    roughness: 0.7,
-                    metalness: 0,
-                    transmission: 0.1
-                });
-                
-                const page = new THREE.Mesh(pageGeometry, pageMaterial);
-                page.position.z = -0.15 + (i * 0.008);
-                page.rotation.y = Math.random() * 0.02;
-                page.castShadow = true;
-                page.receiveShadow = true;
-                
-                documentGroup.add(page);
-                pages.push(page);
-            }
-
-            // Holographic seal
-            const sealGeometry = new THREE.RingGeometry(0.8, 1.1, 32);
-            const sealMaterial = new THREE.MeshPhysicalMaterial({
-                color: 0x8B5CF6,
-                emissive: 0x8B5CF6,
-                emissiveIntensity: 0.2,
-                metalness: 0.9,
+            
+            const backLight = new THREE.DirectionalLight(0xffffff, 0.4);
+            backLight.position.set(-5, -5, -5);
+            scene.add(backLight);
+            
+            // Create Document 3D Model (simplified as a plane with edges)
+            const geometry = new THREE.BufferGeometry();
+            const vertices = new Float32Array([
+                // A4 Document Proportions (3:4)
+                -1.5,  1.0,  0.1,   // Top Left
+                 1.5,  1.0,  0.1,   // Top Right
+                 1.5, -1.0,  0.1,   // Bottom Right
+                -1.5, -1.0,  0.1    // Bottom Left
+            ]);
+            
+            const uvs = new Float32Array([
+                0, 1,
+                1, 1,
+                1, 0,
+                0, 0
+            ]);
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+            
+            // Document Material with Gradient
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 512;
+            canvas.height = 512;
+            
+            // Create gradient
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, '#4f46e5');
+            gradient.addColorStop(1, '#7c3aed');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Add white document shape
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(100, 100, 312, 312);
+            
+            // Add some text lines
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = 'bold 40px Arial';
+            ctx.fillText('CERT', 150, 200);
+            ctx.fillText('SURE', 150, 260);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.MeshStandardMaterial({
+                map: texture,
                 roughness: 0.1,
-                transparent: true,
-                opacity: 0.8
+                metalness: 0.2,
+                side: THREE.DoubleSide
             });
-            const seal = new THREE.Mesh(sealGeometry, sealMaterial);
-            seal.rotation.x = -Math.PI / 2;
-            seal.position.set(0, 2.5, 0.4);
-            documentGroup.add(seal);
-
-            // QR Code effect
-            const qrGeometry = new THREE.PlaneGeometry(0.6, 0.6);
-            const qrMaterial = new THREE.MeshBasicMaterial({
-                color: 0x10B981,
-                transparent: true,
-                opacity: 0.9
+            
+            documentModel = new THREE.Mesh(geometry, material);
+            scene.add(documentModel);
+            
+            // Add subtle floating animation
+            gsap.to(documentModel.rotation, {
+                y: 0.02,
+                duration: 8,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
             });
-            const qr = new THREE.Mesh(qrGeometry, qrMaterial);
-            qr.position.set(1.5, -1.5, 0.31);
-            documentGroup.add(qr);
-        }
-
-        function createParticles() {
-            const particlesGeometry = new THREE.BufferGeometry();
-            const particlesCount = 200;
-            const positions = new Float32Array(particlesCount * 3);
-
-            for(let i = 0; i < particlesCount * 3; i++) {
-                positions[i] = (Math.random() - 0.5) * 50;
-            }
-
-            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-            const particlesMaterial = new THREE.PointsMaterial({
-                size: 0.02,
-                color: 0x8B5CF6,
-                transparent: true,
-                opacity: 0.6,
-                blending: THREE.AdditiveBlending
-            });
-
-            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-            scene.add(particlesMesh);
+            
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize);
+            
+            // Animation loop
+            animate();
+            
+            // Scroll interaction
+            setupScrollInteraction();
         }
 
         function onWindowResize() {
@@ -634,76 +915,67 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // Mouse Movement
-        document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
+        function animate() {
+            requestAnimationFrame(animate);
             
-            setTimeout(() => {
-                follower.style.left = e.clientX + 'px';
-                follower.style.top = e.clientY + 'px';
-            }, 50);
-        });
-
-        // Scroll Events
-        let ticking = false;
-        function updateScroll() {
-            scrollY = window.pageYOffset;
-            ticking = false;
+            // Update document model based on scroll
+            const scroll = window.scrollY;
+            
+            // Smooth scroll interpolation
+            scrollPosition = THREE.Math.LinearInterpolate(
+                scrollPosition, 
+                scroll * 0.0002, 
+                0.1
+            );
+            
+            // Apply 3D transformations based on scroll
+            documentModel.rotation.x = Math.sin(scrollPosition) * 0.3;
+            documentModel.rotation.y = scrollPosition;
+            documentModel.position.y = Math.sin(scrollPosition * 2) * 0.5;
+            documentModel.position.z = Math.cos(scrollPosition) * 0.3;
+            
+            renderer.render(scene, camera);
         }
 
-        window.addEventListener('scroll', () => {
-            if (!ticking) {
-                requestAnimationFrame(updateScroll);
-                ticking = true;
-            }
-        });
-
-        // Interactive Elements
-        document.querySelectorAll('a, button, .floating-card').forEach(el => {
-            el.addEventListener('mouseenter', () => {
-                cursor.style.transform = 'translate(-50%, -50%) scale(2)';
-                follower.style.transform = 'translate(-50%, -50%) scale(3)';
-                cursor.style.background = 'rgba(139, 92, 246, 0.3)';
+        function setupScrollInteraction() {
+            // Use GSAP ScrollTrigger for smooth control
+            gsap.to(documentModel.rotation, {
+                y: 4,
+                duration: 0.5,
+                ease: "power2.out",
+                scrollTrigger: {
+                    trigger: ".hero",
+                    start: "top center",
+                    end: "bottom center",
+                    scrub: true
+                }
             });
             
-            el.addEventListener('mouseleave', () => {
-                cursor.style.transform = 'translate(-50%, -50%) scale(1)';
-                follower.style.transform = 'translate(-50%, -50%) scale(1)';
-                cursor.style.background = 'transparent';
+            gsap.to(documentModel.position, {
+                z: 2,
+                duration: 0.5,
+                ease: "power2.out",
+                scrollTrigger: {
+                    trigger: ".features",
+                    start: "top center",
+                    end: "bottom center",
+                    scrub: true
+                }
             });
-        });
+        }
 
-        // Navbar Scroll Effect
-        window.addEventListener('scroll', () => {
-            const nav = document.getElementById('nav');
-            if (window.scrollY > 50) {
-                nav.style.background = 'rgba(10, 10, 10, 0.98)';
-            } else {
-                nav.style.background = 'rgba(10, 10, 10, 0.8)';
-            }
-        });
-
-        // Initialize Everything
+        // Initialize when page loads
         window.addEventListener('load', () => {
-            AOS.init({
-                duration: 1200,
-                once: true,
-                offset: 100
-            });
+            init3DScene();
             
-            feather.replace();
-            init3D();
-        });
-
-        // Preload
-        document.body.style.opacity = '0';
-        window.addEventListener('load', () => {
-            document.body.style.transition = 'opacity 0.8s ease';
-            document.body.style.opacity = '1';
+            // Throttled scroll handler
+            let isScrolling;
+            window.addEventListener('scroll', () => {
+                window.clearTimeout(isScrolling);
+                isScrolling = setTimeout(() => {
+                    // Animation complete callback if needed
+                }, 100);
+            });
         });
     </script>
 </body>
