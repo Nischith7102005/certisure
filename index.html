@@ -1,779 +1,370 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>CertiSure - Secure Academic Credentials</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    :root {
-      --bg: #050509;
-      --bg-soft: #0b0b13;
-      --fg: #f5f5f7;
-      --muted: #8b8ca0;
-      --accent: #7c3aed;
-      --accent-soft: rgba(124, 58, 237, 0.15);
-      --border: #1a1b27;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CertiSure - Secure Academic Credentials</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #020517;
+            --accent: #4a5568;
+            --neon: #00f3ff;
+            --dark: #0a0a0a;
+            --text: #e6e6e6;
+            --glass: rgba(255, 255, 255, 0.15);
+        }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
 
-    html, body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-        "Inter", sans-serif;
-      background: radial-gradient(circle at top, #151521 0, #050509 55%);
-      color: var(--fg);
-      scroll-behavior: smooth;
-    }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg), var(--dark));
+            color: var(--text);
+            overflow-x: hidden;
+            min-height: 100vh;
+            padding: 2rem;
+        }
 
-    body {
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+        /* Glassmorphism Card */
+        .glass-card {
+            position: relative;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            transform: translateY(-5px);
+            transition: transform 0.3s ease;
+        }
 
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
+        .glass-card:hover {
+            transform: translateY(0);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+        }
 
-    img {
-      max-width: 100%;
-      display: block;
-    }
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 0 4rem;
+        }
 
-    /* Layout */
-    .page {
-      width: min(1120px, 100%);
-      margin: 0 auto;
-      padding-inline: clamp(1.5rem, 4vw, 3rem);
-    }
+        .hero-content {
+            max-width: 1200px;
+            text-align: center;
+        }
 
-    /* Nav */
-    .nav {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      backdrop-filter: blur(18px);
-      background: linear-gradient(
-        to bottom,
-        rgba(5, 5, 9, 0.9),
-        rgba(5, 5, 9, 0.2)
-      );
-      border-bottom: 1px solid rgba(26, 27, 39, 0.8);
-    }
+        .hero-title {
+            font-size: clamp(3.5rem, 6vw, 4.5rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(90deg, var(--accent), var(--neon));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-    .nav-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 64px;
-      max-width: 1120px;
-      margin: 0 auto;
-      padding-inline: clamp(1.5rem, 4vw, 3rem);
-    }
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: var(--text);
+            margin-bottom: 2.5rem;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-weight: 600;
-      letter-spacing: -0.04em;
-      font-size: 1rem;
-    }
+        /* Tech Scenery Parallax */
+        .parallax {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
 
-    .logo-mark {
-      width: 26px;
-      height: 26px;
-      border-radius: 8px;
-      background: radial-gradient(circle at 30% 0%, #a855f7, #4c1d95);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.9rem;
-    }
+        .parallax-layer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(
+                to bottom,
+                rgba(15, 23, 42, 0.9),
+                rgba(15, 23, 42, 0.2)
+            );
+            opacity: 0.3;
+            animation: parallax 10s infinite linear;
+        }
 
-    .logo span {
-      background: linear-gradient(120deg, #e5e7eb, #9ca3af);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+        @keyframes parallax {
+            0% { transform: translate(-50%, -50%) scale(2); }
+            100% { transform: translate(50%, 50%) scale(0.5); }
+        }
 
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 1.75rem;
-      font-size: 0.85rem;
-      color: var(--muted);
-    }
+        /* Interactive Document Card */
+        .document-card {
+            position: fixed;
+            right: 20%;
+            bottom: 30%;
+            width: 300px;
+            height: 400px;
+            background: rgba(15, 23, 42, 0.7);
+            border-radius: 20px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+            transform: rotateX(15deg) rotateY(5deg);
+            backface-visibility: hidden;
+            transition: transform 0.3s ease;
+            will-change: transform;
+        }
 
-    .nav-links a {
-      position: relative;
-      padding-block: 0.15rem;
-    }
+        .document-card:hover {
+            transform: rotateX(20deg) rotateY(10deg);
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
+        }
 
-    .nav-links a::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      bottom: -0.2rem;
-      width: 0;
-      height: 1px;
-      background: linear-gradient(90deg, #7c3aed, #8b5cf6);
-      transition: width 0.2s ease;
-    }
+        .document-front {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(20, 20, 35, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
 
-    .nav-links a:hover::after {
-      width: 100%;
-    }
+        .document-content {
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            width: 80%;
+            max-width: 240px;
+            background: rgba(30, 30, 50, 0.7);
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            color: var(--text);
+        }
 
-    .nav-cta {
-      border-radius: 999px;
-      padding: 0.45rem 0.95rem;
-      border: 1px solid rgba(124, 58, 237, 0.6);
-      color: #e5e7eb;
-      background: radial-gradient(
-        circle at top,
-        rgba(124, 58, 237, 0.35),
-        rgba(15, 23, 42, 0.7)
-      );
-      font-size: 0.8rem;
-    }
+        /* Animated Stats */
+        .stats-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 20px;
+            z-index: 10;
+        }
 
-    /* Hero */
-    .hero {
-      padding-top: 4.5rem;
-      padding-bottom: 3.5rem;
-      display: grid;
-      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-      gap: clamp(2rem, 5vw, 3.5rem);
-      align-items: center;
-    }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 10px;
+            background: var(--glass);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
 
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.18rem 0.6rem;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.3);
-      background: rgba(15, 23, 42, 0.7);
-      font-size: 0.7rem;
-      color: var(--muted);
-      margin-bottom: 1.3rem;
-    }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            background: linear-gradient(90deg, var(--accent), var(--neon));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-    .pill-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #22c55e;
-      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
-    }
+        /* Smooth Scroll */
+        .scroll-section {
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
 
-    .hero-title {
-      font-size: clamp(2.4rem, 4vw, 3.2rem);
-      letter-spacing: -0.06em;
-      line-height: 1.05;
-      margin-bottom: 1.2rem;
-    }
+        .section-item {
+            height: 100vh;
+            position: relative;
+            transition: all 0.5s ease;
+        }
 
-    .hero-title span.highlight {
-      background: linear-gradient(110deg, #a855f7, #4ade80);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+        .section-item.active {
+            transform: translateY(-100px);
+            opacity: 1;
+        }
 
-    .hero-text {
-      font-size: 0.95rem;
-      color: var(--muted);
-      max-width: 28rem;
-      line-height: 1.7;
-      margin-bottom: 1.6rem;
-    }
+        /* CSS Grid Gallery */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+        }
 
-    .hero-row {
-      display: flex;
-      align-items: center;
-      gap: 0.9rem;
-      flex-wrap: wrap;
-    }
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
 
-    .btn-primary {
-      border-radius: 999px;
-      padding: 0.6rem 1.3rem;
-      font-size: 0.85rem;
-      border: 1px solid rgba(124, 58, 237, 0.8);
-      background: radial-gradient(
-        circle at top left,
-        rgba(124, 58, 237, 0.9),
-        rgba(15, 23, 42, 0.9)
-      );
-      color: #f9fafb;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      transition: transform 120ms ease, box-shadow 120ms ease;
-      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.9);
-    }
+        .gallery-item:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
 
-    .btn-primary svg {
-      width: 14px;
-      height: 14px;
-      stroke: currentColor;
-    }
+        .gallery-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            filter: brightness(1.2) contrast(1.1);
+            transition: filter 0.3s ease;
+        }
 
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 20px 55px rgba(76, 29, 149, 0.65);
-    }
+        .gallery-image:hover {
+            filter: brightness(1.3) contrast(1.2);
+        }
 
-    .btn-ghost {
-      font-size: 0.85rem;
-      color: var(--muted);
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-
-    .btn-ghost span.icon {
-      width: 18px;
-      height: 18px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.7rem;
-    }
-
-    .hero-footer {
-      margin-top: 2rem;
-      font-size: 0.8rem;
-      color: var(--muted);
-      display: flex;
-      gap: 1.75rem;
-      flex-wrap: wrap;
-    }
-
-    .hero-footer strong {
-      color: #e5e7eb;
-      font-weight: 500;
-    }
-
-    /* Hero visual */
-    .hero-visual {
-      position: relative;
-      min-height: 260px;
-    }
-
-    .hero-image-wrap {
-      position: relative;
-      border-radius: 1.2rem;
-      overflow: hidden;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      background: radial-gradient(circle at top left, #1f2937, #020617);
-      box-shadow: 0 30px 60px rgba(15, 23, 42, 0.9);
-    }
-
-    .hero-image {
-      width: 100%;
-      height: 230px;
-      object-fit: cover;
-      filter: saturate(1.2) contrast(1.1);
-      transform-origin: center;
-      transform: scale(1.03);
-    }
-
-    .hero-tag {
-      position: absolute;
-      bottom: 0.9rem;
-      left: 0.9rem;
-      padding: 0.25rem 0.6rem;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      font-size: 0.7rem;
-      color: var(--muted);
-    }
-
-    .doc-card {
-      position: absolute;
-      right: 0;
-      bottom: -1.4rem;
-      width: 180px;
-      height: 120px;
-      border-radius: 0.9rem;
-      background: radial-gradient(circle at top, #111827, #020617);
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      box-shadow: 0 22px 55px rgba(15, 23, 42, 0.9);
-      padding: 0.8rem;
-      transform-origin: center;
-      will-change: transform;
-    }
-
-    .doc-title {
-      font-size: 0.7rem;
-      color: #e5e7eb;
-      margin-bottom: 0.35rem;
-    }
-
-    .doc-lines {
-      height: 40px;
-      border-radius: 0.55rem;
-      background: repeating-linear-gradient(
-        to bottom,
-        rgba(148, 163, 184, 0.17) 0,
-        rgba(148, 163, 184, 0.17) 1px,
-        transparent 1px,
-        transparent 4px
-      );
-      margin-bottom: 0.5rem;
-    }
-
-    .doc-meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 0.7rem;
-      color: var(--muted);
-    }
-
-    .doc-score {
-      padding: 0.1rem 0.5rem;
-      border-radius: 999px;
-      background: rgba(22, 163, 74, 0.12);
-      border: 1px solid rgba(34, 197, 94, 0.5);
-      color: #bbf7d0;
-    }
-
-    /* Sections */
-    section {
-      padding-block: 3.5rem;
-    }
-
-    .section-header {
-      margin-bottom: 2rem;
-    }
-
-    .section-kicker {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      color: var(--muted);
-      margin-bottom: 0.7rem;
-    }
-
-    .section-title {
-      font-size: 1.4rem;
-      letter-spacing: -0.03em;
-      margin-bottom: 0.5rem;
-    }
-
-    .section-text {
-      font-size: 0.9rem;
-      color: var(--muted);
-      max-width: 32rem;
-      line-height: 1.7;
-    }
-
-    /* Features */
-    .feature-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1.3rem;
-      margin-top: 2rem;
-    }
-
-    .feature-card {
-      border-radius: 1rem;
-      border: 1px solid var(--border);
-      background: radial-gradient(circle at top left, #0b1120, #020617);
-      padding: 1.25rem;
-      min-height: 140px;
-      position: relative;
-      overflow: hidden;
-      transform: translateY(16px);
-      opacity: 0;
-      will-change: transform, opacity;
-    }
-
-    .feature-icon {
-      width: 24px;
-      height: 24px;
-      border-radius: 999px;
-      background: rgba(124, 58, 237, 0.15);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.9rem;
-      margin-bottom: 0.8rem;
-    }
-
-    .feature-title {
-      font-size: 0.95rem;
-      margin-bottom: 0.4rem;
-    }
-
-    .feature-body {
-      font-size: 0.8rem;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    /* Image Strip */
-    .image-strip {
-      display: grid;
-      grid-template-columns: 1.4fr 1fr;
-      gap: 1.1rem;
-      margin-top: 2.5rem;
-    }
-
-    .image-large,
-    .image-small {
-      position: relative;
-      border-radius: 1rem;
-      overflow: hidden;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      background: #020617;
-      height: 200px;
-      transform: translateY(16px);
-      opacity: 0;
-      will-change: transform, opacity;
-    }
-
-    .image-small {
-      height: 200px;
-    }
-
-    .image-large img,
-    .image-small img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      filter: saturate(1.1) contrast(1.02);
-      transform: scale(1.03);
-    }
-
-    .image-label {
-      position: absolute;
-      left: 0.9rem;
-      bottom: 0.9rem;
-      padding: 0.25rem 0.65rem;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.92);
-      border: 1px solid rgba(148, 163, 184, 0.45);
-      font-size: 0.7rem;
-      color: var(--muted);
-    }
-
-    /* CTA */
-    .cta {
-      padding-block: 3.8rem 4.5rem;
-      border-top: 1px solid rgba(15, 23, 42, 0.9);
-      margin-top: 2rem;
-    }
-
-    .cta-inner {
-      text-align: center;
-      padding: 2.3rem 1.6rem;
-      border-radius: 1.2rem;
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      background: radial-gradient(circle at top, #111827, #020617);
-    }
-
-    .cta-title {
-      font-size: 1.5rem;
-      letter-spacing: -0.04em;
-      margin-bottom: 0.7rem;
-    }
-
-    .cta-text {
-      font-size: 0.9rem;
-      color: var(--muted);
-      margin-bottom: 1.6rem;
-    }
-
-    /* Reveal base */
-    .reveal {
-      transform: translateY(18px);
-      opacity: 0;
-      will-change: transform, opacity;
-    }
-
-    @media (max-width: 880px) {
-      .hero {
-        grid-template-columns: minmax(0, 1fr);
-      }
-      .hero-visual {
-        order: -1;
-      }
-      .hero {
-        padding-top: 3.8rem;
-      }
-      .nav-inner {
-        padding-inline: 1.2rem;
-      }
-      .nav-links {
-        display: none;
-      }
-      .section {
-        padding-block: 3rem;
-      }
-      .feature-grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
-      .image-strip {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-  </style>
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-content {
+                text-align: center;
+                padding: 1rem;
+            }
+            
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="nav">
-    <div class="nav-inner">
-      <div class="logo">
-        <div class="logo-mark">C</div>
-        <span>CertiSure</span>
-      </div>
-      <div class="nav-links">
-        <a href="#features">Features</a>
-        <a href="#workflow">Workflow</a>
-        <a href="#security">Security</a>
-        <a href="#cta" class="nav-cta">Get started</a>
-      </div>
+    <!-- Parallax Layers -->
+    <div class="parallax">
+        <div class="parallax-layer"></div>
+        <div class="parallax-layer" style="opacity: 0.5"></div>
     </div>
-  </div>
 
-  <main class="page">
-    <!-- HERO -->
+    <!-- Hero Section -->
     <section class="hero">
-      <div>
-        <div class="pill">
-          <span class="pill-dot"></span>
-          AI + Blockchain Verification
+        <div class="hero-content">
+            <h1 class="hero-title">CertiSure</h1>
+            <p class="hero-subtitle">Minimal security. Maximum trust.<br>
+            Academic credentials verified through blockchain and AI analysis</p>
+            <a href="#" class="cta-btn" style="position: fixed; top: 80%; left: 50%; transform: translate(-50%, -50%); padding: 1rem 2rem; background: linear-gradient(45deg, var(--accent), var(--neon)); color: var(--text); text-decoration: none; display: inline-block; font-weight: 600; border-radius: 50px; transition: all 0.3s ease; border: 1px solid var(--accent);">Get Started Free</a>
         </div>
-        <h1 class="hero-title">
-          Minimal, secure<br />
-          <span class="highlight">academic credentials.</span>
-        </h1>
-        <p class="hero-text">
-          CertiSure transforms academic documents into tamper‑proof,
-          verifiable records—secured with blockchain and evaluated with
-          lightweight AI models.
-        </p>
-        <div class="hero-row">
-          <a href="#cta" class="btn-primary">
-            Issue a document
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M5 12h14M12 5l7 7-7 7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </a>
-          <a href="#workflow" class="btn-ghost">
-            <span class="icon">?</span> How it works
-          </a>
-        </div>
-        <div class="hero-footer">
-          <span><strong>2.3M+</strong> documents verified</span>
-          <span><strong>&lt; 200ms</strong> verification latency</span>
-        </div>
-      </div>
-
-      <div class="hero-visual">
-        <div class="hero-image-wrap">
-          <!-- Tech scenery image #1 -->
-          <img
-            class="hero-image"
-            src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80"
-            alt="Tech servers and cyber lines"
-          />
-          <div class="hero-tag">Live verification network</div>
-        </div>
-
-        <!-- "3D" Document card (rotates on scroll) -->
-        <div class="doc-card" id="docCard">
-          <div class="doc-title">BSc Computer Science</div>
-          <div class="doc-lines"></div>
-          <div class="doc-meta">
-            <span>University ID · 4937</span>
-            <span class="doc-score">Trust: 96</span>
-          </div>
-        </div>
-      </div>
     </section>
 
-    <!-- FEATURES -->
-    <section id="features">
-      <div class="section-header reveal">
-        <div class="section-kicker">Features</div>
-        <h2 class="section-title">Secure by default, minimal by design.</h2>
-        <p class="section-text">
-          Every document gets a unique hash, decentralized storage, and an
-          optional AI‑computed trust score—without cluttering your workflow.
-        </p>
-      </div>
-
-      <div class="feature-grid">
-        <article class="feature-card">
-          <div class="feature-icon">◎</div>
-          <h3 class="feature-title">Blockchain fingerprint</h3>
-          <p class="feature-body">
-            Each credential is hashed and anchored on‑chain, giving you a
-            verifiable fingerprint that cannot be forged or silently edited.
-          </p>
-        </article>
-
-        <article class="feature-card">
-          <div class="feature-icon">↻</div>
-          <h3 class="feature-title">AI trust scoring</h3>
-          <p class="feature-body">
-            Lightweight vision models compare signatures and layouts to known
-            references, returning a simple 0–100 trust score.
-          </p>
-        </article>
-
-        <article class="feature-card">
-          <div class="feature-icon">▢</div>
-          <h3 class="feature-title">QR‑first verification</h3>
-          <p class="feature-body">
-            Each PDF includes a compact QR code linking to the canonical record.
-            Scan on any phone, see authenticity in seconds.
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <!-- WORKFLOW / TECH IMAGES STRIP -->
-    <section id="workflow">
-      <div class="section-header reveal">
-        <div class="section-kicker">Workflow</div>
-        <h2 class="section-title">From issuing to trust score in three steps.</h2>
-        <p class="section-text">
-          Issue, anchor, and verify. CertiSure fits into your existing tools,
-          adding a thin cryptographic layer instead of a new platform to manage.
-        </p>
-      </div>
-
-      <div class="image-strip">
-        <div class="image-large">
-          <!-- Tech scenery image #2 -->
-          <img
-            src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1400&q=80"
-            alt="Abstract digital network"
-          />
-          <div class="image-label">01 · Anchor to the network</div>
+    <!-- Tech Scenery -->
+    <div class="section-item active">
+        <div class="gallery">
+            <div class="gallery-item">
+                <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80" alt="Tech servers">
+            </div>
+            <div class="gallery-item">
+                <img src="https://images.unsplash.com/photo-1508514483178-4c2e97e4d8f9?auto=format&fit=crop&w=1200&q=80" alt="Digital network">
+            </div>
         </div>
+    </div>
 
-        <div class="image-small">
-          <!-- Tech scenery image #3 -->
-          <img
-            src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80"
-            alt="Minimal UI and code"
-          />
-          <div class="image-label">02 · Generate trust score</div>
+    <!-- Document Showcase -->
+    <div class="section-item">
+        <div class="document-card">
+            <div class="document-front">
+                <div class="document-content">
+                    <h2 class="document-title">BSc Computer Science</h2>
+                    <p class="document-meta">University of Tech • Issued 2023</p>
+                    <div class="document-stats">
+                        <div class="stats-container">
+                            <div class="stat-item">
+                                <div class="stat-number">2.1M</div>
+                                <div class="stat-label">Documents Secured</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">99.8%</div>
+                                <div class="stat-label">Verification Accuracy</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </section>
+    </div>
 
-    <!-- SECURITY / MORE FEATURES -->
-    <section id="security">
-      <div class="section-header reveal">
-        <div class="section-kicker">Security</div>
-        <h2 class="section-title">Minimal attack surface, maximum clarity.</h2>
-        <p class="section-text">
-          No passwords stored. No hidden dashboards. Just signed documents,
-          public proofs, and transparent verification logs.
-        </p>
-      </div>
-
-      <div class="feature-grid">
-        <article class="feature-card">
-          <div class="feature-icon">□</div>
-          <h3 class="feature-title">Decentralized storage</h3>
-          <p class="feature-body">
-            Store documents on IPFS or your own S3‑compatible bucket, keeping
-            control while CertiSure handles verification.
-          </p>
-        </article>
-
-        <article class="feature-card">
-          <div class="feature-icon">∞</div>
-          <h3 class="feature-title">Immutable history</h3>
-          <p class="feature-body">
-            Each issuance and revocation is recorded, giving auditors a
-            linear, tamper‑evident trail.
-          </p>
-        </article>
-
-        <article class="feature-card">
-          <div class="feature-icon">☰</div>
-          <h3 class="feature-title">Simple APIs</h3>
-          <p class="feature-body">
-            A small, well‑documented REST surface: issue, verify, revoke.
-            That’s it—no vendor lock‑in, no SDK sprawl.
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <!-- CTA -->
-    <section class="cta" id="cta">
-      <div class="cta-inner reveal">
-        <h2 class="cta-title">Start issuing verifiable credentials.</h2>
-        <p class="cta-text">
-          Point your existing PDF export at CertiSure, and start attaching
-          verifiable trust to every document you send.
-        </p>
-        <div class="hero-row" style="justify-content:center;">
-          <a href="#" class="btn-primary">
-            Talk to us
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M5 12h14M12 5l7 7-7 7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </a>
-          <a href="#features" class="btn-ghost">
-            or browse the feature set
-          </a>
+    <!-- Feature Grid -->
+    <div class="section-item">
+        <div class="glass-card">
+            <h3>Blockchain Anchor</h3>
+            <p>Each credential gets a cryptographic anchor on IPFS - tamper-proof and immutable</p>
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#4a5568">
+                    <path d="M12 5v10m-6 4h12a2 2 0 0 0-2-2v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                </svg>
+            </div>
         </div>
-      </div>
-    </section>
-  </main>
+    </div>
 
-  <script>
-    // ----- Minimal scroll-based card "3D" rotation -----
-    const docCard = document.getElementById('docCard');
-
-    function updateDocCard() {
-      const scrollY = window.scrollY || window.pageYOffset;
-      const rotateY = (scrollY / 400) * 12; // subtle rotation
-      const translateY = Math.sin(scrollY / 400) * 4;
-      docCard.style.transform =
-        `translateY(${translateY}px) rotateY(${rotateY}deg)`;
-      requestAnimationFrame(updateDocCard);
-    }
-    requestAnimationFrame(updateDocCard);
-
-    // ----- Simple intersection-based reveals -----
-    const reveals = document.querySelectorAll('.reveal, .feature-card, .image-large, .image-small');
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-            entry.target.style.transition =
-              'opacity 500ms ease-out, transform 500ms ease-out';
-            io.unobserve(entry.target);
-          }
+    <script>
+        // ----- Smooth Scrolling -----
+        document.querySelectorAll('.section-item').forEach(item => {
+            item.addEventListener('click', () => {
+                gsap.to('.section-item', {
+                    opacity: 0,
+                    y: -100,
+                    duration: 0.6,
+                    ease: 'power4.out'
+                });
+            });
         });
-      },
-      { threshold: 0.12 }
-    );
 
-    reveals.forEach((el) => io.observe(el));
-  </script>
+        // ----- Document Card Rotation -----
+        const card = document.querySelector('.document-card');
+        let rotX = 0, rotY = 0;
+        
+        function rotateCard() {
+            const rotSpeed = 0.01;
+            const mouseX = (window.innerWidth / 2 - event.clientX) / window.innerWidth;
+            const mouseY = (window.innerHeight / 2 - event.clientY) / window.innerHeight;
+            
+            rotX += mouseX * rotSpeed;
+            rotY += mouseY * rotSpeed;
+            
+            card.style.transform = `rotateX(${rotX}rad) rotateY(${rotY}rad)`;
+            requestAnimationFrame(rotateCard);
+        }
+        rotateCard();
+
+        // ----- Stats Animation -----
+        const stats = document.querySelectorAll('.stat-number');
+        stats.forEach((stat, i) => {
+            gsap.to(stat, {
+                from: { fontSize: '1rem' },
+                to: { fontSize: '2.5rem', opacity: 1 },
+                duration: 1.2 + i * 0.3,
+                delay: 0.5,
+                ease: 'power4.out',
+                opacity: 0
+            });
+        });
+    </script>
 </body>
 </html>
