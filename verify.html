@@ -607,13 +607,17 @@
                     body: JSON.stringify(verificationData)
                 });
                 
-                if (!response.ok) throw new Error('Failed to send log to MongoDB');
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    log(`MongoDB API response (${response.status}): ${errorText}`, "warning");
+                    return false;
+                }
                 
                 log("✅ Verification log sent to certisure database", "success");
                 return true;
             } catch (error) {
                 console.error('MongoDB log error:', error);
-                log("❌ Failed to send log to MongoDB (check if server is running on port 3001)", "error");
+                log(`⚠️ MongoDB connection skipped (server may not be running on port 3001)`, "warning");
                 return false;
             }
         }
@@ -672,8 +676,7 @@
                 statusBadge.innerHTML = '<span>Sending to AI for final scoring...</span>';
                 log("Sending analysis to AI for verification...", "info");
 
-                const prompt = `
-You are verifying a Dayananda Sagar University certificate (PDF/Image).
+                const prompt = `You are verifying a Dayananda Sagar University certificate (PDF/Image).
 
 SCAN RESULTS:
 - QR Code detected: ${hasQR ? "YES" : "NO"}
@@ -693,8 +696,7 @@ SCORING RULES:
 Respond EXACTLY in this format:
 SCORE: [number between 1-99]
 STATUS: [GENUINE or SUSPICIOUS or FAKE]
-REASON: [1-2 sentence explanation]
-                `;
+REASON: [1-2 sentence explanation]`;
 
                 const aiResponse = await fetch(AI_API_URL, {
                     method: "POST",
@@ -710,11 +712,15 @@ REASON: [1-2 sentence explanation]
                     })
                 });
 
-                if (!aiResponse.ok) throw new Error("AI verification failed");
+                if (!aiResponse.ok) {
+                    const errorText = await aiResponse.text();
+                    throw new Error(`AI API error (${aiResponse.status}): ${errorText}`);
+                }
+                
                 const aiData = await aiResponse.json();
                 const aiResult = aiData.choices[0]?.message?.content || "";
 
-                log("AI Response received", "info");
+                log("AI Response received", "success");
                 log(`Raw AI output: ${aiResult}`, "info");
 
                 // Parse AI response
@@ -760,8 +766,8 @@ REASON: [1-2 sentence explanation]
                 log(`Status: ${status}`, "success");
                 log(`Reason: ${reasonPart}`, "info");
 
-                // Step 3: Send verification log to MongoDB
-                log("Sending log to certisure database...", "info");
+                // Step 3: Send verification log to MongoDB (non-blocking)
+                log("Attempting to send log to certisure database...", "info");
                 const verificationPayload = {
                     fileName: selectedFile.name,
                     mimeType: selectedFile.type,
@@ -781,14 +787,17 @@ REASON: [1-2 sentence explanation]
                 await sendVerificationLogToMongoDB(verificationPayload);
 
             } catch (err) {
-                // Handle errors
+                // Handle errors gracefully
                 statusBadge.className = 'status-badge error';
-                statusBadge.innerHTML = '<span>❌ Verification Failed</span>';
+                statusBadge.innerHTML = '<span>❌ Verification Error</span>';
                 log(`Error: ${err.message}`, "error");
-                console.error(err);
-                verdict.textContent = "Verification Failed";
-                scoreCircle.textContent = "X";
+                console.error('Full error:', err);
+                verdict.textContent = "Verification Error - Check logs";
+                scoreCircle.textContent = "!";
                 scoreCircle.className = 'score-circle red';
+            } finally {
+                // Re-enable button
+                verifyBtn.disabled = false;
             }
         });
 
