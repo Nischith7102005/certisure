@@ -202,8 +202,8 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         // API Configuration
-        const AI_API_TOKEN = "sk-or-v1-ee3f77df094afa3917206caeebeeed2ec6a573e2a7d0235d11a3f2b7640b95bcsk-or-v1-ee3f77df094afa3917206caeebeeed2ec6a573e2a7d0235d11a3f2b7640b95bc";
-        const AI_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+        const AI_API_TOKEN = "cpk_6e025460f1cf48438058b24954f3ef0a.6cce9b81609c509dbdcfb29cc876557b.v1DAhbEMclbAihw1OAb6SD5S4YiX67Ts";
+        const AI_API_URL = "https://llm.chutes.ai/v1/chat/completions";
         const MONGO_API_BASE = "http://localhost:3001/api";
 
         // DOM Elements
@@ -697,20 +697,18 @@ REASON: [1-2 sentence explanation]
                 `;
 
                 const aiResponse = await fetch(AI_API_URL, {
-    method: "POST",
-    headers: {
-        "Authorization": `Bearer ${AI_API_TOKEN}`,
-        "HTTP-Referer": SITE_URL,  // Optional
-        "X-Title": SITE_NAME,  // Optional
-        "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-        model: "mistralai/devstral-2512:free",  // Changed model
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 200,
-        temperature: 0.2
-    })
-});
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${AI_API_TOKEN}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "openai/gpt-oss-20b",
+                        messages: [{ role: "user", content: prompt }],
+                        max_tokens: 200,
+                        temperature: 0.2
+                    })
+                });
 
                 if (!aiResponse.ok) throw new Error("AI verification failed");
                 const aiData = await aiResponse.json();
