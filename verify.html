@@ -201,10 +201,10 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // API Configuration - OpenRouter (supports multiple AI models)
+        // API Configuration - OpenRouter with Mistral Devstral
         const AI_API_KEY = "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";
         const AI_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-        const AI_MODEL = "google/gemini-2.0-flash-exp:free"; // Free Gemini 2.0 via OpenRouter
+        const AI_MODEL = "mistralai/devstral-2512:free"; // Free Mistral Devstral model
         const MONGO_API_BASE = "http://localhost:3001/api";
 
         // DOM Elements
@@ -673,9 +673,9 @@
                 // Update detection UI
                 updateDetectionUI(hasQR, qrContent, hasDSU, pagesData.length, totalTextLength);
 
-                // Step 2: Send to AI for scoring (via OpenRouter)
-                statusBadge.innerHTML = '<span>Sending to Gemini 2.0 AI for final scoring...</span>';
-                log("Sending analysis to Gemini 2.0 Flash AI (via OpenRouter) for verification...", "info");
+                // Step 2: Send to AI for scoring (via OpenRouter with Mistral Devstral)
+                statusBadge.innerHTML = '<span>Sending to Mistral Devstral AI for final scoring...</span>';
+                log("Sending analysis to Mistral Devstral AI (via OpenRouter) for verification...", "info");
 
                 const prompt = `You are verifying a Dayananda Sagar University certificate (PDF/Image).
 
@@ -726,7 +726,7 @@ REASON: [1-2 sentence explanation]`;
                 const aiData = await aiResponse.json();
                 const aiResult = aiData.choices[0]?.message?.content || "";
 
-                log("AI Response received from Gemini 2.0 Flash", "success");
+                log("AI Response received from Mistral Devstral", "success");
                 log(`Raw AI output: ${aiResult}`, "info");
 
                 // Parse AI response
@@ -751,7 +751,7 @@ REASON: [1-2 sentence explanation]`;
 
                 // Update UI with final result
                 statusBadge.className = 'status-badge connected';
-                statusBadge.innerHTML = '<span>✅ AI Verification Complete (Gemini 2.0)</span>';
+                statusBadge.innerHTML = '<span>✅ AI Verification Complete (Mistral Devstral)</span>';
 
                 if (score >= 75) {
                     scoreCircle.className = 'score-circle green';
