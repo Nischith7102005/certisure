@@ -3,1362 +3,328 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CertiSure - The Future of Digital Trust</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>CertiSure demo - Secure Document Verification</title>
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔒</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.7.6/lottie.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            cursor: none;
-        }
-
-        :root {
-            --primary: #00D9FF;
-            --secondary: #7000FF;
-            --accent: #FF006E;
-            --dark: #000000;
-            --light: #FFFFFF;
-            --glass: rgba(255, 255, 255, 0.01);
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         body {
-            font-family: 'Space Grotesk', -apple-system, sans-serif;
-            background: #000;
-            color: #fff;
-            overflow-x: hidden;
-            position: relative;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            color: #e2e8f0;
         }
-
-        /* LOADING SCREEN */
-        .loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #000;
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 1s ease, visibility 1s ease;
+        .hero-bg {
+            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                        radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.15) 0%, transparent 40%);
         }
-
-        .loader-content {
-            text-align: center;
-        }
-
-        .loader-logo {
-            font-size: 4rem;
-            font-weight: 700;
-            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: pulse 2s infinite;
-        }
-
-        .loader-bar {
-            width: 300px;
-            height: 2px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 2rem auto;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .loader-progress {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            transition: width 0.3s ease;
-            box-shadow: 0 0 20px var(--primary);
-        }
-
-        /* CUSTOM CURSOR */
-        .cursor {
-            width: 40px;
-            height: 40px;
-            border: 2px solid var(--primary);
-            border-radius: 50%;
-            position: fixed;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 9999;
-            transition: all 0.15s ease;
-            backdrop-filter: invert(1);
-            mix-blend-mode: difference;
-        }
-
-        .cursor-follower {
-            width: 8px;
-            height: 8px;
-            background: var(--primary);
-            border-radius: 50%;
-            position: fixed;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 9998;
-        }
-
-        .cursor.active {
-            width: 80px;
-            height: 80px;
-            border-color: var(--accent);
-            background: rgba(255, 0, 110, 0.1);
-        }
-
-        /* NAVIGATION */
-        nav {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            padding: 2rem 4rem;
-            z-index: 1000;
-            backdrop-filter: blur(20px);
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-            transition: all 0.5s ease;
-        }
-
-        nav.scrolled {
-            padding: 1rem 4rem;
-            background: rgba(0, 0, 0, 0.95);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .nav-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            position: relative;
-        }
-
-        .logo::after {
-            content: '®';
-            position: absolute;
-            top: 0;
-            right: -15px;
-            font-size: 0.5rem;
-            color: var(--primary);
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 3rem;
-            list-style: none;
-        }
-
-        .nav-link {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            font-size: 0.9rem;
-            position: relative;
-            transition: color 0.3s ease;
-        }
-
-        .nav-link::before {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 0;
-            width: 0%;
-            height: 1px;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            transition: width 0.3s ease;
-        }
-
-        .nav-link:hover {
-            color: white;
-        }
-
-        .nav-link:hover::before {
-            width: 100%;
-        }
-
-        /* HERO SECTION */
-        .hero {
-            height: 100vh;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-
-        #canvas-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 10;
-            text-align: center;
-            max-width: 1200px;
-            padding: 0 2rem;
-        }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: rgba(0, 217, 255, 0.1);
-            border: 1px solid rgba(0, 217, 255, 0.3);
-            border-radius: 100px;
-            margin-bottom: 2rem;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .badge-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--primary);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.5); }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .hero-title {
-            font-size: clamp(3rem, 10vw, 8rem);
-            font-weight: 700;
-            line-height: 0.9;
-            letter-spacing: -0.05em;
-            margin-bottom: 1.5rem;
-        }
-
-        .hero-title-line {
-            display: block;
-            overflow: hidden;
-        }
-
-        .hero-title-text {
-            display: inline-block;
-            transform: translateY(100%);
-            animation: slideUp 1s ease forwards;
-        }
-
-        @keyframes slideUp {
-            to { transform: translateY(0); }
-        }
-
-        .gradient-text {
-            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-size: 200% auto;
-            animation: shimmer 3s linear infinite;
-        }
-
-        @keyframes shimmer {
-            to { background-position: 200% center; }
-        }
-
-        .hero-subtitle {
-            font-size: 1.5rem;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 3rem;
-            font-weight: 300;
-        }
-
-        .typed-cursor {
-            color: var(--primary);
-        }
-
-        .hero-cta {
-            display: inline-flex;
-            gap: 1rem;
-        }
-
-        .btn {
-            padding: 1rem 2.5rem;
-            font-size: 1rem;
-            font-weight: 600;
-            border-radius: 100px;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            color: white;
-            border: none;
-            box-shadow: 0 10px 40px rgba(0, 217, 255, 0.4);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 20px 60px rgba(0, 217, 255, 0.6);
-        }
-
-        .btn-primary::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            transition: left 0.5s ease;
-        }
-
-        .btn-primary:hover::before {
-            left: 100%;
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--primary);
-            transform: translateY(-3px);
-        }
-
-        /* FLOATING CARDS */
-        .floating-cards {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-
-        .floating-card {
-            position: absolute;
-            width: 300px;
-            height: 200px;
-            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(112, 0, 255, 0.1));
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 1.5rem;
-            animation: floatCard 20s ease-in-out infinite;
-        }
-
-        .floating-card:nth-child(1) {
-            top: 10%;
-            left: 10%;
-            animation-delay: 0s;
-        }
-
-        .floating-card:nth-child(2) {
-            top: 60%;
-            right: 10%;
-            animation-delay: 5s;
-        }
-
-        .floating-card:nth-child(3) {
-            bottom: 10%;
-            left: 15%;
-            animation-delay: 10s;
-        }
-
-        @keyframes floatCard {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            25% { transform: translateY(-20px) rotate(5deg); }
-            50% { transform: translateY(0) rotate(-5deg); }
-            75% { transform: translateY(20px) rotate(3deg); }
-        }
-
-        /* STATS SECTION */
-        .stats {
-            padding: 8rem 4rem;
-            background: linear-gradient(to bottom, #000, #0a0a0a);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stats-grid {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 3rem;
-        }
-
-        .stat-card {
-            text-align: center;
-            position: relative;
-            padding: 2rem;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
+        .card-hover {
             transition: all 0.3s ease;
         }
-
-        .stat-card:hover {
+        .card-hover:hover {
             transform: translateY(-10px);
-            background: rgba(0, 217, 255, 0.05);
-            border-color: var(--primary);
-            box-shadow: 0 20px 40px rgba(0, 217, 255, 0.3);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
-
-        .stat-number {
-            font-size: 3rem;
-            font-weight: 700;
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.6);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-        }
-
-        /* FEATURES SECTION */
-        .features {
-            padding: 8rem 4rem;
-            background: #000;
-            position: relative;
-        }
-
-        .features-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 5rem;
-        }
-
-        .section-label {
-            font-size: 0.9rem;
-            color: var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            margin-bottom: 1rem;
-        }
-
-        .section-title {
-            font-size: clamp(2.5rem, 5vw, 4rem);
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(45deg, white, rgba(255, 255, 255, 0.6));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .section-subtitle {
-            font-size: 1.2rem;
-            color: rgba(255, 255, 255, 0.6);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-        }
-
-        .feature-card {
-            padding: 2.5rem;
-            background: linear-gradient(135deg, rgba(0, 217, 255, 0.03), rgba(112, 0, 255, 0.03));
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            transition: all 0.5s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--primary), transparent);
-            animation: scan 3s linear infinite;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        @keyframes scan {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        .feature-card:hover::before {
-            opacity: 1;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(112, 0, 255, 0.1));
-            border-color: var(--primary);
-            box-shadow: 0 30px 60px rgba(0, 217, 255, 0.3);
-        }
-
-        .feature-icon {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 1.5rem;
-            position: relative;
-        }
-
-        .icon-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            border-radius: 20px;
-            opacity: 0.2;
+        .btn-primary {
+            background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
             transition: all 0.3s ease;
         }
-
-        .feature-card:hover .icon-bg {
-            opacity: 0.3;
-            transform: scale(1.1);
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
         }
-
-        .icon-symbol {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: var(--primary);
+        .feature-icon {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
         }
-
-        .feature-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
+        .glow {
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.5);
         }
-
-        .feature-description {
-            color: rgba(255, 255, 255, 0.7);
-            line-height: 1.6;
+        .pulse {
+            animation: pulse 2s infinite;
         }
-
-        /* SHOWCASE SECTION */
-        .showcase {
-            padding: 8rem 0;
-            background: linear-gradient(to bottom, #0a0a0a, #000);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .showcase-container {
-            max-width: 100%;
-            position: relative;
-        }
-
-        .showcase-track {
-            display: flex;
-            animation: scroll 30s linear infinite;
-        }
-
-        @keyframes scroll {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-        }
-
-        .showcase-item {
-            min-width: 400px;
-            margin: 0 1rem;
-            position: relative;
-            border-radius: 20px;
-            overflow: hidden;
-            height: 500px;
-        }
-
-        .showcase-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s ease;
-        }
-
-        .showcase-item:hover .showcase-image {
-            transform: scale(1.1);
-        }
-
-        .showcase-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.8));
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding: 2rem;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .showcase-item:hover .showcase-overlay {
-            opacity: 1;
-        }
-
-        .showcase-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .showcase-description {
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        /* CTA SECTION */
-        .cta {
-            padding: 8rem 4rem;
-            background: #000;
-            position: relative;
-            text-align: center;
-        }
-
-        .cta-container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 4rem;
-            background: linear-gradient(135deg, rgba(0, 217, 255, 0.05), rgba(112, 0, 255, 0.05));
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 30px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .cta-container::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: conic-gradient(
-                from 0deg at 50% 50%,
-                transparent,
-                var(--primary),
-                transparent,
-                var(--secondary),
-                transparent
-            );
-            animation: rotate 10s linear infinite;
-            opacity: 0.1;
-        }
-
-        @keyframes rotate {
-            100% { transform: rotate(360deg); }
-        }
-
-        .cta-content {
-            position: relative;
-            z-index: 1;
-        }
-
-        .cta-title {
-            font-size: 3rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .cta-subtitle {
-            font-size: 1.3rem;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 3rem;
-        }
-
-        /* FOOTER */
-        footer {
-            padding: 4rem;
-            background: #000;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .footer-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .footer-text {
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 0.9rem;
-        }
-
-        .footer-links {
-            display: flex;
-            gap: 2rem;
-        }
-
-        .footer-link {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .footer-link:hover {
-            color: var(--primary);
-        }
-
-        /* PARALLAX BACKGROUND */
-        .parallax-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .parallax-layer {
-            position: absolute;
-            width: 110%;
-            height: 110%;
-            top: -5%;
-            left: -5%;
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 1024px) {
-            .features-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 768px) {
-            nav {
-                padding: 1rem 2rem;
-            }
-            
-            .nav-links {
-                display: none;
-            }
-            
-            .hero-title {
-                font-size: 3rem;
-            }
-            
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .showcase-track {
-                animation: none;
-                flex-direction: column;
-            }
-            
-            .footer-container {
-                flex-direction: column;
-                gap: 2rem;
-                text-align: center;
-            }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
         }
     </style>
 </head>
-<body>
-    <!-- LOADER -->
-    <div class="loader" id="loader">
-        <div class="loader-content">
-            <div class="loader-logo">CertiSure</div>
-            <div class="loader-bar">
-                <div class="loader-progress" id="loader-progress"></div>
+<body class="min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-900 bg-opacity-90 backdrop-blur-sm fixed w-full z-50" data-aos="fade-down">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i data-feather="shield" class="text-indigo-500 mr-2"></i>
+                        <span class="text-xl font-bold text-white">CertiSure abc</span>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-10 flex items-baseline space-x-4">
+                            <a href="index.html" class="text-white px-3 py-2 rounded-md text-sm font-medium bg-indigo-600">Home</a>
+                            <a href="issuer.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Issuer Portal</a>
+                            <a href="verify.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Verify Document</a>
+                            <a href="about.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">About</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <button class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium">Login</button>
+                </div>
+                <div class="-mr-2 flex md:hidden">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none">
+                        <i data-feather="menu" class="block h-6 w-6"></i>
+                    </button>
+                </div>
             </div>
-        </div>
-    </div>
-
-    <!-- CUSTOM CURSOR -->
-    <div class="cursor" id="cursor"></div>
-    <div class="cursor-follower" id="cursor-follower"></div>
-
-    <!-- PARALLAX BACKGROUND -->
-    <div class="parallax-bg">
-        <div class="parallax-layer" id="parallax-1"></div>
-        <div class="parallax-layer" id="parallax-2"></div>
-        <div class="parallax-layer" id="parallax-3"></div>
-    </div>
-
-    <!-- NAVIGATION -->
-    <nav id="nav">
-        <div class="nav-container">
-            <div class="logo">CertiSure</div>
-            <ul class="nav-links">
-                <li><a href="#features" class="nav-link">Features</a></li>
-                <li><a href="#showcase" class="nav-link">Showcase</a></li>
-                <li><a href="#stats" class="nav-link">Statistics</a></li>
-                <li><a href="#cta" class="nav-link">Get Started</a></li>
-            </ul>
         </div>
     </nav>
 
-    <!-- HERO SECTION -->
-    <section class="hero">
-        <div id="canvas-container"></div>
-        
-        <div class="floating-cards">
-            <div class="floating-card">
-                <div style="font-size: 0.8rem; color: var(--primary); margin-bottom: 0.5rem;">VERIFIED</div>
-                <div style="font-size: 1.2rem; font-weight: 600;">BSc Computer Science</div>
-                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem;">MIT • 2024</div>
-            </div>
-            <div class="floating-card">
-                <div style="font-size: 0.8rem; color: var(--secondary); margin-bottom: 0.5rem;">TRUST SCORE</div>
-                <div style="font-size: 2rem; font-weight: 700;">98.7%</div>
-                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem;">AI Verified</div>
-            </div>
-            <div class="floating-card">
-                <div style="font-size: 0.8rem; color: var(--accent); margin-bottom: 0.5rem;">BLOCKCHAIN</div>
-                <div style="font-size: 1rem; font-weight: 600;">0x7f3a...9b2c</div>
-                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem;">IPFS Hash</div>
+    <!-- Hero Section -->
+    <section class="hero-bg pt-24 pb-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div data-aos="fade-right" data-aos-delay="200">
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight">
+                        Secure Academic <span class="text-indigo-400">Credentials</span> with AI-Powered Verification
+                    </h1>
+                    <p class="mt-6 text-xl text-gray-300 max-w-2xl">
+                        CertiSure revolutionizes document authentication using blockchain technology and AI to ensure trust and integrity in academic credentials.
+                    </p>
+                    <div class="mt-10 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                        <a href="issuer.html" class="btn-primary text-white px-8 py-4 rounded-lg text-lg font-semibold shadow-lg">
+                            Get Started as Issuer
+                        </a>
+                        <a href="verify.html" class="bg-gray-800 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-700 transition duration-300">
+                            Verify Document
+                        </a>
+                    </div>
+                </div>
+                <div class="relative" data-aos="fade-left" data-aos-delay="400">
+                    <div class="relative z-10">
+                        <div id="hero-animation" class="w-full h-80 md:h-96"></div>
+                    </div>
+                    <div class="absolute -top-6 -right-6 w-full h-full bg-indigo-500 rounded-2xl opacity-20 blur-3xl"></div>
+                </div>
             </div>
         </div>
+    </section>
 
-        <div class="hero-content">
-            <div class="hero-badge">
-                <span class="badge-dot"></span>
-                <span>Next-Gen Verification Platform</span>
+    <!-- Features Section -->
+    <section class="py-20 bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-3xl md:text-4xl font-bold">Powerful Features for <span class="text-indigo-400">Secure Verification</span></h2>
+                <p class="mt-4 text-xl text-gray-400 max-w-3xl mx-auto">
+                    Our platform combines cutting-edge technology with intuitive design to provide the best document verification experience.
+                </p>
             </div>
             
-            <h1 class="hero-title">
-                <span class="hero-title-line">
-                    <span class="hero-title-text">Trust</span>
-                </span>
-                <span class="hero-title-line">
-                    <span class="hero-title-text gradient-text">Redefined</span>
-                </span>
-            </h1>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                <!-- Feature 1 -->
+                <div class="bg-gray-800 rounded-2xl p-8 card-hover" data-aos="fade-up" data-aos-delay="100">
+                    <div class="feature-icon w-16 h-16 rounded-xl flex items-center justify-center mb-6">
+                        <i data-feather="lock" class="text-white w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Blockchain Security</h3>
+                    <p class="text-gray-400">
+                        Documents are stored on IPFS with tamper-proof hashing, ensuring authenticity and integrity.
+                    </p>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="bg-gray-800 rounded-2xl p-8 card-hover" data-aos="fade-up" data-aos-delay="200">
+                    <div class="feature-icon w-16 h-16 rounded-xl flex items-center justify-center mb-6">
+                        <i data-feather="cpu" class="text-white w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">AI-Powered Trust Score</h3>
+                    <p class="text-gray-400">
+                        Advanced AI models compare signatures and reference documents to generate a trust score (1-100).
+                    </p>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="bg-gray-800 rounded-2xl p-8 card-hover" data-aos="fade-up" data-aos-delay="300">
+                    <div class="feature-icon w-16 h-16 rounded-xl flex items-center justify-center mb-6">
+                        <i data-feather="smartphone" class="text-white w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">QR Code Verification</h3>
+                    <p class="text-gray-400">
+                        Instantly verify documents by scanning the unique QR code with any smartphone camera.
+                    </p>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div class="bg-gray-800 rounded-2xl p-8 card-hover" data-aos="fade-up" data-aos-delay="400">
+                    <div class="feature-icon w-16 h-16 rounded-xl flex items-center justify-center mb-6">
+                        <i data-feather="user-check" class="text-white w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Fingerprint Authentication</h3>
+                    <p class="text-gray-400">
+                        Issuers can authenticate documents with biometric fingerprint scanning for extra security.
+                    </p>
+                </div>
+                
+                <!-- Feature 5 -->
+                <div class="bg-gray-800 rounded-2xl p-8 card-hover" data-aos="fade-up" data-aos-delay="500">
+                    <div class="feature-icon w-16 h-16 rounded-xl flex items-center justify-center mb-6">
+                        <i data-feather="globe" class="text-white w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Decentralized Storage</h3>
+                    <p class="text-gray-400">
+                        All documents are stored on IPFS, ensuring permanent availability and censorship resistance.
+                    </p>
+                </div>
+                
+                <!-- Feature 6 -->
+                <div class="bg-gray-800 rounded-2xl p-8 card-hover" data-aos="fade-up" data-aos-delay="600">
+                    <div class="feature-icon w-16 h-16 rounded-xl flex items-center justify-center mb-6">
+                        <i data-feather="bar-chart-2" class="text-white w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Verification Analytics</h3>
+                    <p class="text-gray-400">
+                        Track and analyze document verification history with detailed reports and metrics.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16" data-aos="fade-up">
+                <h2 class="text-3xl md:text-4xl font-bold">How CertiSure <span class="text-indigo-400">Works</span></h2>
+                <p class="mt-4 text-xl text-gray-400 max-w-3xl mx-auto">
+                    A simple 3-step process to secure and verify academic credentials
+                </p>
+            </div>
             
-            <p class="hero-subtitle">
-                <span id="typed"></span>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                <!-- Step 1 -->
+                <div class="text-center" data-aos="fade-up" data-aos-delay="100">
+                    <div class="relative mb-8">
+                        <div class="w-24 h-24 mx-auto rounded-full bg-indigo-900 flex items-center justify-center glow pulse">
+                            <span class="text-3xl font-bold text-white">1</span>
+                        </div>
+                        <div class="absolute top-1/2 right-0 w-full h-1 bg-gray-700 hidden md:block"></div>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Document Issuance</h3>
+                    <p class="text-gray-400">
+                        Academic institutions upload documents which are watermarked, hashed, and stored on IPFS with a unique QR code.
+                    </p>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="text-center" data-aos="fade-up" data-aos-delay="200">
+                    <div class="relative mb-8">
+                        <div class="w-24 h-24 mx-auto rounded-full bg-indigo-900 flex items-center justify-center glow pulse">
+                            <span class="text-3xl font-bold text-white">2</span>
+                        </div>
+                        <div class="absolute top-1/2 right-0 w-full h-1 bg-gray-700 hidden md:block"></div>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">AI Verification</h3>
+                    <p class="text-gray-400">
+                        Our AI models compare signatures and reference documents to generate a trust score (1-100).
+                    </p>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="text-center" data-aos="fade-up" data-aos-delay="300">
+                    <div class="relative mb-8">
+                        <div class="w-24 h-24 mx-auto rounded-full bg-indigo-900 flex items-center justify-center glow pulse">
+                            <span class="text-3xl font-bold text-white">3</span>
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Instant Results</h3>
+                    <p class="text-gray-400">
+                        Users scan the QR code to instantly verify document authenticity and view the trust score.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 bg-gradient-to-r from-indigo-900 to-purple-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-6" data-aos="fade-up">
+                Ready to Secure Your Academic Credentials?
+            </h2>
+            <p class="text-xl text-indigo-200 max-w-3xl mx-auto mb-10" data-aos="fade-up" data-aos-delay="100">
+                Join thousands of institutions and individuals who trust CertiSure for document verification.
             </p>
-            
-            <div class="hero-cta">
-                <a href="#" class="btn btn-primary">Start Verifying</a>
-                <a href="#" class="btn btn-secondary">Watch Demo</a>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6" data-aos="fade-up" data-aos-delay="200">
+                <a href="issuer.html" class="btn-primary text-white px-8 py-4 rounded-lg text-lg font-semibold shadow-lg">
+                    Become an Issuer
+                </a>
+                <a href="verify.html" class="bg-white text-indigo-900 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition duration-300">
+                    Verify a Document
+                </a>
             </div>
         </div>
     </section>
 
-    <!-- STATS SECTION -->
-    <section class="stats" id="stats">
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number" data-target="2.3">0</div>
-                <div class="stat-label">Million Documents</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" data-target="99.8">0</div>
-                <div class="stat-label">% Accuracy</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" data-target="150">0</div>
-                <div class="stat-label">Universities</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" data-target="0.3">0</div>
-                <div class="stat-label">Sec Verification</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- FEATURES SECTION -->
-    <section class="features" id="features">
-        <div class="features-container">
-            <div class="section-header">
-                <div class="section-label">Features</div>
-                <h2 class="section-title">Technology That Matters</h2>
-                <p class="section-subtitle">
-                    Revolutionary verification powered by cutting-edge blockchain and AI
-                </p>
-            </div>
-
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <div class="icon-bg"></div>
-                        <div class="icon-symbol">🔐</div>
+    <!-- Footer -->
+    <footer class="bg-gray-900 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="col-span-1 md:col-span-2">
+                    <div class="flex items-center mb-6">
+                        <i data-feather="shield" class="text-indigo-500 mr-2"></i>
+                        <span class="text-xl font-bold text-white">CertiSure</span>
                     </div>
-                    <h3 class="feature-title">Quantum Encryption</h3>
-                    <p class="feature-description">
-                        Military-grade AES-256 encryption with quantum-resistant algorithms protecting every document
+                    <p class="text-gray-400 max-w-md">
+                        Securing academic credentials with blockchain technology and AI-powered verification for trust and integrity.
                     </p>
                 </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <div class="icon-bg"></div>
-                        <div class="icon-symbol">🧠</div>
-                    </div>
-                    <h3 class="feature-title">Neural Verification</h3>
-                    <p class="feature-description">
-                        Deep learning models analyze patterns, signatures, and metadata with 99.8% accuracy
-                    </p>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="index.html" class="text-gray-400 hover:text-white">Home</a></li>
+                        <li><a href="issuer.html" class="text-gray-400 hover:text-white">Issuer Portal</a></li>
+                        <li><a href="verify.html" class="text-gray-400 hover:text-white">Verify Document</a></li>
+                        <li><a href="about.html" class="text-gray-400 hover:text-white">About Us</a></li>
+                    </ul>
                 </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <div class="icon-bg"></div>
-                        <div class="icon-symbol">⚡</div>
-                    </div>
-                    <h3 class="feature-title">Lightning Network</h3>
-                    <p class="feature-description">
-                        Sub-second verification across 150+ global nodes with zero downtime guarantee
-                    </p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <div class="icon-bg"></div>
-                        <div class="icon-symbol">🌐</div>
-                    </div>
-                    <h3 class="feature-title">IPFS Storage</h3>
-                    <p class="feature-description">
-                        Decentralized, immutable storage ensuring permanent availability and censorship resistance
-                    </p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <div class="icon-bg"></div>
-                        <div class="icon-symbol">📊</div>
-                    </div>
-                    <h3 class="feature-title">Real-time Analytics</h3>
-                    <p class="feature-description">
-                        Advanced dashboards with predictive insights and fraud detection algorithms
-                    </p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <div class="icon-bg"></div>
-                        <div class="icon-symbol">🔍</div>
-                    </div>
-                    <h3 class="feature-title">Smart Verification</h3>
-                    <p class="feature-description">
-                        QR-based instant verification with biometric authentication support
-                    </p>
+                <div>
+                    <h3 class="text-lg font-semibold text-white mb-4">Legal</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Terms of Service</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Security</a></li>
+                    </ul>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <!-- SHOWCASE SECTION -->
-    <section class="showcase" id="showcase">
-        <div class="showcase-container">
-            <div class="section-header">
-                <div class="section-label">Showcase</div>
-                <h2 class="section-title">See It In Action</h2>
-            </div>
-
-            <div class="showcase-track">
-                <!-- First set of images -->
-                <div class="showcase-item">
-                    <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&h=800&fit=crop" alt="Tech Infrastructure" class="showcase-image">
-                    <div class="showcase-overlay">
-                        <h3 class="showcase-title">Global Infrastructure</h3>
-                        <p class="showcase-description">150+ data centers worldwide</p>
-                    </div>
-                </div>
-                
-                <div class="showcase-item">
-                    <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=800&fit=crop" alt="Neural Network" class="showcase-image">
-                    <div class="showcase-overlay">
-                        <h3 class="showcase-title">AI Processing</h3>
-                        <p class="showcase-description">Deep learning verification</p>
-                    </div>
-                </div>
-
-                <div class="showcase-item">
-                    <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&h=800&fit=crop" alt="Data Matrix" class="showcase-image">
-                    <div class="showcase-overlay">
-                        <h3 class="showcase-title">Blockchain Network</h3>
-                        <p class="showcase-description">Immutable ledger technology</p>
-                    </div>
-                </div>
-
-                <div class="showcase-item">
-                    <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&h=800&fit=crop" alt="Server Room" class="showcase-image">
-                    <div class="showcase-overlay">
-                        <h3 class="showcase-title">Enterprise Security</h3>
-                        <p class="showcase-description">SOC 2 Type II compliant</p>
-                    </div>
-                </div>
-
-                <!-- Duplicate for continuous scroll -->
-                <div class="showcase-item">
-                    <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&h=800&fit=crop" alt="Tech Infrastructure" class="showcase-image">
-                    <div class="showcase-overlay">
-                        <h3 class="showcase-title">Global Infrastructure</h3>
-                        <p class="showcase-description">150+ data centers worldwide</p>
-                    </div>
-                </div>
-                
-                <div class="showcase-item">
-                    <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=800&fit=crop" alt="Neural Network" class="showcase-image">
-                    <div class="showcase-overlay">
-                        <h3 class="showcase-title">AI Processing</h3>
-                        <p class="showcase-description">Deep learning verification</p>
-                    </div>
-                </div>
-
-                <div class="showcase-item">
-                    <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&h=800&fit=crop" alt="Data Matrix" class="showcase-image">
-                    <div class="showcase-overlay">
-                        <h3 class="showcase-title">Blockchain Network</h3>
-                        <p class="showcase-description">Immutable ledger technology</p>
-                    </div>
-                </div>
-
-                <div class="showcase-item">
-                    <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&h=800&fit=crop" alt="Server Room" class="showcase-image">
-                    <div class="showcase-overlay">
-                        <h3 class="showcase-title">Enterprise Security</h3>
-                        <p class="showcase-description">SOC 2 Type II compliant</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- CTA SECTION -->
-    <section class="cta" id="cta">
-        <div class="cta-container">
-            <div class="cta-content">
-                <h2 class="cta-title">Ready to Transform Your Verification?</h2>
-                <p class="cta-subtitle">
-                    Join 150+ universities and 2.3 million users trusting CertiSure
-                </p>
-                <div class="hero-cta">
-                    <a href="#" class="btn btn-primary">Get Started Free</a>
-                    <a href="#" class="btn btn-secondary">Schedule Demo</a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- FOOTER -->
-    <footer>
-        <div class="footer-container">
-            <div class="footer-text">
-                © 2024 CertiSure. All rights reserved.
-            </div>
-            <div class="footer-links">
-                <a href="#" class="footer-link">Privacy</a>
-                <a href="#" class="footer-link">Terms</a>
-                <a href="#" class="footer-link">Security</a>
-                <a href="#" class="footer-link">API</a>
+            <div class="border-t border-gray-800 mt-10 pt-6 text-center text-gray-500">
+                <p>&copy; 2023 CertiSure. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
     <script>
-        // LOADING ANIMATION
-        window.addEventListener('load', () => {
-            let progress = 0;
-            const progressBar = document.getElementById('loader-progress');
-            const loader = document.getElementById('loader');
-            
-            const interval = setInterval(() => {
-                progress += Math.random() * 30;
-                if (progress >= 100) {
-                    progress = 100;
-                    clearInterval(interval);
-                    progressBar.style.width = progress + '%';
-                    
-                    setTimeout(() => {
-                        loader.style.opacity = '0';
-                        loader.style.visibility = 'hidden';
-                        initAnimations();
-                    }, 500);
-                } else {
-                    progressBar.style.width = progress + '%';
-                }
-            }, 200);
+        AOS.init({
+            duration: 1000,
+            once: true
         });
-
-        // CUSTOM CURSOR
-        const cursor = document.getElementById('cursor');
-        const follower = document.getElementById('cursor-follower');
-
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-            
-            setTimeout(() => {
-                follower.style.left = e.clientX + 'px';
-                follower.style.top = e.clientY + 'px';
-            }, 100);
-        });
-
-        document.querySelectorAll('a, button, .feature-card, .stat-card').forEach(el => {
-            el.addEventListener('mouseenter', () => cursor.classList.add('active'));
-            el.addEventListener('mouseleave', () => cursor.classList.remove('active'));
-        });
-
-        // TYPED.JS
-        function initTyped() {
-            new Typed('#typed', {
-                strings: [
-                    'Blockchain-powered verification',
-                    'AI-driven trust scores',
-                    'Instant QR authentication',
-                    'Quantum-resistant security'
-                ],
-                typeSpeed: 50,
-                backSpeed: 30,
-                backDelay: 2000,
-                loop: true
-            });
-        }
-
-        // THREE.JS BACKGROUND
-        function initThree() {
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            const renderer = new THREE.WebGLRenderer({ 
-                alpha: true,
-                antialias: true 
-            });
-            
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            document.getElementById('canvas-container').appendChild(renderer.domElement);
-
-            // Create particles
-            const particlesGeometry = new THREE.BufferGeometry();
-            const particlesCount = 5000;
-            const posArray = new Float32Array(particlesCount * 3);
-
-            for(let i = 0; i < particlesCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 10;
-            }
-
-            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-
-            const particlesMaterial = new THREE.PointsMaterial({
-                size: 0.005,
-                color: 0x00D9FF,
-                transparent: true,
-                opacity: 0.8,
-                blending: THREE.AdditiveBlending
-            });
-
-            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-            scene.add(particlesMesh);
-
-            // Create wireframe sphere
-            const sphereGeometry = new THREE.SphereGeometry(2, 32, 32);
-            const sphereMaterial = new THREE.MeshBasicMaterial({
-                color: 0x7000FF,
-                wireframe: true,
-                transparent: true,
-                opacity: 0.1
-            });
-            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            scene.add(sphere);
-
-            camera.position.z = 5;
-
-            // Mouse interaction
-            let mouseX = 0, mouseY = 0;
-            document.addEventListener('mousemove', (e) => {
-                mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-                mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-            });
-
-            // Animation
-            function animate() {
-                requestAnimationFrame(animate);
-
-                particlesMesh.rotation.y += 0.001;
-                particlesMesh.rotation.x += 0.0005;
-
-                sphere.rotation.x += 0.002;
-                sphere.rotation.y += 0.002;
-
-                // Mouse parallax
-                camera.position.x = mouseX * 0.5;
-                camera.position.y = mouseY * 0.5;
-                camera.lookAt(scene.position);
-
-                renderer.render(scene, camera);
-            }
-            animate();
-
-            // Handle resize
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-        }
-
-        // SCROLL ANIMATIONS
-        function initScrollAnimations() {
-            // Navigation scroll effect
-            window.addEventListener('scroll', () => {
-                const nav = document.getElementById('nav');
-                if (window.scrollY > 50) {
-                    nav.classList.add('scrolled');
-                } else {
-                    nav.classList.remove('scrolled');
-                }
-            });
-
-            // Parallax layers
-            window.addEventListener('scroll', () => {
-                const scrollY = window.pageYOffset;
-                
-                document.getElementById('parallax-1').style.transform = `translateY(${scrollY * 0.5}px)`;
-                document.getElementById('parallax-2').style.transform = `translateY(${scrollY * 0.3}px)`;
-                document.getElementById('parallax-3').style.transform = `translateY(${scrollY * 0.1}px)`;
-            });
-
-            // Stats counter animation
-            const observerOptions = {
-                threshold: 0.5
-            };
-
-            const statsObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const statNumbers = entry.target.querySelectorAll('.stat-number');
-                        statNumbers.forEach(stat => {
-                            const target = parseFloat(stat.getAttribute('data-target'));
-                            let current = 0;
-                            const increment = target / 100;
-                            const timer = setInterval(() => {
-                                current += increment;
-                                if (current >= target) {
-                                    current = target;
-                                    clearInterval(timer);
-                                }
-                                stat.textContent = current.toFixed(1) + (stat.parentElement.querySelector('.stat-label').textContent.includes('Million') ? 'M' : '');
-                            }, 20);
-                        });
-                        statsObserver.unobserve(entry.target);
-                    }
-                });
-            }, observerOptions);
-
-            const statsSection = document.querySelector('.stats');
-            if (statsSection) {
-                statsObserver.observe(statsSection);
-            }
-
-            // ScrollTrigger animations
-            gsap.registerPlugin(ScrollTrigger);
-
-            // Feature cards animation
-            gsap.from('.feature-card', {
-                scrollTrigger: {
-                    trigger: '.features',
-                    start: 'top 80%',
-                    toggleActions: 'play none none none'
-                },
-                y: 100,
-                opacity: 0,
-                duration: 1,
-                stagger: 0.2,
-                ease: 'power3.out'
-            });
-
-            // Floating cards animation
-            gsap.to('.floating-card', {
-                y: 'random(-20, 20)',
-                rotation: 'random(-5, 5)',
-                duration: 'random(3, 5)',
-                repeat: -1,
-                yoyo: true,
-                ease: 'power1.inOut',
-                stagger: {
-                    each: 0.5,
-                    from: 'random'
-                }
-            });
-        }
-
-        // Initialize everything
-        function initAnimations() {
-            initTyped();
-            initThree();
-            initScrollAnimations();
-        }
-
-        // Smooth scroll for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
+        
+        feather.replace();
+        
+        // Load Lottie animation
+        document.addEventListener('DOMContentLoaded', function() {
+            const animation = bodymovin.loadAnimation({
+                container: document.getElementById('hero-animation'),
+                renderer: 'svg',
+                loop: true,
+                autoplay: true,
+                path: 'https://assets10.lottiefiles.com/packages/lf20_jbrw3hcz.json'
             });
         });
     </script>
 </body>
 </html>
+
