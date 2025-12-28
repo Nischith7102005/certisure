@@ -201,9 +201,9 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // API Configuration
+        // API Configuration - Updated to Gemini 2.0 Flash
         const AI_API_KEY = "AIzaSyBgjBepyWtqCmQSbHSrkBt-QL6E6Ixst30";
-        const AI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+        const AI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
         const MONGO_API_BASE = "http://localhost:3001/api";
 
         // DOM Elements
@@ -672,9 +672,9 @@
                 // Update detection UI
                 updateDetectionUI(hasQR, qrContent, hasDSU, pagesData.length, totalTextLength);
 
-                // Step 2: Send to AI for scoring (Google Gemini)
-                statusBadge.innerHTML = '<span>Sending to AI for final scoring...</span>';
-                log("Sending analysis to Google Gemini AI for verification...", "info");
+                // Step 2: Send to AI for scoring (Google Gemini 2.0 Flash)
+                statusBadge.innerHTML = '<span>Sending to Gemini 2.0 AI for final scoring...</span>';
+                log("Sending analysis to Google Gemini 2.0 Flash AI for verification...", "info");
 
                 const prompt = `You are verifying a Dayananda Sagar University certificate (PDF/Image).
 
@@ -720,7 +720,7 @@ REASON: [1-2 sentence explanation]`;
                 const aiData = await aiResponse.json();
                 const aiResult = aiData.candidates[0]?.content?.parts[0]?.text || "";
 
-                log("AI Response received", "success");
+                log("AI Response received from Gemini 2.0 Flash", "success");
                 log(`Raw AI output: ${aiResult}`, "info");
 
                 // Parse AI response
@@ -745,7 +745,7 @@ REASON: [1-2 sentence explanation]`;
 
                 // Update UI with final result
                 statusBadge.className = 'status-badge connected';
-                statusBadge.innerHTML = '<span>✅ AI Verification Complete</span>';
+                statusBadge.innerHTML = '<span>✅ AI Verification Complete (Gemini 2.0)</span>';
 
                 if (score >= 75) {
                     scoreCircle.className = 'score-circle green';
