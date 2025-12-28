@@ -33,19 +33,6 @@
             border: 1px solid rgba(129, 140, 248, 0.2);
         }
 
-        .api-notice {
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px solid #6366f1;
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            font-size: 0.9rem;
-            color: #a5b4fc;
-        }
-
-        .api-notice strong { color: #c7d2fe; }
-
         .upload-box {
             border: 3px dashed #475569;
             border-radius: 16px;
@@ -149,10 +136,6 @@
         <p class="subtitle">Upload your certificate (PDF or Image) - AI scans every page for QR code and Dayananda Sagar University</p>
 
         <div class="card">
-            <div class="api-notice">
-                ⚡ Powered by <strong>Groq AI</strong> (Ultra-Fast & Free) | Get your API key at <a href="https://console.groq.com/keys" target="_blank" style="color: #c7d2fe;">console.groq.com/keys</a>
-            </div>
-
             <div class="upload-box" id="drop-zone" onclick="document.getElementById('file-input').click()">
                 <div style="font-size: 3rem; margin-bottom:12px;">📄</div>
                 <p>Click or drop your certificate here</p>
@@ -222,7 +205,7 @@
         // API CONFIGURATION - GROQ (FREE & FAST)
         // ============================================
         // Get your free API key at: https://console.groq.com/keys
-        const AI_API_TOKEN = "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";  // <-- REPLACE THIS
+        const AI_API_TOKEN = "YOUR_GROQ_API_KEY_HERE";  // <-- REPLACE THIS
         const AI_API_URL = "https://api.groq.com/openai/v1/chat/completions";
         const AI_MODEL = "llama-3.3-70b-versatile";  // Fast and accurate
         const MONGO_API_BASE = "http://localhost:3001/api";
@@ -695,8 +678,8 @@
 
                 updateDetectionUI(hasQR, qrContent, hasDSU, pagesData.length, totalTextLength);
 
-                statusBadge.innerHTML = '<span>⚡ Sending to Groq AI for scoring...</span>';
-                log("Sending analysis to Groq AI for verification...", "info");
+                statusBadge.innerHTML = '<span>⚡ Sending to AI for scoring...</span>';
+                log("Sending analysis to AI for verification...", "info");
 
                 const prompt = `You are verifying a Dayananda Sagar University certificate.
 
@@ -721,7 +704,7 @@ REASON: [1-2 sentence explanation]`;
 
                 const aiResult = await verifyWithGroq(prompt);
                 
-                log("✅ Groq AI Response received", "success");
+                log("✅ AI Response received", "success");
                 log(`Raw AI output: ${aiResult}`, "info");
 
                 const scoreMatch = aiResult.match(/SCORE:\s*(\d+)/i);
@@ -743,7 +726,7 @@ REASON: [1-2 sentence explanation]`;
                 }, 20);
 
                 statusBadge.className = 'status-badge connected';
-                statusBadge.innerHTML = '<span>✅ Groq AI Verification Complete</span>';
+                statusBadge.innerHTML = '<span>✅ AI Verification Complete</span>';
 
                 if (score >= 75) {
                     scoreCircle.className = 'score-circle green';
