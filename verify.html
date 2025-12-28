@@ -202,8 +202,8 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         // API Configuration
-        const AI_API_TOKEN = "cpk_6e025460f1cf48438058b24954f3ef0a.6cce9b81609c509dbdcfb29cc876557b.v1DAhbEMclbAihw1OAb6SD5S4YiX67Ts";
-        const AI_API_URL = "https://llm.chutes.ai/v1/chat/completions";
+        const AI_API_KEY = "AIzaSyBgjBepyWtqCmQSbHSrkBt-QL6E6Ixst30";
+        const AI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
         const MONGO_API_BASE = "http://localhost:3001/api";
 
         // DOM Elements
@@ -672,9 +672,9 @@
                 // Update detection UI
                 updateDetectionUI(hasQR, qrContent, hasDSU, pagesData.length, totalTextLength);
 
-                // Step 2: Send to AI for scoring
+                // Step 2: Send to AI for scoring (Google Gemini)
                 statusBadge.innerHTML = '<span>Sending to AI for final scoring...</span>';
-                log("Sending analysis to AI for verification...", "info");
+                log("Sending analysis to Google Gemini AI for verification...", "info");
 
                 const prompt = `You are verifying a Dayananda Sagar University certificate (PDF/Image).
 
@@ -698,17 +698,17 @@ SCORE: [number between 1-99]
 STATUS: [GENUINE or SUSPICIOUS or FAKE]
 REASON: [1-2 sentence explanation]`;
 
-                const aiResponse = await fetch(AI_API_URL, {
+                const aiResponse = await fetch(`${AI_API_URL}?key=${AI_API_KEY}`, {
                     method: "POST",
                     headers: {
-                        "Authorization": `Bearer ${AI_API_TOKEN}`,
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        model: "openai/gpt-oss-20b",
-                        messages: [{ role: "user", content: prompt }],
-                        max_tokens: 200,
-                        temperature: 0.2
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }]
                     })
                 });
 
@@ -718,7 +718,7 @@ REASON: [1-2 sentence explanation]`;
                 }
                 
                 const aiData = await aiResponse.json();
-                const aiResult = aiData.choices[0]?.message?.content || "";
+                const aiResult = aiData.candidates[0]?.content?.parts[0]?.text || "";
 
                 log("AI Response received", "success");
                 log(`Raw AI output: ${aiResult}`, "info");
