@@ -33,6 +33,19 @@
             border: 1px solid rgba(129, 140, 248, 0.2);
         }
 
+        .api-notice {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid #6366f1;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #a5b4fc;
+        }
+
+        .api-notice strong { color: #c7d2fe; }
+
         .upload-box {
             border: 3px dashed #475569;
             border-radius: 16px;
@@ -136,6 +149,10 @@
         <p class="subtitle">Upload your certificate (PDF or Image) - AI scans every page for QR code and Dayananda Sagar University</p>
 
         <div class="card">
+            <div class="api-notice">
+                ⚡ Powered by <strong>Groq AI</strong> (Ultra-Fast & Free) | Get your API key at <a href="https://console.groq.com/keys" target="_blank" style="color: #c7d2fe;">console.groq.com/keys</a>
+            </div>
+
             <div class="upload-box" id="drop-zone" onclick="document.getElementById('file-input').click()">
                 <div style="font-size: 3rem; margin-bottom:12px;">📄</div>
                 <p>Click or drop your certificate here</p>
@@ -201,9 +218,13 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // API Configuration
-        const AI_API_TOKEN = "cpk_6e025460f1cf48438058b24954f3ef0a.6cce9b81609c509dbdcfb29cc876557b.v1DAhbEMclbAihw1OAb6SD5S4YiX67Ts";
-        const AI_API_URL = "https://llm.chutes.ai/v1/chat/completions";
+        // ============================================
+        // API CONFIGURATION - GROQ (FREE & FAST)
+        // ============================================
+        // Get your free API key at: https://console.groq.com/keys
+        const AI_API_TOKEN = "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";  // <-- REPLACE THIS
+        const AI_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+        const AI_MODEL = "llama-3.3-70b-versatile";  // Fast and accurate
         const MONGO_API_BASE = "http://localhost:3001/api";
 
         // DOM Elements
@@ -220,7 +241,10 @@
 
         let selectedFile = null;
 
-        // Helper: Add log entry to UI
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+
         function log(message, type = 'normal') {
             const entry = document.createElement('div');
             entry.className = 'log-entry';
@@ -233,7 +257,6 @@
             logDiv.scrollTop = logDiv.scrollHeight;
         }
 
-        // Update detection summary UI
         function updateDetectionUI(qrFound, qrContent, dsuFound, pages, textLength) {
             document.getElementById('qr-result').innerHTML = qrFound 
                 ? '<span class="detection-yes">✅ YES</span>' 
@@ -250,7 +273,10 @@
             document.getElementById('text-result').textContent = `${textLength.toLocaleString()} characters`;
         }
 
-        // Render file preview
+        // ============================================
+        // FILE PREVIEW
+        // ============================================
+
         async function renderPreview(file) {
             previewContainer.style.display = 'block';
             previewContent.innerHTML = '<p style="color:#94a3b8">Loading preview...</p>';
@@ -286,37 +312,21 @@
             }
         }
 
-        // Handle file selection
-        fileInput.addEventListener('change', async (e) => {
-            if (e.target.files[0]) {
-                selectedFile = e.target.files[0];
-                verifyBtn.disabled = false;
-                await renderPreview(selectedFile);
-                resultDiv.style.display = 'none';
-                log(`File loaded: ${selectedFile.name} (${(selectedFile.size/1024/1024).toFixed(2)} MB)`, "info");
-            }
-        });
+        // ============================================
+        // QR CODE DETECTION (ENHANCED)
+        // ============================================
 
-        // Enhanced QR Code Scanner - scans multiple times with different settings
         function scanForQRCode(canvas, context) {
             const width = canvas.width;
             const height = canvas.height;
             
-            // Try multiple scan approaches
             const scanAttempts = [
-                // Full image scan
                 { x: 0, y: 0, w: width, h: height },
-                // Bottom right quadrant (common QR position)
                 { x: width * 0.5, y: height * 0.5, w: width * 0.5, h: height * 0.5 },
-                // Bottom left quadrant
                 { x: 0, y: height * 0.5, w: width * 0.5, h: height * 0.5 },
-                // Top right quadrant
                 { x: width * 0.5, y: 0, w: width * 0.5, h: height * 0.5 },
-                // Top left quadrant
                 { x: 0, y: 0, w: width * 0.5, h: height * 0.5 },
-                // Center region
                 { x: width * 0.25, y: height * 0.25, w: width * 0.5, h: height * 0.5 },
-                // Bottom center
                 { x: width * 0.25, y: height * 0.6, w: width * 0.5, h: height * 0.4 },
             ];
 
@@ -333,35 +343,27 @@
                         inversionAttempts: "dontInvert"
                     });
                     
-                    if (qrCode && qrCode.data) {
-                        return qrCode;
-                    }
+                    if (qrCode && qrCode.data) return qrCode;
 
-                    // Try with inversion
                     const qrCodeInverted = jsQR(imageData.data, Math.floor(region.w), Math.floor(region.h), {
                         inversionAttempts: "attemptBoth"
                     });
                     
-                    if (qrCodeInverted && qrCodeInverted.data) {
-                        return qrCodeInverted;
-                    }
+                    if (qrCodeInverted && qrCodeInverted.data) return qrCodeInverted;
                 } catch (e) {
-                    // Continue to next region
+                    continue;
                 }
             }
             
             return null;
         }
 
-        // Enhanced image preprocessing for better QR detection
         function preprocessImageForQR(canvas, context) {
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
             
-            // Convert to grayscale and increase contrast
             for (let i = 0; i < data.length; i += 4) {
                 const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-                // Increase contrast
                 const contrast = 1.5;
                 const adjusted = ((gray - 128) * contrast) + 128;
                 const final = Math.max(0, Math.min(255, adjusted));
@@ -375,7 +377,10 @@
             return context;
         }
 
-        // Process PDF document with improved scanning
+        // ============================================
+        // DOCUMENT PROCESSING (PDF/IMAGE)
+        // ============================================
+
         async function processDocument(file) {
             const isPDF = file.type === 'application/pdf';
             let pagesData = [];
@@ -392,8 +397,6 @@
                     log(`Processing page ${i}/${pdf.numPages}...`, "info");
                     
                     const page = await pdf.getPage(i);
-                    
-                    // Use higher scale for better QR detection
                     const scale = 3.0;
                     const viewport = page.getViewport({ scale });
                     const canvas = document.createElement('canvas');
@@ -403,11 +406,9 @@
 
                     await page.render({ canvasContext: context, viewport }).promise;
                     
-                    // Scan for QR code (original)
                     log(`  Scanning for QR codes on page ${i}...`, "info");
                     let qrCode = scanForQRCode(canvas, context);
                     
-                    // If not found, try with preprocessing
                     if (!qrCode) {
                         log(`  Trying enhanced QR scan on page ${i}...`, "info");
                         const processedCanvas = document.createElement('canvas');
@@ -429,19 +430,12 @@
                         log(`  ❌ No QR code found on page ${i}`, "warning");
                     }
 
-                    // OCR with improved settings
                     log(`  Running OCR on page ${i}...`, "info");
                     try {
                         const { data: { text, confidence } } = await Tesseract.recognize(
                             canvas.toDataURL('image/png'),
                             'eng',
-                            {
-                                logger: m => {
-                                    if (m.status === 'recognizing text') {
-                                        // Silent progress
-                                    }
-                                }
-                            }
+                            { logger: () => {} }
                         );
                         
                         const cleanedText = text.replace(/\s+/g, ' ').trim();
@@ -477,18 +471,15 @@
                     img.onerror = reject;
                 });
 
-                // Create canvas with original dimensions
                 const canvas = document.createElement('canvas');
                 canvas.width = img.width;
                 canvas.height = img.height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
 
-                // Scan for QR code
                 log("Scanning for QR codes in image...", "info");
                 let qrCode = scanForQRCode(canvas, ctx);
                 
-                // Try with preprocessing if not found
                 if (!qrCode) {
                     log("Trying enhanced QR scan...", "info");
                     const processedCanvas = document.createElement('canvas');
@@ -500,7 +491,6 @@
                     qrCode = scanForQRCode(processedCanvas, processedContext);
                 }
                 
-                // Try with scaled up image
                 if (!qrCode) {
                     log("Trying scaled QR scan...", "info");
                     const scaledCanvas = document.createElement('canvas');
@@ -521,19 +511,12 @@
                     log("❌ No QR code found in image", "warning");
                 }
 
-                // OCR
                 log("Running OCR on image...", "info");
                 try {
                     const { data: { text, confidence } } = await Tesseract.recognize(
                         file,
                         'eng',
-                        {
-                            logger: m => {
-                                if (m.status === 'recognizing text' && m.progress) {
-                                    // Could add progress bar here
-                                }
-                            }
-                        }
+                        { logger: () => {} }
                     );
                     
                     const cleanedText = text.replace(/\s+/g, ' ').trim();
@@ -567,10 +550,11 @@
             };
         }
 
-        // Check for DSU-related keywords
+        // ============================================
+        // DSU KEYWORD DETECTION
+        // ============================================
+
         function checkForDSU(text) {
-            const lowerText = text.toLowerCase();
-            
             const dsuPatterns = [
                 /dayananda\s*sagar\s*university/i,
                 /dayananda\s*sagar\s*institutions/i,
@@ -586,9 +570,7 @@
             for (const pattern of dsuPatterns) {
                 if (pattern.test(text)) {
                     const match = text.match(pattern);
-                    if (match) {
-                        matchedPatterns.push(match[0]);
-                    }
+                    if (match) matchedPatterns.push(match[0]);
                 }
             }
             
@@ -598,7 +580,10 @@
             };
         }
 
-        // Send verification log to MongoDB
+        // ============================================
+        // MONGODB LOGGING
+        // ============================================
+
         async function sendVerificationLogToMongoDB(verificationData) {
             try {
                 const response = await fetch(`${MONGO_API_BASE}/verifications`, {
@@ -618,11 +603,57 @@
             }
         }
 
-        // Main verification handler
+        // ============================================
+        // AI VERIFICATION WITH GROQ
+        // ============================================
+
+        async function verifyWithGroq(prompt) {
+            const response = await fetch(AI_API_URL, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${AI_API_TOKEN}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: AI_MODEL,
+                    messages: [
+                        {
+                            role: "system",
+                            content: "You are a certificate verification expert. Analyze documents and provide scores between 1-99 based on authenticity markers."
+                        },
+                        {
+                            role: "user",
+                            content: prompt
+                        }
+                    ],
+                    temperature: 0.2,
+                    max_tokens: 300,
+                    top_p: 1
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Groq API error: ${response.status} - ${errorText}`);
+            }
+
+            const data = await response.json();
+            return data.choices[0]?.message?.content || "";
+        }
+
+        // ============================================
+        // MAIN VERIFICATION HANDLER
+        // ============================================
+
         verifyBtn.addEventListener('click', async () => {
             if (!selectedFile) return;
 
-            // Reset UI state
+            // Check if API key is configured
+            if (AI_API_TOKEN === "YOUR_GROQ_API_KEY_HERE") {
+                alert("⚠️ Please configure your Groq API key!\n\n1. Get free API key at: https://console.groq.com/keys\n2. Replace 'YOUR_GROQ_API_KEY_HERE' in the code with your key");
+                return;
+            }
+
             verifyBtn.disabled = true;
             resultDiv.style.display = 'block';
             detectionSummary.style.display = 'block';
@@ -632,7 +663,6 @@
             statusBadge.className = 'status-badge loading';
             statusBadge.innerHTML = '<span>Analyzing content...</span>';
 
-            // Reset detection summary
             document.getElementById('qr-result').textContent = 'Scanning...';
             document.getElementById('qr-content').textContent = '-';
             document.getElementById('dsu-result').textContent = 'Scanning...';
@@ -640,7 +670,6 @@
             document.getElementById('text-result').textContent = '0 characters';
 
             try {
-                // Step 1: Process document (PDF/OCR/QR)
                 log("Starting document analysis...", "info");
                 const { pagesData, qrCodes, totalTextLength } = await processDocument(selectedFile);
                 
@@ -650,7 +679,6 @@
                 const dsuCheck = checkForDSU(allText);
                 const hasDSU = dsuCheck.found;
 
-                // Log detection results
                 log("=== DETECTION SUMMARY ===", "info");
                 log(`QR Codes Found: ${hasQR ? 'YES (' + qrCodes.length + ')' : 'NO'}`, hasQR ? "success" : "warning");
                 if (hasQR) {
@@ -665,59 +693,37 @@
                 log(`Total Text Extracted: ${totalTextLength} characters`, "info");
                 log(`Pages Scanned: ${pagesData.length}`, "info");
 
-                // Update detection UI
                 updateDetectionUI(hasQR, qrContent, hasDSU, pagesData.length, totalTextLength);
 
-                // Step 2: Send to AI for scoring
-                statusBadge.innerHTML = '<span>Sending to AI for final scoring...</span>';
-                log("Sending analysis to AI for verification...", "info");
+                statusBadge.innerHTML = '<span>⚡ Sending to Groq AI for scoring...</span>';
+                log("Sending analysis to Groq AI for verification...", "info");
 
-                const prompt = `
-You are verifying a Dayananda Sagar University certificate (PDF/Image).
+                const prompt = `You are verifying a Dayananda Sagar University certificate.
 
 SCAN RESULTS:
 - QR Code detected: ${hasQR ? "YES" : "NO"}
 ${hasQR ? `- QR Code content: "${qrContent}"` : ''}
-- "Dayananda Sagar University" or related keywords found: ${hasDSU ? "YES" : "NO"}
+- "Dayananda Sagar University" keywords found: ${hasDSU ? "YES" : "NO"}
 ${hasDSU ? `- Keywords matched: ${dsuCheck.matches.join(', ')}` : ''}
-- Total pages scanned: ${pagesData.length}
-- Total text extracted: ${totalTextLength} characters
-- Sample extracted text: "${allText.substring(0, 1000)}..."
+- Pages scanned: ${pagesData.length}
+- Text extracted: ${totalTextLength} characters
+- Sample text: "${allText.substring(0, 800)}..."
 
 SCORING RULES:
-- If QR code present AND university name/keywords found → Score 75–99 (GENUINE)
-- If only QR code present OR only university name found → Score 40–74 (SUSPICIOUS)
-- If neither QR code nor university name found → Score 1–39 (FAKE)
-- Consider the QR code content if it contains verification URLs or certificate IDs
+- If QR code present AND university name found → Score 75–99 (GENUINE)
+- If only QR code OR only university name found → Score 40–74 (SUSPICIOUS)
+- If neither found → Score 1–39 (FAKE)
 
 Respond EXACTLY in this format:
-SCORE: [number between 1-99]
+SCORE: [number 1-99]
 STATUS: [GENUINE or SUSPICIOUS or FAKE]
-REASON: [1-2 sentence explanation]
-                `;
+REASON: [1-2 sentence explanation]`;
 
-                const aiResponse = await fetch(AI_API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${AI_API_TOKEN}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        model: "openai/gpt-oss-20b",
-                        messages: [{ role: "user", content: prompt }],
-                        max_tokens: 200,
-                        temperature: 0.2
-                    })
-                });
-
-                if (!aiResponse.ok) throw new Error("AI verification failed");
-                const aiData = await aiResponse.json();
-                const aiResult = aiData.choices[0]?.message?.content || "";
-
-                log("AI Response received", "info");
+                const aiResult = await verifyWithGroq(prompt);
+                
+                log("✅ Groq AI Response received", "success");
                 log(`Raw AI output: ${aiResult}`, "info");
 
-                // Parse AI response
                 const scoreMatch = aiResult.match(/SCORE:\s*(\d+)/i);
                 const statusMatch = aiResult.match(/STATUS:\s*(GENUINE|SUSPICIOUS|FAKE)/i);
                 const reasonMatch = aiResult.match(/REASON:\s*(.+?)(?:\n|$)/i);
@@ -726,7 +732,6 @@ REASON: [1-2 sentence explanation]
                 const status = statusMatch ? statusMatch[1].toUpperCase() : "UNKNOWN";
                 const reasonPart = reasonMatch ? reasonMatch[1].trim() : "Analysis complete.";
 
-                // Animate score display
                 let currentScore = 0;
                 const scoreTimer = setInterval(() => {
                     currentScore += 2;
@@ -737,9 +742,8 @@ REASON: [1-2 sentence explanation]
                     scoreCircle.textContent = currentScore;
                 }, 20);
 
-                // Update UI with final result
                 statusBadge.className = 'status-badge connected';
-                statusBadge.innerHTML = '<span>✅ AI Verification Complete</span>';
+                statusBadge.innerHTML = '<span>✅ Groq AI Verification Complete</span>';
 
                 if (score >= 75) {
                     scoreCircle.className = 'score-circle green';
@@ -760,7 +764,6 @@ REASON: [1-2 sentence explanation]
                 log(`Status: ${status}`, "success");
                 log(`Reason: ${reasonPart}`, "info");
 
-                // Step 3: Send verification log to MongoDB
                 log("Sending log to certisure database...", "info");
                 const verificationPayload = {
                     fileName: selectedFile.name,
@@ -775,13 +778,13 @@ REASON: [1-2 sentence explanation]
                     score,
                     status,
                     reason: reasonPart,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    aiProvider: "Groq AI"
                 };
 
                 await sendVerificationLogToMongoDB(verificationPayload);
 
             } catch (err) {
-                // Handle errors
                 statusBadge.className = 'status-badge error';
                 statusBadge.innerHTML = '<span>❌ Verification Failed</span>';
                 log(`Error: ${err.message}`, "error");
@@ -792,7 +795,20 @@ REASON: [1-2 sentence explanation]
             }
         });
 
-        // Drag-and-drop support
+        // ============================================
+        // FILE INPUT HANDLERS
+        // ============================================
+
+        fileInput.addEventListener('change', async (e) => {
+            if (e.target.files[0]) {
+                selectedFile = e.target.files[0];
+                verifyBtn.disabled = false;
+                await renderPreview(selectedFile);
+                resultDiv.style.display = 'none';
+                log(`File loaded: ${selectedFile.name} (${(selectedFile.size/1024/1024).toFixed(2)} MB)`, "info");
+            }
+        });
+
         const dropZone = document.getElementById('drop-zone');
         dropZone.addEventListener('dragover', e => {
             e.preventDefault();
@@ -810,4 +826,3 @@ REASON: [1-2 sentence explanation]
     </script>
 </body>
 </html>
-
