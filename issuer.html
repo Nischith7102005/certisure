@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CertiSure - Document Issuer Portal (Integrated Auth)</title>
+    <title>CertiSure - Document Issuer Portal</title>
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔒</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <!-- QR Code library -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <!-- PDF-lib for PDF manipulation -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <!-- AWS SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://unpkg.com/tesseract.js@v4.0.2/dist/tesseract.min.js"></script>
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1492.0.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
@@ -30,7 +29,7 @@
             background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
             transition: all 0.3s ease;
         }
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             transform: scale(1.05);
             box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
         }
@@ -38,7 +37,7 @@
             background: linear-gradient(90deg, #10b981 0%, #059669 100%);
             transition: all 0.3s ease;
         }
-        .btn-secondary:hover {
+        .btn-secondary:hover:not(:disabled) {
             transform: scale(1.05);
             box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
         }
@@ -62,7 +61,7 @@
             background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
             border-radius: 4px;
             width: 0%;
-            transition: width 0.5s ease;
+            transition: width 0.3s ease;
         }
         .file-info {
             margin-top: 10px;
@@ -76,16 +75,9 @@
             border-radius: 6px;
             display: none;
         }
-        .success {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
-            border: 1px solid #10b981;
-        }
-        .error {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-            border: 1px solid #ef4444;
-        }
+        .success { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
+        .error { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+        .warning { background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid #fbbf24; }
         .s3-status {
             padding: 8px 12px;
             border-radius: 6px;
@@ -95,14 +87,9 @@
         .s3-uploading { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid #3b82f6; }
         .s3-success { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
         .s3-error { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
-
-        /* Auth Modal Styles */
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background-color: rgba(0, 0, 0, 0.7);
             display: flex;
             justify-content: center;
@@ -118,8 +105,7 @@
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
         }
         .connection-dot {
-            width: 8px;
-            height: 8px;
+            width: 8px; height: 8px;
             border-radius: 50%;
             display: inline-block;
             margin-right: 6px;
@@ -132,49 +118,59 @@
             0%,100% { opacity: 1; }
             50% { opacity: .5; }
         }
-        /* Disable interactivity when not logged in */
         .portal-disabled {
             pointer-events: none;
             opacity: 0.5;
         }
+        .ocr-preview {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(79, 70, 229, 0.1);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .step-indicator.active { background: rgba(79, 70, 229, 0.3); }
+        .step-indicator.complete { background: rgba(16, 185, 129, 0.2); }
+        .step-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 12px; }
+        .step-icon.pending { background: #475569; }
+        .step-icon.active { background: #4f46e5; }
+        .step-icon.complete { background: #10b981; }
     </style>
 </head>
 <body class="min-h-screen">
 
-    <!-- Auth Modal - blocks portal until login/signup -->
+    <!-- Auth Modal -->
     <div id="authModal" class="modal-overlay">
         <div class="modal-content">
             <h2 class="text-2xl font-bold text-white mb-6" id="authTitle">Login to CertiSure</h2>
-            
             <form id="authForm">
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                        <input 
-                            type="email" 
-                            id="email" 
-                            class="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-white"
-                            placeholder="test@certisure.com"
-                            required
-                        >
+                        <input type="email" id="email" class="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-white" placeholder="test@certisure.com" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                        <input 
-                            type="password" 
-                            id="password" 
-                            class="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-white"
-                            placeholder="password123"
-                            required
-                        >
+                        <input type="password" id="password" class="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-white" placeholder="password123" required>
                     </div>
-                    
                     <div id="authMessage" class="hidden p-3 rounded-lg text-sm"></div>
-                    
                     <button type="submit" class="w-full btn-primary py-3 rounded-lg font-medium text-white">
                         <span id="authButtonText">Login</span>
                     </button>
-                    
                     <div class="text-center">
                         <button type="button" id="toggleAuthModeBtn" class="text-blue-400 hover:text-blue-300 text-sm">
                             <span id="toggleText">Don't have an account? Sign up</span>
@@ -182,7 +178,6 @@
                     </div>
                 </div>
             </form>
-            
             <div class="mt-6 p-3 bg-slate-700 rounded-lg">
                 <div class="flex items-center justify-between">
                     <span class="text-xs text-gray-400">MongoDB Status:</span>
@@ -206,7 +201,9 @@
                     </div>
                     <div class="hidden md:block">
                         <div class="ml-10 flex items-baseline space-x-4">
-                            <a href="#" class="text-white px-3 py-2 rounded-md text-sm font-medium bg-indigo-600">Issuer Portal</a>
+                            <a href="index.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Home</a>
+                            <a href="issuer.html" class="text-white px-3 py-2 rounded-md text-sm font-medium bg-indigo-600">Issuer Portal</a>
+                            <a href="verify.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Verify Document</a>
                         </div>
                     </div>
                 </div>
@@ -227,7 +224,7 @@
         </div>
     </nav>
 
-    <!-- Dashboard Header -->
+    <!-- Header -->
     <header class="dashboard-bg pt-24 pb-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center">
@@ -235,11 +232,11 @@
                     CertiSure Issuer Portal
                 </h1>
                 <p class="mt-4 text-xl text-gray-300 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="100">
-                    Secure document certification integrated with live MongoDB Auth.
+                    Issue certified documents with OCR extraction and database storage
                 </p>
                 <div class="mt-6 inline-flex items-center px-4 py-2 bg-purple-600 bg-opacity-20 border border-purple-400 rounded-lg" data-aos="fade-up" data-aos-delay="200">
                     <i data-feather="database" class="h-5 w-5 text-purple-400 mr-2"></i>
-                    <span class="text-purple-300">Live MongoDB (localhost:27017) & AWS S3 Integration</span>
+                    <span class="text-purple-300">MongoDB + OCR + AWS S3 Integration</span>
                 </div>
             </div>
         </div>
@@ -249,6 +246,7 @@
     <main class="py-8">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div id="portalContent" class="grid grid-cols-1 lg:grid-cols-3 gap-8 portal-disabled">
+                
                 <!-- Left Column - Document Upload -->
                 <div class="lg:col-span-2">
                     <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
@@ -296,15 +294,48 @@
                                         <input type="file" id="fileInput" class="hidden" accept=".pdf">
                                     </div>
                                     <div id="fileInfo" class="file-info hidden">
-                                        <p class="text-sm text-gray-300">Selected file: <span id="fileName" class="font-medium text-white"></span></p>
+                                        <p class="text-sm text-gray-300">Selected: <span id="fileName" class="font-medium text-white"></span></p>
                                         <p class="text-xs text-gray-400" id="fileSize"></p>
                                     </div>
                                     <div id="statusMessage" class="status-message"></div>
                                 </div>
                             </div>
                             
+                            <!-- Processing Steps -->
+                            <div class="mt-6 space-y-2" id="processingSteps" style="display:none;">
+                                <div class="step-indicator" id="step-hash">
+                                    <div class="step-icon pending">1</div>
+                                    <span class="text-sm">Generating file hash...</span>
+                                </div>
+                                <div class="step-indicator" id="step-ocr">
+                                    <div class="step-icon pending">2</div>
+                                    <span class="text-sm">Performing OCR extraction...</span>
+                                </div>
+                                <div class="step-indicator" id="step-qr">
+                                    <div class="step-icon pending">3</div>
+                                    <span class="text-sm">Generating QR code...</span>
+                                </div>
+                                <div class="step-indicator" id="step-pdf">
+                                    <div class="step-icon pending">4</div>
+                                    <span class="text-sm">Embedding QR in PDF...</span>
+                                </div>
+                                <div class="step-indicator" id="step-db">
+                                    <div class="step-icon pending">5</div>
+                                    <span class="text-sm">Storing in database...</span>
+                                </div>
+                            </div>
+
+                            <!-- OCR Preview -->
+                            <div id="ocrPreview" class="ocr-preview" style="display:none;">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-xs text-indigo-400 font-medium">OCR Extracted Text Preview</span>
+                                    <span id="ocrConfidence" class="text-xs text-green-400"></span>
+                                </div>
+                                <div id="ocrText"></div>
+                            </div>
+                            
                             <!-- Progress Bar -->
-                            <div class="mt-8">
+                            <div class="mt-6">
                                 <div class="flex items-center justify-between mb-2">
                                     <span class="text-sm font-medium text-gray-300">Processing Progress</span>
                                     <span class="text-sm font-medium text-gray-300" id="progressText">0%</span>
@@ -316,112 +347,109 @@
                             
                             <!-- Action Buttons -->
                             <div class="mt-8 flex justify-end space-x-4">
-                                <button type="submit" id="submitBtn" class="btn-primary px-6 py-3 rounded-lg font-medium">
-                                    <span id="buttonText">Generate QR Code</span>
+                                <button type="submit" id="submitBtn" class="btn-primary px-6 py-3 rounded-lg font-medium text-white">
+                                    <span id="buttonText">Generate & Store Document</span>
                                 </button>
-                                <button type="button" id="downloadBtn" class="btn-secondary px-6 py-3 rounded-lg font-medium hidden">
+                                <button type="button" id="downloadBtn" class="btn-secondary px-6 py-3 rounded-lg font-medium hidden text-white">
                                     <i data-feather="download" class="inline h-4 w-4 mr-2"></i>
                                     Download & Upload to S3
                                 </button>
                             </div>
                             
-                            <!-- S3 Upload Status -->
+                            <!-- S3 Status -->
                             <div id="s3Status" class="s3-status hidden mt-6">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center">
                                         <i data-feather="cloud" class="h-4 w-4 mr-2"></i>
                                         <span id="s3StatusText">Preparing S3 upload...</span>
                                     </div>
-                                    <div class="flex space-x-2">
-                                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
-                                        <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
-                                    </div>
                                 </div>
                             </div>
                         </form>
                     </div>
+
+                    <!-- Issued Documents Table -->
+                    <div class="bg-gray-800 rounded-xl shadow-lg p-6 mt-6" data-aos="fade-up" data-aos-delay="100">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold text-white">Recently Issued Documents</h2>
+                            <button id="refreshDocsBtn" class="text-blue-400 hover:text-blue-300">
+                                <i data-feather="refresh-cw" class="h-4 w-4"></i>
+                            </button>
+                        </div>
+                        <div id="documentsTable" class="overflow-x-auto">
+                            <p class="text-gray-400 text-sm">Loading documents...</p>
+                        </div>
+                    </div>
                 </div>
                 
-                <!-- Right Column - Info Panels -->
+                <!-- Right Column -->
                 <div class="space-y-6">
-                    <!-- Activity Feed (MongoDB Logs) -->
+                    <!-- Activity Feed -->
                     <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up">
                         <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-xl font-bold text-white">MongoDB Activity Log</h2>
+                            <h2 class="text-xl font-bold text-white">Activity Log</h2>
                             <button id="refreshLogsBtn" class="text-blue-400 hover:text-blue-300">
                                 <i data-feather="refresh-cw" class="h-4 w-4"></i>
                             </button>
                         </div>
-                        <div class="space-y-4 max-h-[400px] overflow-y-auto" id="mongodbActivityFeed">
+                        <div class="space-y-4 max-h-[300px] overflow-y-auto" id="mongodbActivityFeed">
                             <div class="flex items-start text-gray-400">
                                 <div class="flex-shrink-0 mt-1">
                                     <i data-feather="info" class="h-5 w-5"></i>
                                 </div>
                                 <div class="ml-3">
-                                    <p class="text-sm font-medium">System Initialized</p>
-                                    <p class="text-xs text-gray-500">Awaiting MongoDB connection...</p>
+                                    <p class="text-sm font-medium">System Ready</p>
+                                    <p class="text-xs text-gray-500">Awaiting document upload...</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- S3 Configuration Panel -->
+                    <!-- Database Stats -->
                     <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up" data-aos-delay="100">
-                        <h2 class="text-xl font-bold text-white mb-4">AWS S3 Configuration</h2>
-                        <div class="space-y-4">
+                        <h2 class="text-xl font-bold text-white mb-4">Database Stats</h2>
+                        <div class="space-y-3">
                             <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
                                 <div class="flex items-center">
-                                    <i data-feather="hard-drive" class="h-5 w-5 text-green-400 mr-3"></i>
-                                    <span class="text-sm">S3 Bucket</span>
+                                    <i data-feather="file-text" class="h-5 w-5 text-indigo-400 mr-3"></i>
+                                    <span class="text-sm">Documents Issued</span>
                                 </div>
+                                <span id="docCount" class="text-lg font-bold text-indigo-400">0</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-feather="users" class="h-5 w-5 text-green-400 mr-3"></i>
+                                    <span class="text-sm">Total Users</span>
+                                </div>
+                                <span id="userCount" class="text-lg font-bold text-green-400">0</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                                <div class="flex items-center">
+                                    <i data-feather="activity" class="h-5 w-5 text-yellow-400 mr-3"></i>
+                                    <span class="text-sm">Total Logs</span>
+                                </div>
+                                <span id="logCount" class="text-lg font-bold text-yellow-400">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- S3 Config -->
+                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up" data-aos-delay="200">
+                        <h2 class="text-xl font-bold text-white mb-4">AWS S3 Config</h2>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                                <span class="text-sm">Bucket</span>
                                 <span class="text-xs bg-green-500 text-green-900 px-2 py-1 rounded">certisure</span>
                             </div>
                             <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                                <div class="flex items-center">
-                                    <i data-feather="folder" class="h-5 w-5 text-green-400 mr-3"></i>
-                                    <span class="text-sm">Storage Path</span>
-                                </div>
-                                <span class="text-xs text-gray-300">docs/</span>
-                            </div>
-                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                                <div class="flex items-center">
-                                    <i data-feather="map-pin" class="h-5 w-5 text-green-400 mr-3"></i>
-                                    <span class="text-sm">AWS Region</span>
-                                </div>
+                                <span class="text-sm">Region</span>
                                 <span class="text-xs text-gray-300">eu-north-1</span>
                             </div>
                             <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                                <div class="flex items-center">
-                                    <i data-feather="link" class="h-5 w-5 text-green-400 mr-3"></i>
-                                    <span class="text-sm">ARN</span>
-                                </div>
-                                <span class="text-xs text-gray-300 truncate" title="arn:aws:s3:::certisure">arn:aws:s3:::certisure</span>
+                                <span class="text-sm">Path</span>
+                                <span class="text-xs text-gray-300">docs/</span>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Instructions -->
-                    <div class="bg-gray-800 rounded-xl shadow-lg p-6" data-aos="fade-up" data-aos-delay="200">
-                        <h2 class="text-xl font-bold text-white mb-4">How It Works</h2>
-                        <ol class="space-y-3 text-sm text-gray-300">
-                            <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-white text-xs mr-3">1</span>
-                                <span>Login / Sign up via MongoDB backend</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">2</span>
-                                <span>Upload PDF document & fill recipient details</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs mr-3">3</span>
-                                <span>Generate QR code & embed into the PDF</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs mr-3">4</span>
-                                <span>Download & auto-upload to AWS S3 (logged to MongoDB)</span>
-                            </li>
-                        </ol>
                     </div>
                 </div>
             </div>
@@ -433,23 +461,15 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center text-gray-500">
                 <p class="mb-2">CertiSure - Document Certification System</p>
-                <p class="text-sm">Live AWS S3 Integration | MongoDB Auth (localhost)</p>
+                <p class="text-sm">MongoDB + OCR + AWS S3 Integration</p>
             </div>
         </div>
     </footer>
 
-    <!-- server.js reference (unchanged) -->
-    <script type="text/template" id="serverCode">
-/* server.js code here - same as earlier, omitted for brevity */
-    </script>
-
     <script>
+        // ============ CONFIGURATION ============
         const API_BASE = 'http://localhost:3001/api';
-
-        let isLoginMode = true;
-        let currentUser = null;
-        let authToken = null;
-
+        
         const AWS_CONFIG = {
             region: 'eu-north-1',
             accessKeyId: 'AKIAS5JBIBYFTSZVE4VA',
@@ -457,6 +477,7 @@
             bucketName: 'certisure',
             folderPath: 'docs/'
         };
+
         AWS.config.update({
             region: AWS_CONFIG.region,
             accessKeyId: AWS_CONFIG.accessKeyId,
@@ -465,17 +486,22 @@
         });
         const s3 = new AWS.S3();
 
-        // Portal state vars
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // ============ STATE ============
+        let isLoginMode = true;
+        let currentUser = null;
+        let authToken = null;
         let selectedFile = null;
         let qrCodeDataUrl = null;
         let modifiedPdfBytes = null;
         let documentMetadata = {};
 
+        // ============ INIT ============
         document.addEventListener('DOMContentLoaded', () => {
             AOS.init({ duration: 1000, once: true });
             feather.replace();
 
-            // Auth UI handlers
             document.getElementById('authForm').addEventListener('submit', handleAuth);
             document.getElementById('toggleAuthModeBtn').addEventListener('click', toggleAuthMode);
             document.getElementById('authNavButton').addEventListener('click', () => {
@@ -483,17 +509,15 @@
             });
             document.getElementById('logoutBtn').addEventListener('click', logout);
             document.getElementById('refreshLogsBtn').addEventListener('click', refreshLogs);
+            document.getElementById('refreshDocsBtn').addEventListener('click', loadIssuedDocuments);
 
-            // Portal handlers
             initPortalHandlers();
-
             checkConnection();
             checkAuthStatus();
             setInterval(checkConnection, 5000);
         });
 
-        // ==== AUTH ====
-
+        // ============ AUTH FUNCTIONS ============
         function toggleAuthMode() {
             isLoginMode = !isLoginMode;
             document.getElementById('authTitle').textContent = isLoginMode ? 'Login to CertiSure' : 'Create Account';
@@ -530,6 +554,7 @@
                     body: JSON.stringify({ email, password })
                 });
                 const data = await res.json();
+                
                 if (!res.ok) {
                     showAuthMessage(data.error || 'Authentication failed', 'error');
                     btn.textContent = isLoginMode ? 'Login' : 'Sign Up';
@@ -541,18 +566,19 @@
                     currentUser = data.user;
                     localStorage.setItem('certisure_token', authToken);
                     localStorage.setItem('certisure_user', JSON.stringify(currentUser));
-                    showAuthMessage('Login successful! Redirecting...', 'success');
+                    showAuthMessage('Login successful!', 'success');
                     setTimeout(() => {
                         document.getElementById('authModal').classList.add('hidden');
                         setAuthState(true);
                         refreshLogs();
-                    }, 1000);
+                        loadIssuedDocuments();
+                    }, 500);
                 } else {
                     showAuthMessage('Account created! Please log in.', 'success');
                     toggleAuthMode();
                 }
             } catch (err) {
-                showAuthMessage('Server connection failed. Is node server running on 3001?', 'error');
+                showAuthMessage('Server connection failed. Is server running on port 3001?', 'error');
             } finally {
                 btn.textContent = isLoginMode ? 'Login' : 'Sign Up';
             }
@@ -566,6 +592,7 @@
                 currentUser = JSON.parse(user);
                 setAuthState(true);
                 refreshLogs();
+                loadIssuedDocuments();
             } else {
                 setAuthState(false);
             }
@@ -581,6 +608,7 @@
                 navUser.classList.remove('hidden');
                 navBtn.classList.add('hidden');
                 document.getElementById('navUserEmail').textContent = currentUser.email;
+                document.getElementById('authModal').classList.add('hidden');
             } else {
                 portal.classList.add('portal-disabled');
                 navUser.classList.add('hidden');
@@ -591,17 +619,15 @@
         }
 
         async function logout() {
-            await logMongoActivity('user_logout', {}, 'info');
+            await logMongoActivity('user_logout', {});
             localStorage.removeItem('certisure_token');
             localStorage.removeItem('certisure_user');
             authToken = null;
             currentUser = null;
             setAuthState(false);
-            refreshLogs();
         }
 
-        // ==== MONGODB STATUS & LOGS ====
-
+        // ============ CONNECTION & LOGS ============
         async function checkConnection() {
             const dot = document.getElementById('modalMongoStatus');
             const text = document.getElementById('modalMongoStatusText');
@@ -610,18 +636,21 @@
                 const data = await res.json();
                 if (data.mongodb) {
                     dot.className = 'connection-dot connected';
-                    text.textContent = `Connected (${data.stats.users} users)`;
+                    text.textContent = 'Connected';
+                    document.getElementById('docCount').textContent = data.stats.documents || 0;
+                    document.getElementById('userCount').textContent = data.stats.users || 0;
+                    document.getElementById('logCount').textContent = data.stats.logs || 0;
                 } else {
                     dot.className = 'connection-dot disconnected';
-                    text.textContent = 'Disconnected (mongod not running)';
+                    text.textContent = 'Disconnected';
                 }
             } catch {
                 dot.className = 'connection-dot disconnected';
-                text.textContent = 'Server offline (node not running)';
+                text.textContent = 'Server offline';
             }
         }
 
-        async function logMongoActivity(action, data = {}, type = 'info') {
+        async function logMongoActivity(action, data = {}) {
             if (!authToken) return;
             try {
                 await fetch(`${API_BASE}/logs`, {
@@ -652,40 +681,90 @@
                 });
                 if (!res.ok) throw new Error();
                 const logs = await res.json();
+                
                 if (!logs.length) {
                     feed.innerHTML = `<div class="p-3 text-sm text-gray-400">No logs yet.</div>`;
                     return;
                 }
-                logs.forEach(log => {
-                    const type = log.action.includes('failed') ? 'error' :
-                                 log.action.includes('success') || log.action.includes('login') || log.action.includes('signup') ? 'success' : 'info';
-                    const color = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-green-400' : 'text-blue-400';
-                    const icon = type === 'error' ? 'alert-triangle' : 'activity';
-                    const title = log.action.split('_').map(w => w[0].toUpperCase()+w.slice(1)).join(' ');
+                
+                logs.slice(0, 20).forEach(log => {
+                    const isSuccess = log.action.includes('success') || log.action.includes('login') || log.action.includes('issued');
+                    const isError = log.action.includes('failed') || log.action.includes('error');
+                    const color = isError ? 'text-red-400' : isSuccess ? 'text-green-400' : 'text-blue-400';
+                    const icon = isError ? 'alert-triangle' : isSuccess ? 'check-circle' : 'activity';
+                    const title = log.action.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
                     const time = new Date(log.timestamp).toLocaleTimeString();
 
                     const div = document.createElement('div');
                     div.className = `flex items-start ${color}`;
                     div.innerHTML = `
-                        <div class="flex-shrink-0 mt-1">
-                            <i data-feather="${icon}" class="h-5 w-5"></i>
-                        </div>
+                        <div class="flex-shrink-0 mt-1"><i data-feather="${icon}" class="h-4 w-4"></i></div>
                         <div class="ml-3">
                             <p class="text-sm font-medium">${title}</p>
-                            <p class="text-xs text-gray-400">${log.userEmail || 'System'}</p>
-                            <p class="text-xs text-gray-500 mt-1">${time}</p>
+                            <p class="text-xs text-gray-500">${time}</p>
                         </div>
                     `;
                     feed.appendChild(div);
                 });
                 feather.replace();
             } catch {
-                feed.innerHTML = `<div class="p-3 text-sm text-red-400 bg-red-400/20 rounded-lg">Cannot load logs (API offline)</div>`;
+                feed.innerHTML = `<div class="p-3 text-sm text-red-400 bg-red-400/20 rounded-lg">Cannot load logs</div>`;
             }
         }
 
-        // ==== PORTAL (DOCUMENT + S3) ====
+        async function loadIssuedDocuments() {
+            const container = document.getElementById('documentsTable');
+            if (!authToken) {
+                container.innerHTML = '<p class="text-gray-400 text-sm">Login to view documents.</p>';
+                return;
+            }
 
+            try {
+                const res = await fetch(`${API_BASE}/documents`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (!res.ok) throw new Error();
+                const docs = await res.json();
+
+                if (!docs.length) {
+                    container.innerHTML = '<p class="text-gray-400 text-sm">No documents issued yet.</p>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="text-left text-gray-400 border-b border-gray-700">
+                                <th class="pb-2">Doc ID</th>
+                                <th class="pb-2">Student</th>
+                                <th class="pb-2">Type</th>
+                                <th class="pb-2">Date</th>
+                                <th class="pb-2">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${docs.slice(0, 10).map(doc => `
+                                <tr class="border-b border-gray-700/50">
+                                    <td class="py-2 text-indigo-400 font-mono text-xs">${doc.documentId.substring(0, 15)}...</td>
+                                    <td class="py-2">${doc.studentName}</td>
+                                    <td class="py-2 capitalize">${doc.docType}</td>
+                                    <td class="py-2 text-gray-400">${new Date(doc.issuedAt).toLocaleDateString()}</td>
+                                    <td class="py-2">
+                                        <span class="px-2 py-1 rounded text-xs ${doc.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">
+                                            ${doc.status}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch {
+                container.innerHTML = '<p class="text-red-400 text-sm">Failed to load documents.</p>';
+            }
+        }
+
+        // ============ PORTAL HANDLERS ============
         function initPortalHandlers() {
             const fileInput = document.getElementById('fileInput');
             const documentUpload = document.getElementById('document-upload');
@@ -698,28 +777,31 @@
             downloadBtn.addEventListener('click', downloadAndUploadToS3);
 
             initDragAndDrop();
-            testS3Connection();
         }
 
         function handleFileSelect(e) {
             const file = e.target.files[0];
             if (!file) return;
             if (!validateFile(file)) return;
+            
             selectedFile = file;
             displayFileInfo(file);
+            
             document.getElementById('downloadBtn').classList.add('hidden');
             document.getElementById('s3Status').classList.add('hidden');
+            document.getElementById('ocrPreview').style.display = 'none';
+            document.getElementById('processingSteps').style.display = 'none';
+            resetSteps();
+            
             showStatus('File ready for processing', 'success');
         }
 
         function validateFile(file) {
-            const validTypes = ['application/pdf'];
-            const maxSize = 10 * 1024 * 1024;
-            if (!validTypes.includes(file.type)) {
-                showStatus('Please select a PDF document only', 'error');
+            if (file.type !== 'application/pdf') {
+                showStatus('Please select a PDF document', 'error');
                 return false;
             }
-            if (file.size > maxSize) {
+            if (file.size > 10 * 1024 * 1024) {
                 showStatus('File size must be less than 10MB', 'error');
                 return false;
             }
@@ -740,13 +822,192 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
+        // ============ PROCESSING STEPS ============
+        function resetSteps() {
+            ['step-hash', 'step-ocr', 'step-qr', 'step-pdf', 'step-db'].forEach(id => {
+                const el = document.getElementById(id);
+                el.className = 'step-indicator';
+                el.querySelector('.step-icon').className = 'step-icon pending';
+            });
+        }
+
+        function setStepActive(stepId) {
+            const el = document.getElementById(stepId);
+            el.className = 'step-indicator active';
+            el.querySelector('.step-icon').className = 'step-icon active';
+        }
+
+        function setStepComplete(stepId) {
+            const el = document.getElementById(stepId);
+            el.className = 'step-indicator complete';
+            el.querySelector('.step-icon').className = 'step-icon complete';
+            el.querySelector('.step-icon').innerHTML = '✓';
+        }
+
+        // ============ CORE FUNCTIONS ============
+        async function generateFileHash(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function performOCR(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+            let fullText = '';
+            let totalConfidence = 0;
+            const pagesToProcess = Math.min(pdf.numPages, 3);
+
+            for (let i = 1; i <= pagesToProcess; i++) {
+                const page = await pdf.getPage(i);
+                const scale = 2.0;
+                const viewport = page.getViewport({ scale });
+
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                await page.render({ canvasContext: context, viewport }).promise;
+
+                const { data: { text, confidence } } = await Tesseract.recognize(
+                    canvas.toDataURL('image/png'),
+                    'eng',
+                    { logger: () => {} }
+                );
+
+                fullText += text + '\n';
+                totalConfidence += confidence;
+            }
+
+            return {
+                text: fullText.trim(),
+                confidence: Math.round(totalConfidence / pagesToProcess)
+            };
+        }
+
+        function extractKeywords(text) {
+            const keywords = [];
+            const patterns = {
+                university: /(?:university|college|institute|institution)\s+(?:of\s+)?[\w\s]+/gi,
+                degree: /(?:bachelor|master|doctor|phd|b\.?tech|m\.?tech|b\.?e|m\.?e|b\.?sc|m\.?sc|b\.?a|m\.?a|b\.?com|m\.?com)[\w\s]*/gi,
+                date: /(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/gi,
+                year: /\b(19|20)\d{2}\b/g
+            };
+
+            for (const [type, pattern] of Object.entries(patterns)) {
+                const matches = text.match(pattern);
+                if (matches) {
+                    keywords.push(...matches.map(m => m.trim().toLowerCase()));
+                }
+            }
+
+            return [...new Set(keywords)];
+        }
+
+        function detectInstitution(text) {
+            const patterns = [
+                /dayananda\s*sagar\s*university/i,
+                /dayananda\s*sagar\s*(?:college|institution)/i,
+                /[\w\s]+university/i,
+                /[\w\s]+college/i
+            ];
+
+            for (const pattern of patterns) {
+                const match = text.match(pattern);
+                if (match) return match[0].trim();
+            }
+            return null;
+        }
+
+        async function generateQRCode() {
+            return new Promise((resolve, reject) => {
+                const verificationData = JSON.stringify({
+                    documentId: documentMetadata.documentId,
+                    type: documentMetadata.docType,
+                    name: documentMetadata.studentName,
+                    studentId: documentMetadata.studentId,
+                    timestamp: documentMetadata.timestamp
+                });
+
+                const qrCodeData = `https://certisure-demo.vercel.app/verify?data=${btoa(verificationData)}`;
+                documentMetadata.qrCodeData = qrCodeData;
+
+                QRCode.toDataURL(qrCodeData, {
+                    width: 200,
+                    margin: 1,
+                    color: { dark: '#000000', light: '#ffffff' }
+                }, (err, url) => {
+                    if (err) reject(new Error('QR generation failed'));
+                    else {
+                        qrCodeDataUrl = url;
+                        resolve();
+                    }
+                });
+            });
+        }
+
+        async function addQRCodeToPDF() {
+            const arrayBuffer = await selectedFile.arrayBuffer();
+            const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+            const qrImageBytes = await fetch(qrCodeDataUrl).then(res => res.arrayBuffer());
+            const qrImage = await pdfDoc.embedPng(qrImageBytes);
+
+            const pages = pdfDoc.getPages();
+            const firstPage = pages[0];
+            const { width, height } = firstPage.getSize();
+
+            const qrSize = 80;
+            const margin = 20;
+            const position = document.getElementById('qrPosition').value;
+
+            let x, y;
+            switch (position) {
+                case 'bottom-right': x = width - qrSize - margin; y = margin; break;
+                case 'bottom-left': x = margin; y = margin; break;
+                case 'top-right': x = width - qrSize - margin; y = height - qrSize - margin; break;
+                case 'top-left': x = margin; y = height - qrSize - margin; break;
+                default: x = width - qrSize - margin; y = margin;
+            }
+
+            firstPage.drawImage(qrImage, { x, y, width: qrSize, height: qrSize });
+            firstPage.drawText('CertiSure Verified', {
+                x, y: y - 12, size: 7, color: PDFLib.rgb(0.3, 0.3, 0.3)
+            });
+
+            modifiedPdfBytes = await pdfDoc.save();
+        }
+
+        async function storeDocumentInDB() {
+            const response = await fetch(`${API_BASE}/documents`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify(documentMetadata)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to store document');
+            }
+
+            return await response.json();
+        }
+
+        // ============ MAIN FORM SUBMIT ============
         async function handleFormSubmit(e) {
             e.preventDefault();
+
             if (!currentUser) {
                 showStatus('Please login first', 'error');
                 document.getElementById('authModal').classList.remove('hidden');
                 return;
             }
+
             if (!selectedFile) {
                 showStatus('Please select a PDF file', 'error');
                 return;
@@ -755,115 +1016,122 @@
             const studentId = document.getElementById('studentId').value;
             const studentName = document.getElementById('studentName').value;
             const docType = document.getElementById('docType').value;
+
             if (!studentId || !studentName || !docType) {
                 showStatus('Please fill in all required fields', 'error');
                 return;
             }
 
+            const documentId = `DOC-${studentId}-${Date.now()}`;
+
             documentMetadata = {
+                documentId,
                 studentId,
                 studentName,
                 docType,
                 timestamp: new Date().toISOString(),
-                originalFileName: selectedFile.name
+                originalFileName: selectedFile.name,
+                fileSize: selectedFile.size
             };
 
             const submitBtn = document.getElementById('submitBtn');
             const buttonText = document.getElementById('buttonText');
 
+            submitBtn.disabled = true;
+            document.getElementById('processingSteps').style.display = 'block';
+            resetSteps();
+
             try {
-                await logMongoActivity('document_processing_start', { docType, studentId });
+                await logMongoActivity('document_processing_start', { docType, studentId, documentId });
 
+                // Step 1: Generate hash
+                setStepActive('step-hash');
+                buttonText.textContent = 'Generating hash...';
                 updateProgress(10);
-                buttonText.textContent = 'Generating QR Code...';
-                submitBtn.disabled = true;
+                
+                const fileHash = await generateFileHash(selectedFile);
+                documentMetadata.fileHash = fileHash;
+                setStepComplete('step-hash');
+                updateProgress(20);
 
+                // Step 2: OCR
+                setStepActive('step-ocr');
+                buttonText.textContent = 'Performing OCR...';
+                
+                try {
+                    const ocrResult = await performOCR(selectedFile);
+                    documentMetadata.ocrText = ocrResult.text;
+                    documentMetadata.ocrConfidence = ocrResult.confidence;
+                    documentMetadata.keywords = extractKeywords(ocrResult.text);
+                    documentMetadata.institutionName = detectInstitution(ocrResult.text);
+
+                    // Show OCR preview
+                    document.getElementById('ocrPreview').style.display = 'block';
+                    document.getElementById('ocrText').textContent = ocrResult.text.substring(0, 500) + '...';
+                    document.getElementById('ocrConfidence').textContent = `Confidence: ${ocrResult.confidence}%`;
+                } catch (ocrError) {
+                    console.warn('OCR failed:', ocrError);
+                }
+                
+                setStepComplete('step-ocr');
+                updateProgress(45);
+
+                // Step 3: Generate QR
+                setStepActive('step-qr');
+                buttonText.textContent = 'Generating QR code...';
+                
                 await generateQRCode();
-                updateProgress(40);
+                setStepComplete('step-qr');
+                updateProgress(60);
 
-                buttonText.textContent = 'Adding QR Code to PDF...';
+                // Step 4: Embed QR in PDF
+                setStepActive('step-pdf');
+                buttonText.textContent = 'Embedding QR in PDF...';
+                
                 await addQRCodeToPDF();
+                setStepComplete('step-pdf');
+                updateProgress(80);
+
+                // Step 5: Store in database
+                setStepActive('step-db');
+                buttonText.textContent = 'Storing in database...';
+                
+                await storeDocumentInDB();
+                setStepComplete('step-db');
                 updateProgress(100);
 
-                showStatus('QR Code generated successfully! Ready for download.', 'success');
+                showStatus('Document processed and stored successfully!', 'success');
                 document.getElementById('downloadBtn').classList.remove('hidden');
                 feather.replace();
 
-                await logMongoActivity('document_processing_success', { docType, studentId });
+                await logMongoActivity('document_issued', { documentId, studentId, studentName, docType });
+                refreshLogs();
+                loadIssuedDocuments();
+                checkConnection();
+
             } catch (err) {
                 console.error(err);
                 showStatus('Processing failed: ' + err.message, 'error');
                 await logMongoActivity('document_processing_failed', { error: err.message });
             } finally {
-                buttonText.textContent = 'Generate QR Code';
+                buttonText.textContent = 'Generate & Store Document';
                 submitBtn.disabled = false;
-                refreshLogs();
             }
         }
 
-        async function generateQRCode() {
-            return new Promise((resolve, reject) => {
-                const verificationData = JSON.stringify({
-                    documentId: documentMetadata.studentId + '_' + Date.now(),
-                    type: documentMetadata.docType,
-                    name: documentMetadata.studentName,
-                    timestamp: documentMetadata.timestamp
-                });
-                const qrCodeData = `https://certisure-demo.vercel.app/verify?data=${btoa(verificationData)}`;
-                QRCode.toDataURL(qrCodeData, {
-                    width: 200, margin: 1,
-                    color: { dark: '#000000', light: '#ffffff' }
-                }, (err, url) => {
-                    if (err) reject(new Error('Error generating QR code'));
-                    else { qrCodeDataUrl = url; resolve(); }
-                });
-            });
-        }
-
-        async function addQRCodeToPDF() {
-            try {
-                const arrayBuffer = await selectedFile.arrayBuffer();
-                const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-                const qrImageBytes = await fetch(qrCodeDataUrl).then(res => res.arrayBuffer());
-                const qrImage = await pdfDoc.embedPng(qrImageBytes);
-
-                const pages = pdfDoc.getPages();
-                const firstPage = pages[0];
-                const { width, height } = firstPage.getSize();
-
-                const qrSize = 80;
-                const margin = 20;
-                const position = document.getElementById('qrPosition').value;
-                let x, y;
-                switch (position) {
-                    case 'bottom-right': x = width - qrSize - margin; y = margin; break;
-                    case 'bottom-left': x = margin; y = margin; break;
-                    case 'top-right': x = width - qrSize - margin; y = height - qrSize - margin; break;
-                    case 'top-left': x = margin; y = height - qrSize - margin; break;
-                    default: x = width - qrSize - margin; y = margin;
-                }
-
-                firstPage.drawImage(qrImage, { x, y, width: qrSize, height: qrSize });
-                firstPage.drawText('CertiSure Verified Document', {
-                    x, y: y - 15, size: 8, color: PDFLib.rgb(0, 0, 0)
-                });
-
-                modifiedPdfBytes = await pdfDoc.save();
-            } catch (err) {
-                throw new Error('Failed to add QR to PDF: ' + err.message);
-            }
-        }
-
+        // ============ S3 UPLOAD ============
         async function downloadAndUploadToS3() {
             if (!modifiedPdfBytes) {
-                showStatus('No document ready for download', 'error');
+                showStatus('No document ready', 'error');
                 return;
             }
+
             try {
                 const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
                 const originalName = selectedFile.name.replace('.pdf', '');
                 const downloadFileName = `${originalName}_certified.pdf`;
 
+                // Download locally
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -873,6 +1141,7 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
 
+                // Upload to S3
                 await uploadToS3(blob, downloadFileName);
             } catch (err) {
                 console.error(err);
@@ -884,38 +1153,36 @@
             return new Promise((resolve, reject) => {
                 const s3Status = document.getElementById('s3Status');
                 const s3StatusText = document.getElementById('s3StatusText');
+                
                 s3Status.className = 's3-status s3-uploading';
                 s3StatusText.textContent = 'Uploading to AWS S3...';
                 s3Status.classList.remove('hidden');
 
                 const timestamp = Date.now();
                 const s3Key = `${AWS_CONFIG.folderPath}${timestamp}_${fileName}`;
+
                 const params = {
                     Bucket: AWS_CONFIG.bucketName,
                     Key: s3Key,
                     Body: blob,
                     ContentType: 'application/pdf',
                     Metadata: {
+                        'document-id': documentMetadata.documentId,
                         'student-id': documentMetadata.studentId,
                         'student-name': documentMetadata.studentName,
-                        'document-type': documentMetadata.docType,
-                        'original-filename': documentMetadata.originalFileName,
-                        'upload-timestamp': documentMetadata.timestamp
+                        'document-type': documentMetadata.docType
                     }
                 };
 
                 s3.upload(params, async (err, data) => {
                     if (err) {
-                        console.error(err);
                         s3Status.className = 's3-status s3-error';
                         s3StatusText.textContent = 'S3 Upload Failed: ' + err.message;
-                        showStatus('S3 upload failed', 'error');
                         await logMongoActivity('s3_upload_failed', { error: err.message, key: s3Key });
                         reject(err);
                     } else {
                         s3Status.className = 's3-status s3-success';
-                        s3StatusText.textContent = `Uploaded to S3: ${s3Key}`;
-                        showStatus('Document downloaded and uploaded to AWS S3 successfully!', 'success');
+                        s3StatusText.textContent = `Uploaded: ${s3Key}`;
                         await logMongoActivity('s3_upload_success', { key: s3Key, url: data.Location });
                         resolve(data);
                     }
@@ -925,15 +1192,7 @@
             });
         }
 
-        async function testS3Connection() {
-            try {
-                const params = { Bucket: AWS_CONFIG.bucketName, MaxKeys: 1 };
-                await s3.listObjectsV2(params).promise();
-            } catch (err) {
-                console.warn('S3 connection test failed', err.message);
-            }
-        }
-
+        // ============ UTILITIES ============
         function updateProgress(percent) {
             document.getElementById('progress-fill').style.width = percent + '%';
             document.getElementById('progressText').textContent = percent + '%';
@@ -949,13 +1208,16 @@
         function initDragAndDrop() {
             const documentUpload = document.getElementById('document-upload');
             const fileInput = document.getElementById('fileInput');
+
             documentUpload.addEventListener('dragover', e => {
                 e.preventDefault();
                 documentUpload.classList.add('dragover');
             });
+
             documentUpload.addEventListener('dragleave', () => {
                 documentUpload.classList.remove('dragover');
             });
+
             documentUpload.addEventListener('drop', e => {
                 e.preventDefault();
                 documentUpload.classList.remove('dragover');
