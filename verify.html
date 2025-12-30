@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CertiSure - DSU PDF Verification</title>
-    <!-- PDF.js -->
+    <title>CertiSure - Document Verification</title>
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔒</text></svg>">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <!-- QR Detection -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    <!-- OCR -->
     <script src="https://unpkg.com/tesseract.js@v4.0.2/dist/tesseract.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -21,9 +19,9 @@
             padding: 2rem 1rem;
         }
         .container { max-width: 1000px; margin: 0 auto; }
-        h1 { font-size: 2.4rem; text-align: center; margin-bottom: 0.5rem; }
+        h1 { font-size: 2.2rem; text-align: center; margin-bottom: 0.5rem; }
         h1 span { color: #818cf8; }
-        p.subtitle { text-align: center; color: #94a3b8; margin-bottom: 2.5rem; font-size: 1.1rem; }
+        p.subtitle { text-align: center; color: #94a3b8; margin-bottom: 2rem; font-size: 1rem; }
 
         .card {
             background: #1e293b;
@@ -56,16 +54,9 @@
         }
         .file-preview-container canvas, .file-preview-container img {
             max-width: 100%;
-            max-height: 400px;
+            max-height: 350px;
             border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             border: 1px solid #475569;
-        }
-        .preview-label {
-            color: #94a3b8;
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            display: block;
         }
 
         button {
@@ -79,10 +70,11 @@
         button:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .result { display: none; margin-top: 2rem; }
+
         .score-circle {
-            width: 160px; height: 160px; border-radius: 50%; margin: 0 auto 1.5rem;
+            width: 150px; height: 150px; border-radius: 50%; margin: 0 auto 1.5rem;
             display: flex; align-items: center; justify-content: center;
-            font-size: 3.8rem; font-weight: bold; color: white;
+            font-size: 3.5rem; font-weight: bold; color: white;
             box-shadow: 0 0 40px rgba(0,0,0,0.5);
         }
         .green { background: linear-gradient(135deg, #10b981, #059669); }
@@ -90,19 +82,19 @@
         .red { background: linear-gradient(135deg, #ef4444, #dc2626); }
 
         .status-badge {
-            display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: 50px; font-size: 0.95rem; font-weight: 500;
-            margin: 1rem 0;
+            display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px;
+            border-radius: 50px; font-size: 0.9rem; font-weight: 500; margin: 1rem 0;
         }
         .connected { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid #10b981; }
         .error { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid #ef4444; }
         .loading { background: rgba(251, 191, 36, 0.2); color: #fde047; border: 1px solid #f59e0b; }
 
         .log-box {
-            background: #0f172a; padding: 1.2rem; border-radius: 12px; margin-top: 1rem;
-            font-family: 'Courier New', monospace; font-size: 0.9rem; color: #94a3b8;
-            max-height: 400px; overflow-y: auto; border-left: 4px solid #6366f1;
+            background: #0f172a; padding: 1rem; border-radius: 12px; margin-top: 1rem;
+            font-family: 'Courier New', monospace; font-size: 0.85rem; color: #94a3b8;
+            max-height: 350px; overflow-y: auto; border-left: 4px solid #6366f1;
         }
-        .log-entry { margin: 6px 0; }
+        .log-entry { margin: 5px 0; }
         .log-success { color: #4ade80; }
         .log-info { color: #60a5fa; }
         .log-error { color: #f87171; }
@@ -119,21 +111,69 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.75rem 0;
+            padding: 0.6rem 0;
             border-bottom: 1px solid #1e293b;
         }
         .detection-item:last-child { border-bottom: none; }
-        .detection-label { color: #94a3b8; font-size: 0.9rem; }
-        .detection-value { font-weight: 600; font-size: 0.9rem; }
+        .detection-label { color: #94a3b8; font-size: 0.85rem; }
+        .detection-value { font-weight: 600; font-size: 0.85rem; }
         .detection-yes { color: #4ade80; }
         .detection-no { color: #f87171; }
-        .detection-partial { color: #fbbf24; }
+
+        .db-match-card {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            border-radius: 12px;
+        }
+        .db-match-card.no-match {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+        }
+        .db-match-title {
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .db-match-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            font-size: 0.85rem;
+        }
+        .db-match-label { color: #94a3b8; }
+        .db-match-value { color: #e5e7eb; }
+
+        .nav-bar {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .nav-link {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover { background: rgba(129, 140, 248, 0.2); color: #e2e8f0; }
+        .nav-link.active { background: #4f46e5; color: white; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>CertiSure - <span>DSU PDF Verification</span></h1>
-        <p class="subtitle">Upload your certificate (PDF or Image) - AI scans every page for QR code and Dayananda Sagar University</p>
+        <nav class="nav-bar">
+            <a href="index.html" class="nav-link">Home</a>
+            <a href="issuer.html" class="nav-link">Issuer Portal</a>
+            <a href="verify.html" class="nav-link active">Verify Document</a>
+        </nav>
+
+        <h1>CertiSure <span>Verification</span></h1>
+        <p class="subtitle">Upload a certificate to verify against our database using QR, hash, and AI analysis</p>
 
         <div class="card">
             <div class="upload-box" id="drop-zone" onclick="document.getElementById('file-input').click()">
@@ -144,37 +184,48 @@
             </div>
 
             <div id="preview-container" class="file-preview-container">
-                <span class="preview-label">File Preview (Page 1)</span>
                 <div id="preview-content"></div>
             </div>
 
-            <button id="verify-btn" disabled>Start AI Verification</button>
+            <button id="verify-btn" disabled>Start Verification</button>
         </div>
 
         <div class="result" id="result">
             <div class="card">
                 <div style="text-align:center;">
                     <div id="score-circle" class="score-circle green">0</div>
-                    <h2 id="verdict">Processing PDF...</h2>
+                    <h2 id="verdict" style="font-size: 1.4rem;">Processing...</h2>
                 </div>
 
                 <div id="connection-status" class="status-badge loading">
                     <span>Initializing...</span>
                 </div>
 
+                <!-- Database Match Card -->
+                <div id="db-match-card" class="db-match-card" style="display:none;">
+                    <div class="db-match-title" id="db-match-title">
+                        <span>📋</span> Database Verification
+                    </div>
+                    <div id="db-match-content"></div>
+                </div>
+
                 <!-- Detection Summary -->
                 <div class="detection-summary" id="detection-summary" style="display:none;">
-                    <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: #e5e7eb;">Detection Results</h3>
+                    <h3 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: #e5e7eb;">Scan Results</h3>
                     <div class="detection-item">
                         <span class="detection-label">QR Code Detected</span>
                         <span class="detection-value" id="qr-result">Scanning...</span>
                     </div>
                     <div class="detection-item">
-                        <span class="detection-label">QR Code Content</span>
-                        <span class="detection-value" id="qr-content" style="max-width: 60%; word-break: break-all; text-align: right;">-</span>
+                        <span class="detection-label">QR Content</span>
+                        <span class="detection-value" id="qr-content" style="max-width: 55%; word-break: break-all; text-align: right; font-size: 0.75rem;">-</span>
                     </div>
                     <div class="detection-item">
-                        <span class="detection-label">University Name Found</span>
+                        <span class="detection-label">File Hash Match</span>
+                        <span class="detection-value" id="hash-result">Checking...</span>
+                    </div>
+                    <div class="detection-item">
+                        <span class="detection-label">University Keywords</span>
                         <span class="detection-value" id="dsu-result">Scanning...</span>
                     </div>
                     <div class="detection-item">
@@ -183,12 +234,12 @@
                     </div>
                     <div class="detection-item">
                         <span class="detection-label">Text Extracted</span>
-                        <span class="detection-value" id="text-result">0 characters</span>
+                        <span class="detection-value" id="text-result">0 chars</span>
                     </div>
                 </div>
 
                 <div class="log-box" id="log">
-                    <div class="log-entry">Upload a PDF or image to begin verification.</div>
+                    <div class="log-entry">Ready for verification.</div>
                 </div>
 
                 <button onclick="location.reload()" style="margin-top:1.5rem; background:#475569;">
@@ -201,16 +252,13 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // ============================================
-        // API CONFIGURATION - GROQ (FREE & FAST)
-        // ============================================
-        // Get your free API key at: https://console.groq.com/keys
-        const AI_API_TOKEN = "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";  // <-- REPLACE THIS
+        // ============ CONFIGURATION ============
+        const AI_API_TOKEN = "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";
         const AI_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-        const AI_MODEL = "llama-3.3-70b-versatile";  // Fast and accurate
+        const AI_MODEL = "llama-3.3-70b-versatile";
         const MONGO_API_BASE = "http://localhost:3001/api";
 
-        // DOM Elements
+        // ============ DOM ELEMENTS ============
         const fileInput = document.getElementById('file-input');
         const verifyBtn = document.getElementById('verify-btn');
         const resultDiv = document.getElementById('result');
@@ -221,13 +269,11 @@
         const previewContainer = document.getElementById('preview-container');
         const previewContent = document.getElementById('preview-content');
         const detectionSummary = document.getElementById('detection-summary');
+        const dbMatchCard = document.getElementById('db-match-card');
 
         let selectedFile = null;
 
-        // ============================================
-        // UTILITY FUNCTIONS
-        // ============================================
-
+        // ============ UTILITIES ============
         function log(message, type = 'normal') {
             const entry = document.createElement('div');
             entry.className = 'log-entry';
@@ -240,130 +286,159 @@
             logDiv.scrollTop = logDiv.scrollHeight;
         }
 
-        function updateDetectionUI(qrFound, qrContent, dsuFound, pages, textLength) {
-            document.getElementById('qr-result').innerHTML = qrFound 
-                ? '<span class="detection-yes">✅ YES</span>' 
+        function updateDetectionUI(data) {
+            document.getElementById('qr-result').innerHTML = data.hasQR
+                ? '<span class="detection-yes">✅ YES</span>'
                 : '<span class="detection-no">❌ NO</span>';
-            
-            document.getElementById('qr-content').textContent = qrContent || '-';
-            document.getElementById('qr-content').className = `detection-value ${qrContent ? 'detection-yes' : ''}`;
-            
-            document.getElementById('dsu-result').innerHTML = dsuFound 
-                ? '<span class="detection-yes">✅ YES</span>' 
+
+            document.getElementById('qr-content').textContent = data.qrContent || '-';
+
+            document.getElementById('hash-result').innerHTML = data.hashMatch
+                ? '<span class="detection-yes">✅ MATCHED</span>'
+                : '<span class="detection-no">❌ NO MATCH</span>';
+
+            document.getElementById('dsu-result').innerHTML = data.hasDSU
+                ? '<span class="detection-yes">✅ YES</span>'
                 : '<span class="detection-no">❌ NO</span>';
-            
-            document.getElementById('pages-result').textContent = pages;
-            document.getElementById('text-result').textContent = `${textLength.toLocaleString()} characters`;
+
+            document.getElementById('pages-result').textContent = data.pages;
+            document.getElementById('text-result').textContent = `${data.textLength.toLocaleString()} chars`;
         }
 
-        // ============================================
-        // FILE PREVIEW
-        // ============================================
+        function showDbMatch(result) {
+            dbMatchCard.style.display = 'block';
+            const titleEl = document.getElementById('db-match-title');
+            const contentEl = document.getElementById('db-match-content');
 
+            if (result.verified) {
+                dbMatchCard.className = 'db-match-card';
+                titleEl.innerHTML = '<span>✅</span> Document Found in Database';
+                contentEl.innerHTML = `
+                    <div class="db-match-row">
+                        <span class="db-match-label">Document ID</span>
+                        <span class="db-match-value">${result.document.documentId}</span>
+                    </div>
+                    <div class="db-match-row">
+                        <span class="db-match-label">Student Name</span>
+                        <span class="db-match-value">${result.document.studentName}</span>
+                    </div>
+                    <div class="db-match-row">
+                        <span class="db-match-label">Student ID</span>
+                        <span class="db-match-value">${result.document.studentId}</span>
+                    </div>
+                    <div class="db-match-row">
+                        <span class="db-match-label">Document Type</span>
+                        <span class="db-match-value" style="text-transform: capitalize;">${result.document.docType}</span>
+                    </div>
+                    <div class="db-match-row">
+                        <span class="db-match-label">Issued By</span>
+                        <span class="db-match-value">${result.document.issuerEmail}</span>
+                    </div>
+                    <div class="db-match-row">
+                        <span class="db-match-label">Issue Date</span>
+                        <span class="db-match-value">${new Date(result.document.issuedAt).toLocaleDateString()}</span>
+                    </div>
+                    <div class="db-match-row">
+                        <span class="db-match-label">Match Type</span>
+                        <span class="db-match-value">${result.matchType.replace('_', ' ').toUpperCase()}</span>
+                    </div>
+                    ${result.textSimilarity ? `
+                    <div class="db-match-row">
+                        <span class="db-match-label">Text Similarity</span>
+                        <span class="db-match-value">${result.textSimilarity}%</span>
+                    </div>
+                    ` : ''}
+                `;
+            } else {
+                dbMatchCard.className = 'db-match-card no-match';
+                titleEl.innerHTML = '<span>❌</span> Not Found in Database';
+                contentEl.innerHTML = `
+                    <p style="color: #fca5a5; font-size: 0.85rem;">
+                        This document was not found in our verification database.
+                        It may not have been issued through CertiSure.
+                    </p>
+                `;
+            }
+        }
+
+        // ============ FILE PREVIEW ============
         async function renderPreview(file) {
             previewContainer.style.display = 'block';
             previewContent.innerHTML = '<p style="color:#94a3b8">Loading preview...</p>';
-            
+
             if (file.type === 'application/pdf') {
                 try {
                     const arrayBuffer = await file.arrayBuffer();
                     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                     const page = await pdf.getPage(1);
-                    
+
                     const scale = 1.5;
                     const viewport = page.getViewport({ scale });
                     const canvas = document.createElement('canvas');
                     const context = canvas.getContext('2d');
                     canvas.height = viewport.height;
                     canvas.width = viewport.width;
-                    
+
                     await page.render({ canvasContext: context, viewport }).promise;
-                    
+
                     previewContent.innerHTML = '';
                     previewContent.appendChild(canvas);
                 } catch (err) {
-                    previewContent.innerHTML = '<p style="color:#f87171">Error loading PDF preview</p>';
-                    console.error(err);
+                    previewContent.innerHTML = '<p style="color:#f87171">Error loading PDF</p>';
                 }
             } else if (file.type.startsWith('image/')) {
                 const img = document.createElement('img');
                 img.src = URL.createObjectURL(file);
                 previewContent.innerHTML = '';
                 previewContent.appendChild(img);
-            } else {
-                previewContent.innerHTML = '<p style="color:#94a3b8">No preview available for this file type</p>';
             }
         }
 
-        // ============================================
-        // QR CODE DETECTION (ENHANCED)
-        // ============================================
+        // ============ FILE HASH ============
+        async function generateFileHash(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
 
+        // ============ QR CODE DETECTION ============
         function scanForQRCode(canvas, context) {
             const width = canvas.width;
             const height = canvas.height;
-            
-            const scanAttempts = [
+
+            const regions = [
                 { x: 0, y: 0, w: width, h: height },
                 { x: width * 0.5, y: height * 0.5, w: width * 0.5, h: height * 0.5 },
                 { x: 0, y: height * 0.5, w: width * 0.5, h: height * 0.5 },
                 { x: width * 0.5, y: 0, w: width * 0.5, h: height * 0.5 },
                 { x: 0, y: 0, w: width * 0.5, h: height * 0.5 },
-                { x: width * 0.25, y: height * 0.25, w: width * 0.5, h: height * 0.5 },
-                { x: width * 0.25, y: height * 0.6, w: width * 0.5, h: height * 0.4 },
+                { x: width * 0.6, y: height * 0.7, w: width * 0.4, h: height * 0.3 },
             ];
 
-            for (const region of scanAttempts) {
+            for (const region of regions) {
                 try {
                     const imageData = context.getImageData(
-                        Math.floor(region.x), 
-                        Math.floor(region.y), 
-                        Math.floor(region.w), 
+                        Math.floor(region.x),
+                        Math.floor(region.y),
+                        Math.floor(region.w),
                         Math.floor(region.h)
                     );
-                    
-                    const qrCode = jsQR(imageData.data, Math.floor(region.w), Math.floor(region.h), {
-                        inversionAttempts: "dontInvert"
-                    });
-                    
-                    if (qrCode && qrCode.data) return qrCode;
 
-                    const qrCodeInverted = jsQR(imageData.data, Math.floor(region.w), Math.floor(region.h), {
+                    const qrCode = jsQR(imageData.data, Math.floor(region.w), Math.floor(region.h), {
                         inversionAttempts: "attemptBoth"
                     });
-                    
-                    if (qrCodeInverted && qrCodeInverted.data) return qrCodeInverted;
+
+                    if (qrCode && qrCode.data) return qrCode;
                 } catch (e) {
                     continue;
                 }
             }
-            
+
             return null;
         }
 
-        function preprocessImageForQR(canvas, context) {
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-            
-            for (let i = 0; i < data.length; i += 4) {
-                const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-                const contrast = 1.5;
-                const adjusted = ((gray - 128) * contrast) + 128;
-                const final = Math.max(0, Math.min(255, adjusted));
-                
-                data[i] = final;
-                data[i + 1] = final;
-                data[i + 2] = final;
-            }
-            
-            context.putImageData(imageData, 0, 0);
-            return context;
-        }
-
-        // ============================================
-        // DOCUMENT PROCESSING (PDF/IMAGE)
-        // ============================================
-
+        // ============ DOCUMENT PROCESSING ============
         async function processDocument(file) {
             const isPDF = file.type === 'application/pdf';
             let pagesData = [];
@@ -371,14 +446,14 @@
             let totalTextLength = 0;
 
             if (isPDF) {
-                log("Loading PDF for analysis...", "info");
+                log("Loading PDF...", "info");
                 const arrayBuffer = await file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                log(`PDF has ${pdf.numPages} page(s). Scanning each page...`, "info");
+                log(`PDF has ${pdf.numPages} page(s)`, "info");
 
                 for (let i = 1; i <= pdf.numPages; i++) {
-                    log(`Processing page ${i}/${pdf.numPages}...`, "info");
-                    
+                    log(`Processing page ${i}...`, "info");
+
                     const page = await pdf.getPage(i);
                     const scale = 3.0;
                     const viewport = page.getViewport({ scale });
@@ -388,65 +463,40 @@
                     canvas.width = viewport.width;
 
                     await page.render({ canvasContext: context, viewport }).promise;
-                    
-                    log(`  Scanning for QR codes on page ${i}...`, "info");
-                    let qrCode = scanForQRCode(canvas, context);
-                    
-                    if (!qrCode) {
-                        log(`  Trying enhanced QR scan on page ${i}...`, "info");
-                        const processedCanvas = document.createElement('canvas');
-                        processedCanvas.width = canvas.width;
-                        processedCanvas.height = canvas.height;
-                        const processedContext = processedCanvas.getContext('2d');
-                        processedContext.drawImage(canvas, 0, 0);
-                        preprocessImageForQR(processedCanvas, processedContext);
-                        qrCode = scanForQRCode(processedCanvas, processedContext);
-                    }
-                    
+
+                    const qrCode = scanForQRCode(canvas, context);
                     const hasQR = !!qrCode;
                     const qrData = qrCode ? qrCode.data : null;
-                    
+
                     if (hasQR) {
                         allQRCodes.push({ page: i, data: qrData });
-                        log(`  ✅ QR Code FOUND on page ${i}: "${qrData.substring(0, 50)}${qrData.length > 50 ? '...' : ''}"`, "success");
-                    } else {
-                        log(`  ❌ No QR code found on page ${i}`, "warning");
+                        log(`✅ QR found on page ${i}`, "success");
                     }
 
-                    log(`  Running OCR on page ${i}...`, "info");
+                    log(`Running OCR on page ${i}...`, "info");
                     try {
                         const { data: { text, confidence } } = await Tesseract.recognize(
                             canvas.toDataURL('image/png'),
                             'eng',
                             { logger: () => {} }
                         );
-                        
+
                         const cleanedText = text.replace(/\s+/g, ' ').trim();
                         totalTextLength += cleanedText.length;
-                        
-                        log(`  OCR complete: ${cleanedText.length} chars extracted (confidence: ${Math.round(confidence)}%)`, "info");
-                        
-                        pagesData.push({ 
-                            page: i, 
-                            hasQR, 
+
+                        pagesData.push({
+                            page: i,
+                            hasQR,
                             qrData,
                             text: cleanedText,
-                            confidence: confidence
+                            confidence
                         });
                     } catch (ocrError) {
-                        log(`  OCR error on page ${i}: ${ocrError.message}`, "error");
-                        pagesData.push({ 
-                            page: i, 
-                            hasQR, 
-                            qrData,
-                            text: '',
-                            confidence: 0
-                        });
+                        pagesData.push({ page: i, hasQR, qrData, text: '', confidence: 0 });
                     }
                 }
             } else {
-                // Image processing
-                log("Loading image for analysis...", "info");
+                log("Loading image...", "info");
                 const img = new Image();
                 img.src = URL.createObjectURL(file);
                 await new Promise((resolve, reject) => {
@@ -460,137 +510,94 @@
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
 
-                log("Scanning for QR codes in image...", "info");
-                let qrCode = scanForQRCode(canvas, ctx);
-                
-                if (!qrCode) {
-                    log("Trying enhanced QR scan...", "info");
-                    const processedCanvas = document.createElement('canvas');
-                    processedCanvas.width = canvas.width;
-                    processedCanvas.height = canvas.height;
-                    const processedContext = processedCanvas.getContext('2d');
-                    processedContext.drawImage(canvas, 0, 0);
-                    preprocessImageForQR(processedCanvas, processedContext);
-                    qrCode = scanForQRCode(processedCanvas, processedContext);
-                }
-                
-                if (!qrCode) {
-                    log("Trying scaled QR scan...", "info");
-                    const scaledCanvas = document.createElement('canvas');
-                    scaledCanvas.width = img.width * 2;
-                    scaledCanvas.height = img.height * 2;
-                    const scaledCtx = scaledCanvas.getContext('2d');
-                    scaledCtx.drawImage(img, 0, 0, scaledCanvas.width, scaledCanvas.height);
-                    qrCode = scanForQRCode(scaledCanvas, scaledCtx);
-                }
-
+                const qrCode = scanForQRCode(canvas, ctx);
                 const hasQR = !!qrCode;
                 const qrData = qrCode ? qrCode.data : null;
 
                 if (hasQR) {
                     allQRCodes.push({ page: 1, data: qrData });
-                    log(`✅ QR Code FOUND: "${qrData.substring(0, 100)}${qrData.length > 100 ? '...' : ''}"`, "success");
-                } else {
-                    log("❌ No QR code found in image", "warning");
+                    log(`✅ QR found in image`, "success");
                 }
 
-                log("Running OCR on image...", "info");
+                log("Running OCR...", "info");
                 try {
                     const { data: { text, confidence } } = await Tesseract.recognize(
                         file,
                         'eng',
                         { logger: () => {} }
                     );
-                    
+
                     const cleanedText = text.replace(/\s+/g, ' ').trim();
                     totalTextLength = cleanedText.length;
-                    
-                    log(`OCR complete: ${cleanedText.length} chars extracted (confidence: ${Math.round(confidence)}%)`, "info");
-                    
-                    pagesData.push({ 
-                        page: 1, 
-                        hasQR, 
-                        qrData,
-                        text: cleanedText,
-                        confidence: confidence
-                    });
+
+                    pagesData.push({ page: 1, hasQR, qrData, text: cleanedText, confidence });
                 } catch (ocrError) {
-                    log(`OCR error: ${ocrError.message}`, "error");
-                    pagesData.push({ 
-                        page: 1, 
-                        hasQR, 
-                        qrData,
-                        text: '',
-                        confidence: 0
-                    });
+                    pagesData.push({ page: 1, hasQR, qrData, text: '', confidence: 0 });
                 }
             }
 
-            return { 
-                pagesData, 
-                qrCodes: allQRCodes, 
-                totalTextLength 
-            };
+            return { pagesData, qrCodes: allQRCodes, totalTextLength };
         }
 
-        // ============================================
-        // DSU KEYWORD DETECTION
-        // ============================================
-
+        // ============ KEYWORD DETECTION ============
         function checkForDSU(text) {
-            const dsuPatterns = [
+            const patterns = [
                 /dayananda\s*sagar\s*university/i,
                 /dayananda\s*sagar\s*institutions/i,
                 /dayananda\s*sagar\s*college/i,
                 /d\.?\s*s\.?\s*u\.?/i,
                 /dsu/i,
-                /ds\s*university/i,
-                /sagar\s*university/i,
                 /dayananda/i
             ];
-            
-            const matchedPatterns = [];
-            for (const pattern of dsuPatterns) {
+
+            const matches = [];
+            for (const pattern of patterns) {
                 if (pattern.test(text)) {
                     const match = text.match(pattern);
-                    if (match) matchedPatterns.push(match[0]);
+                    if (match) matches.push(match[0]);
                 }
             }
-            
-            return {
-                found: matchedPatterns.length > 0,
-                matches: matchedPatterns
-            };
+
+            return { found: matches.length > 0, matches };
         }
 
-        // ============================================
-        // MONGODB LOGGING
-        // ============================================
-
-        async function sendVerificationLogToMongoDB(verificationData) {
+        // ============ DATABASE VERIFICATION ============
+        async function verifyAgainstDatabase(qrContent, fileHash, ocrText) {
             try {
-                const response = await fetch(`${MONGO_API_BASE}/verifications`, {
+                log("Checking database...", "info");
+
+                const response = await fetch(`${MONGO_API_BASE}/documents/verify`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(verificationData)
+                    body: JSON.stringify({
+                        qrCodeData: qrContent,
+                        fileHash: fileHash,
+                        ocrText: ocrText
+                    })
                 });
-                
-                if (!response.ok) throw new Error('Failed to send log to MongoDB');
-                
-                log("✅ Verification log sent to certisure database", "success");
-                return true;
+
+                if (!response.ok) throw new Error('Database check failed');
+
+                const result = await response.json();
+
+                if (result.verified) {
+                    log(`✅ DOCUMENT FOUND IN DATABASE`, "success");
+                    log(`  Document ID: ${result.document.documentId}`, "info");
+                    log(`  Student: ${result.document.studentName}`, "info");
+                    log(`  Match Type: ${result.matchType}`, "info");
+                } else {
+                    log(`❌ Document NOT found in database`, "warning");
+                }
+
+                return result;
             } catch (error) {
-                console.error('MongoDB log error:', error);
-                log("❌ Failed to send log to MongoDB (check if server is running on port 3001)", "error");
-                return false;
+                log(`Database check failed: ${error.message}`, "error");
+                return { verified: false, error: error.message };
             }
         }
 
-        // ============================================
-        // AI VERIFICATION WITH GROQ
-        // ============================================
-
-        async function verifyWithGroq(prompt) {
+        // ============ AI VERIFICATION ============
+        async function verifyWithAI(prompt) {
             const response = await fetch(AI_API_URL, {
                 method: "POST",
                 headers: {
@@ -602,211 +609,86 @@
                     messages: [
                         {
                             role: "system",
-                            content: "You are a certificate verification expert. Analyze documents and provide scores between 1-99 based on authenticity markers."
+                            content: "You are a certificate verification expert. Analyze documents and provide authenticity scores between 1-99."
                         },
-                        {
-                            role: "user",
-                            content: prompt
-                        }
+                        { role: "user", content: prompt }
                     ],
                     temperature: 0.2,
-                    max_tokens: 300,
-                    top_p: 1
+                    max_tokens: 300
                 })
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Groq API error: ${response.status} - ${errorText}`);
+                throw new Error(`AI API error: ${response.status}`);
             }
 
             const data = await response.json();
             return data.choices[0]?.message?.content || "";
         }
 
-        // ============================================
-        // MAIN VERIFICATION HANDLER
-        // ============================================
+        // ============ LOG TO MONGODB ============
+        async function sendVerificationLog(data) {
+            try {
+                await fetch(`${MONGO_API_BASE}/verifications`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                log("✅ Verification logged to database", "success");
+            } catch (error) {
+                log("Failed to log verification", "error");
+            }
+        }
 
+        // ============ MAIN VERIFICATION ============
         verifyBtn.addEventListener('click', async () => {
             if (!selectedFile) return;
 
-            // Check if API key is configured
             if (AI_API_TOKEN === "YOUR_GROQ_API_KEY_HERE") {
-                alert("⚠️ Please configure your Groq API key!\n\n1. Get free API key at: https://console.groq.com/keys\n2. Replace 'YOUR_GROQ_API_KEY_HERE' in the code with your key");
+                alert("Please configure your Groq API key!");
                 return;
             }
 
             verifyBtn.disabled = true;
             resultDiv.style.display = 'block';
             detectionSummary.style.display = 'block';
+            dbMatchCard.style.display = 'none';
             logDiv.innerHTML = '';
             scoreCircle.textContent = "...";
-            verdict.textContent = "Processing document...";
+            verdict.textContent = "Processing...";
             statusBadge.className = 'status-badge loading';
-            statusBadge.innerHTML = '<span>Analyzing content...</span>';
-
-            document.getElementById('qr-result').textContent = 'Scanning...';
-            document.getElementById('qr-content').textContent = '-';
-            document.getElementById('dsu-result').textContent = 'Scanning...';
-            document.getElementById('pages-result').textContent = '0';
-            document.getElementById('text-result').textContent = '0 characters';
+            statusBadge.innerHTML = '<span>Analyzing...</span>';
 
             try {
-                log("Starting document analysis...", "info");
+                log("Starting verification...", "info");
+
+                // Generate file hash
+                log("Generating file hash...", "info");
+                const fileHash = await generateFileHash(selectedFile);
+                log(`Hash: ${fileHash.substring(0, 20)}...`, "info");
+
+                // Process document
                 const { pagesData, qrCodes, totalTextLength } = await processDocument(selectedFile);
-                
+
                 const hasQR = qrCodes.length > 0;
                 const qrContent = hasQR ? qrCodes[0].data : null;
                 const allText = pagesData.map(p => p.text).join("\n");
                 const dsuCheck = checkForDSU(allText);
-                const hasDSU = dsuCheck.found;
 
-                log("=== DETECTION SUMMARY ===", "info");
-                log(`QR Codes Found: ${hasQR ? 'YES (' + qrCodes.length + ')' : 'NO'}`, hasQR ? "success" : "warning");
-                if (hasQR) {
-                    qrCodes.forEach((qr, idx) => {
-                        log(`  QR #${idx + 1} (Page ${qr.page}): ${qr.data.substring(0, 80)}...`, "info");
-                    });
-                }
-                log(`DSU Keywords Found: ${hasDSU ? 'YES' : 'NO'}`, hasDSU ? "success" : "warning");
-                if (hasDSU) {
-                    log(`  Matched: ${dsuCheck.matches.join(', ')}`, "info");
-                }
-                log(`Total Text Extracted: ${totalTextLength} characters`, "info");
-                log(`Pages Scanned: ${pagesData.length}`, "info");
+                log("=== SCAN RESULTS ===", "info");
+                log(`QR Codes: ${hasQR ? qrCodes.length : 0}`, hasQR ? "success" : "warning");
+                log(`University Keywords: ${dsuCheck.found ? 'YES' : 'NO'}`, dsuCheck.found ? "success" : "warning");
+                log(`Text: ${totalTextLength} characters`, "info");
 
-                updateDetectionUI(hasQR, qrContent, hasDSU, pagesData.length, totalTextLength);
+                // Database verification
+                log("=== DATABASE CHECK ===", "info");
+                const dbResult = await verifyAgainstDatabase(qrContent, fileHash, allText);
+                showDbMatch(dbResult);
 
-                statusBadge.innerHTML = '<span>⚡ Sending to AI for scoring...</span>';
-                log("Sending analysis to AI for verification...", "info");
-
-                const prompt = `You are verifying a Dayananda Sagar University certificate.
-
-SCAN RESULTS:
-- QR Code detected: ${hasQR ? "YES" : "NO"}
-${hasQR ? `- QR Code content: "${qrContent}"` : ''}
-- "Dayananda Sagar University" keywords found: ${hasDSU ? "YES" : "NO"}
-${hasDSU ? `- Keywords matched: ${dsuCheck.matches.join(', ')}` : ''}
-- Pages scanned: ${pagesData.length}
-- Text extracted: ${totalTextLength} characters
-- Sample text: "${allText.substring(0, 800)}..."
-
-SCORING RULES:
-- If QR code present AND university name found → Score 75–99 (GENUINE)
-- If only QR code OR only university name found → Score 40–74 (SUSPICIOUS)
-- If neither found → Score 1–39 (FAKE)
-
-Respond EXACTLY in this format:
-SCORE: [number 1-99]
-STATUS: [GENUINE or SUSPICIOUS or FAKE]
-REASON: [1-2 sentence explanation]`;
-
-                const aiResult = await verifyWithGroq(prompt);
-                
-                log("✅ AI Response received", "success");
-                log(`Raw AI output: ${aiResult}`, "info");
-
-                const scoreMatch = aiResult.match(/SCORE:\s*(\d+)/i);
-                const statusMatch = aiResult.match(/STATUS:\s*(GENUINE|SUSPICIOUS|FAKE)/i);
-                const reasonMatch = aiResult.match(/REASON:\s*(.+?)(?:\n|$)/i);
-                
-                const score = scoreMatch ? Math.min(99, Math.max(1, parseInt(scoreMatch[1]))) : 50;
-                const status = statusMatch ? statusMatch[1].toUpperCase() : "UNKNOWN";
-                const reasonPart = reasonMatch ? reasonMatch[1].trim() : "Analysis complete.";
-
-                let currentScore = 0;
-                const scoreTimer = setInterval(() => {
-                    currentScore += 2;
-                    if (currentScore >= score) {
-                        currentScore = score;
-                        clearInterval(scoreTimer);
-                    }
-                    scoreCircle.textContent = currentScore;
-                }, 20);
-
-                statusBadge.className = 'status-badge connected';
-                statusBadge.innerHTML = '<span>✅ AI Verification Complete</span>';
-
-                if (score >= 75) {
-                    scoreCircle.className = 'score-circle green';
-                    verdict.textContent = "GENUINE CERTIFICATE";
-                    verdict.style.color = "#4ade80";
-                } else if (score >= 40) {
-                    scoreCircle.className = 'score-circle orange';
-                    verdict.textContent = "SUSPICIOUS – Manual Review Needed";
-                    verdict.style.color = "#fbbf24";
-                } else {
-                    scoreCircle.className = 'score-circle red';
-                    verdict.textContent = "FAKE / INVALID CERTIFICATE";
-                    verdict.style.color = "#f87171";
-                }
-
-                log("=== FINAL RESULT ===", "success");
-                log(`Score: ${score}/100`, "success");
-                log(`Status: ${status}`, "success");
-                log(`Reason: ${reasonPart}`, "info");
-
-                log("Sending log to certisure database...", "info");
-                const verificationPayload = {
-                    fileName: selectedFile.name,
-                    mimeType: selectedFile.type,
-                    sizeBytes: selectedFile.size,
-                    pages: pagesData.length,
+                // Update UI
+                updateDetectionUI({
                     hasQR,
-                    qrContent: qrContent || null,
-                    hasDSU,
-                    dsuMatches: dsuCheck.matches,
-                    textLength: totalTextLength,
-                    score,
-                    status,
-                    reason: reasonPart,
-                    timestamp: new Date().toISOString(),
-                    aiProvider: "Groq AI"
-                };
-
-                await sendVerificationLogToMongoDB(verificationPayload);
-
-            } catch (err) {
-                statusBadge.className = 'status-badge error';
-                statusBadge.innerHTML = '<span>❌ Verification Failed</span>';
-                log(`Error: ${err.message}`, "error");
-                console.error(err);
-                verdict.textContent = "Verification Failed";
-                scoreCircle.textContent = "X";
-                scoreCircle.className = 'score-circle red';
-            }
-        });
-
-        // ============================================
-        // FILE INPUT HANDLERS
-        // ============================================
-
-        fileInput.addEventListener('change', async (e) => {
-            if (e.target.files[0]) {
-                selectedFile = e.target.files[0];
-                verifyBtn.disabled = false;
-                await renderPreview(selectedFile);
-                resultDiv.style.display = 'none';
-                log(`File loaded: ${selectedFile.name} (${(selectedFile.size/1024/1024).toFixed(2)} MB)`, "info");
-            }
-        });
-
-        const dropZone = document.getElementById('drop-zone');
-        dropZone.addEventListener('dragover', e => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-        dropZone.addEventListener('drop', e => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length) {
-                fileInput.files = e.dataTransfer.files;
-                fileInput.dispatchEvent(new Event('change'));
-            }
-        });
-    </script>
-</body>
-</html>
-
+                    qrContent: qrContent ? qrContent.substring(0, 60) + '...' : null,
+                    hashMatch: dbResult.verified && dbResult.matchType === 'file_hash',
+                    hasDSU: dsuCheck.found,
+            
