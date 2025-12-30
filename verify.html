@@ -691,4 +691,141 @@
                     qrContent: qrContent ? qrContent.substring(0, 60) + '...' : null,
                     hashMatch: dbResult.verified && dbResult.matchType === 'file_hash',
                     hasDSU: dsuCheck.found,
-            
+                    pages: pagesData.length,
+                    textLength: totalTextLength
+                });
+
+                // AI Verification
+                statusBadge.innerHTML = '<span>⚡ AI Analysis...</span>';
+                log("=== AI ANALYSIS ===", "info");
+
+                const prompt = `Verify this certificate:
+
+SCAN RESULTS:
+- QR Code: ${hasQR ? "YES" : "NO"}
+${hasQR ? `- QR Content: "${qrContent}"` : ''}
+- University Keywords (DSU): ${dsuCheck.found ? "YES - " + dsuCheck.matches.join(', ') : "NO"}
+- Database Match: ${dbResult.verified ? "YES - " + dbResult.matchType : "NO"}
+${dbResult.verified ? `- Registered Student: ${dbResult.document.studentName}` : ''}
+${dbResult.textSimilarity ? `- Text Similarity: ${dbResult.textSimilarity}%` : ''}
+- Pages: ${pagesData.length}
+- Text Length: ${totalTextLength} chars
+
+SCORING:
+- Database verified → 85-99 (GENUINE)
+- QR + Keywords (no DB) → 60-84 (LIKELY GENUINE)
+- Only QR or Keywords → 40-59 (SUSPICIOUS)
+- Neither → 1-39 (FAKE)
+
+Format:
+SCORE: [1-99]
+STATUS: [GENUINE/SUSPICIOUS/FAKE]
+REASON: [explanation]`;
+
+                const aiResult = await verifyWithAI(prompt);
+                log("✅ AI analysis complete", "success");
+
+                // Parse AI response
+                const scoreMatch = aiResult.match(/SCORE:\s*(\d+)/i);
+                const statusMatch = aiResult.match(/STATUS:\s*(GENUINE|SUSPICIOUS|FAKE)/i);
+                const reasonMatch = aiResult.match(/REASON:\s*(.+?)(?:\n|$)/i);
+
+                let score = scoreMatch ? Math.min(99, Math.max(1, parseInt(scoreMatch[1]))) : 50;
+
+                // Database bonus
+                if (dbResult.verified && score < 85) {
+                    score = Math.min(99, score + 25);
+                    log(`Database match bonus applied`, "success");
+                }
+
+                const status = statusMatch ? statusMatch[1].toUpperCase() : "UNKNOWN";
+                const reason = reasonMatch ? reasonMatch[1].trim() : "Analysis complete.";
+
+                // Animate score
+                let currentScore = 0;
+                const timer = setInterval(() => {
+                    currentScore += 2;
+                    if (currentScore >= score) {
+                        currentScore = score;
+                        clearInterval(timer);
+                    }
+                    scoreCircle.textContent = currentScore;
+                }, 20);
+
+                // Update UI
+                statusBadge.className = 'status-badge connected';
+                statusBadge.innerHTML = '<span>✅ Complete</span>';
+
+                if (score >= 75) {
+                    scoreCircle.className = 'score-circle green';
+                    verdict.textContent = dbResult.verified ? "GENUINE - DATABASE VERIFIED" : "GENUINE CERTIFICATE";
+                    verdict.style.color = "#4ade80";
+                } else if (score >= 40) {
+                    scoreCircle.className = 'score-circle orange';
+                    verdict.textContent = "SUSPICIOUS - Review Needed";
+                    verdict.style.color = "#fbbf24";
+                } else {
+                    scoreCircle.className = 'score-circle red';
+                    verdict.textContent = "INVALID CERTIFICATE";
+                    verdict.style.color = "#f87171";
+                }
+
+                log("=== RESULT ===", "success");
+                log(`Score: ${score}/100`, "success");
+                log(`Status: ${status}`, "success");
+                log(`Database: ${dbResult.verified ? 'VERIFIED' : 'NOT FOUND'}`, dbResult.verified ? "success" : "warning");
+                log(`Reason: ${reason}`, "info");
+
+                // Log to MongoDB
+                await sendVerificationLog({
+                    fileName: selectedFile.name,
+                    fileHash,
+                    hasQR,
+                    qrContent,
+                    hasDSU: dsuCheck.found,
+                    databaseVerified: dbResult.verified,
+                    databaseDocumentId: dbResult.document?.documentId || null,
+                    score,
+                    status,
+                    reason,
+                    timestamp: new Date().toISOString()
+                });
+
+            } catch (err) {
+                statusBadge.className = 'status-badge error';
+                statusBadge.innerHTML = '<span>❌ Failed</span>';
+                log(`Error: ${err.message}`, "error");
+                verdict.textContent = "Verification Failed";
+                scoreCircle.textContent = "X";
+                scoreCircle.className = 'score-circle red';
+            }
+        });
+
+        // ============ FILE INPUT ============
+        fileInput.addEventListener('change', async (e) => {
+            if (e.target.files[0]) {
+                selectedFile = e.target.files[0];
+                verifyBtn.disabled = false;
+                await renderPreview(selectedFile);
+                resultDiv.style.display = 'none';
+            }
+        });
+
+        // Drag & Drop
+        const dropZone = document.getElementById('drop-zone');
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        });
+    </script>
+</body>
+</html>
